@@ -43,6 +43,9 @@ typedef struct {
     libusb_device_handle *deviceHandle;
 } XhbUsb;
 
+typedef struct {
+    bool dropNextInPackage;
+} WhbSleepDetect;
 
 typedef struct {
     typedef enum { NA1=0, NA2=1, Key1=2, Key2=3, Feed=4, Axis=5, Step=6, CRC=7 } ByteType;
@@ -66,25 +69,6 @@ typedef struct {
 typedef struct WhbSoftwareButton{
     const WhbKeyCode* key;
     const WhbKeyCode* modifier;
-/*
-    WhbSoftwareButton(const WhbKeyCode* key, const WhbKeyCode* modifier) :
-        key(key),
-        modifier(modifier) { }
-
-    bool matches(const WhbKeyCode* key, const WhbKeyCode* modifier) {
-
-        if ( (key == nullptr) | (modifier == nullptr) |
-             (this->key == nullptr) | (this->modifier == nullptr))
-        {
-            return false;
-        }
-
-        if ( key->code == this->key->code && modifier->code == this->modifier->code)
-        {
-            return true;
-        }
-        return false;
-    }*/
 } WhbSoftwareButton;
 
 typedef struct {
@@ -146,13 +130,14 @@ typedef struct {
 } WhbKeyCodes;
 
 typedef struct {
-	WhbEntity entity;
-	WhbKeyCodes codes;
-    WhbPackageInfo packageInfo;
-} Whb;
+	const WhbEntity entity;
+    const WhbKeyCodes codes;
+    const WhbPackageInfo packageInfo;
+    WhbSleepDetect sleepState;
+} WhbContext;
 
 
-const Whb WHB = {
+WhbContext Whb = {
 	.entity = {
 		.name = "xhc-whb04b-6",
 		.configSectionName = "XHC-WHB04B-6",
@@ -214,7 +199,8 @@ const Whb WHB = {
             },
             .expectedSize = (sizeof(WhbInPackageInfo::positionToType)/sizeof(WhbInPackageInfo::ByteType))
         }
-    }
+    },
+    .sleepState = {.dropNextInPackage = false }
 };
 
 
@@ -303,16 +289,17 @@ typedef struct {
 typedef struct {
 	xhc_hal_t *hal;
     uint8_t currentAxisCode;
-	//xhc_button_t buttons[NB_MAX_BUTTONS];
     WhbSoftwareButton button[31];
-	unsigned char button_code;
+    unsigned char button_code;
 
 	unsigned char old_inc_step_status;
-	unsigned char button_step;	// Used in simulation mode to handle the STEP increment
+    //! used in simulation mode to handle the STEP increment
+    unsigned char button_step;
 
-    // Variables for velocity computation
+    //! velocity computation
 	hal_s32_t last_jog_counts;
 
+    //! cleanup refernces
     XhcCleanupRef cleanup;
 
 	struct timeval last_tv;
@@ -322,39 +309,39 @@ typedef struct {
 static xhc_t xhc =
 {
     .hal = nullptr,
-    .currentAxisCode = WHB.codes.axis.undefined.code,
+    .currentAxisCode = Whb.codes.axis.undefined.code,
     .button = {
-            { .key = &WHB.codes.buttons.reset,          .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.reset,          .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.stop,           .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.stop,           .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.start,          .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.start,          .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.feed_plus,      .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.feed_plus,      .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.feed_minus,     .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.feed_minus,     .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.spindle_plus,   .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.spindle_plus,   .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.spindle_minus,  .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.spindle_minus,  .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.machine_home,   .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.machine_home,   .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.safe_z,         .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.safe_z,         .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.workpiece_home, .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.workpiece_home, .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.spindle_on_off, .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.spindle_on_off, .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.function,       .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.probe_z,        .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.probe_z,        .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.macro10,        .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.macro10,        .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.manual_pulse_generator, .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.manual_pulse_generator, .modifier = &WHB.codes.buttons.function},
-            { .key = &WHB.codes.buttons.step_continuous, .modifier = &WHB.codes.buttons.undefined},
-            { .key = &WHB.codes.buttons.step_continuous, .modifier = &WHB.codes.buttons.function}
+            { .key = &Whb.codes.buttons.reset,          .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.reset,          .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.stop,           .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.stop,           .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.start,          .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.start,          .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.feed_plus,      .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.feed_plus,      .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.feed_minus,     .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.feed_minus,     .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.spindle_plus,   .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.spindle_plus,   .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.spindle_minus,  .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.spindle_minus,  .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.machine_home,   .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.machine_home,   .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.safe_z,         .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.safe_z,         .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.workpiece_home, .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.workpiece_home, .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.spindle_on_off, .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.spindle_on_off, .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.function,       .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.probe_z,        .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.probe_z,        .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.macro10,        .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.macro10,        .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.manual_pulse_generator, .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.manual_pulse_generator, .modifier = &Whb.codes.buttons.function},
+            { .key = &Whb.codes.buttons.step_continuous, .modifier = &Whb.codes.buttons.undefined},
+            { .key = &Whb.codes.buttons.step_continuous, .modifier = &Whb.codes.buttons.function}
     },
     .button_code = 0,
     .old_inc_step_status = 0,
@@ -418,11 +405,11 @@ void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
 	*p++ = 0xFD;
 	*p++ = 0x0C;
 
-	if (xhc->currentAxisCode == WHB.codes.axis.a.code) p += xhc_encode_float(rtapi_rint(1000 * *(xhc->hal->a_wc)) / 1000, p);
+	if (xhc->currentAxisCode == Whb.codes.axis.a.code) p += xhc_encode_float(rtapi_rint(1000 * *(xhc->hal->a_wc)) / 1000, p);
 	else p += xhc_encode_float(rtapi_rint(1000 * *(xhc->hal->x_wc)) / 1000, p);
 	p += xhc_encode_float(rtapi_rint(1000 * *(xhc->hal->y_wc)) / 1000, p);
 	p += xhc_encode_float(rtapi_rint(1000 * *(xhc->hal->z_wc)) / 1000, p);
-	if (xhc->currentAxisCode == WHB.codes.axis.a.code) p += xhc_encode_float(rtapi_rint(1000 * *(xhc->hal->a_mc)) / 1000, p);
+	if (xhc->currentAxisCode == Whb.codes.axis.a.code) p += xhc_encode_float(rtapi_rint(1000 * *(xhc->hal->a_mc)) / 1000, p);
 	else p += xhc_encode_float(rtapi_rint(1000 * *(xhc->hal->x_mc)) / 1000, p);
 	p += xhc_encode_float(rtapi_rint(1000 * *(xhc->hal->y_mc)) / 1000, p);
 	p += xhc_encode_float(rtapi_rint(1000 * *(xhc->hal->z_mc)) / 1000, p);
@@ -483,22 +470,22 @@ void xhc_set_display(libusb_device_handle *dev_handle, xhc_t *xhc)
 void printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
 {
     uint8_t indent = 10;
-    const WhbKeyCode* keyCodeBase = (WhbKeyCode*)&WHB.codes.buttons;
+    const WhbKeyCode* keyCodeBase = (WhbKeyCode*)&Whb.codes.buttons;
     // no key
-    if (keyCode == WHB.codes.buttons.undefined.code)
+    if (keyCode == Whb.codes.buttons.undefined.code)
     {
-        if (modifierCode == WHB.codes.buttons.function.code) {
-            printf("%*s", indent, WHB.codes.buttons.undefined.altText);
+        if (modifierCode == Whb.codes.buttons.function.code) {
+            printf("%*s", indent, Whb.codes.buttons.undefined.altText);
         } else {
-            printf("%*s", indent, WHB.codes.buttons.undefined.text);
+            printf("%*s", indent, Whb.codes.buttons.undefined.text);
         }
         return;
     }
 
     // key is modifier key itself
-    if (keyCode == WHB.codes.buttons.function.code)
+    if (keyCode == Whb.codes.buttons.function.code)
     {
-        printf("%*s", indent, WHB.codes.buttons.function.text);
+        printf("%*s", indent, Whb.codes.buttons.function.text);
         return;
     }
 
@@ -511,7 +498,7 @@ void printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
         whbKeyCode++;
     }
 
-    if (modifierCode == WHB.codes.buttons.function.code) {
+    if (modifierCode == Whb.codes.buttons.function.code) {
         printf("%*s", indent,whbKeyCode->altText);
     } else {
         printf("%*s", indent,whbKeyCode->text);
@@ -533,10 +520,10 @@ void printTwistButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode) {
 
 void printData(const unsigned char* data, int length)
 {
-    if (length != WHB.packageInfo.in.expectedSize) return;
+    if (length != Whb.packageInfo.in.expectedSize) return;
 
-    for (uint8_t idx = 0; idx < WHB.packageInfo.in.expectedSize; idx++) {
-        WhbInPackageInfo::ByteType dataType = WHB.packageInfo.in.positionToType[idx];
+    for (uint8_t idx = 0; idx < Whb.packageInfo.in.expectedSize; idx++) {
+        WhbInPackageInfo::ByteType dataType = Whb.packageInfo.in.positionToType[idx];
         switch (dataType)
         {
             case WhbInPackageInfo::ByteType::NA1:
@@ -554,11 +541,11 @@ void printData(const unsigned char* data, int length)
                 printf(" | ");
                 break;
             case WhbInPackageInfo::ByteType::Feed:
-                printTwistButtonText((WhbKeyCode*)&WHB.codes.feed, (uint8_t)data[idx]);
+                printTwistButtonText((WhbKeyCode*)&Whb.codes.feed, (uint8_t)data[idx]);
                 printf(" | ");
                 break;
             case WhbInPackageInfo::ByteType::Axis:
-                printTwistButtonText((WhbKeyCode*)&WHB.codes.axis, (uint8_t)data[idx]);
+                printTwistButtonText((WhbKeyCode*)&Whb.codes.axis, (uint8_t)data[idx]);
                 printf(" | ");
                 break;
             case WhbInPackageInfo::ByteType::Step:
@@ -734,6 +721,11 @@ void cb_response_in(struct libusb_transfer *transfer)
 {
     switch (transfer->status) {
         case(LIBUSB_TRANSFER_COMPLETED):
+            // detetec sleep mode, truncate subsequent package once
+            if (Whb.sleepState.dropNextInPackage) {
+                Whb.sleepState.dropNextInPackage = false;
+                goto ___TRUNCATE_PACKAGE;
+            }
 
             // clarify modifier and key
             if (transfer->actual_length > 0) {
@@ -742,21 +734,21 @@ void cb_response_in(struct libusb_transfer *transfer)
                 uint8_t buttonCode1 = in_buf[WhbInPackageInfo::ByteType::Key1];
                 uint8_t buttonCode2 = in_buf[WhbInPackageInfo::ByteType::Key2];
 
-                uint8_t modifierCode = WHB.codes.buttons.undefined.code;
-                uint8_t keyCode = WHB.codes.buttons.undefined.code;
+                uint8_t modifierCode = Whb.codes.buttons.undefined.code;
+                uint8_t keyCode = Whb.codes.buttons.undefined.code;
 
                 //! found modifier on key1, key2 is the key
-                if (buttonCode1 == WHB.codes.buttons.function.code) {
-                    modifierCode = WHB.codes.buttons.function.code;
+                if (buttonCode1 == Whb.codes.buttons.function.code) {
+                    modifierCode = Whb.codes.buttons.function.code;
                     keyCode = buttonCode2;
                 }
                     //! found modifier on key2, key1 is the key
-                else if (buttonCode2 == WHB.codes.buttons.function.code) {
-                    modifierCode = WHB.codes.buttons.function.code;
+                else if (buttonCode2 == Whb.codes.buttons.function.code) {
+                    modifierCode = Whb.codes.buttons.function.code;
                     keyCode = buttonCode1;
                 }
                     //! no modifier, key1 and key2 are defined, fallback to key2
-                else if (buttonCode2 != WHB.codes.buttons.undefined.code) {
+                else if (buttonCode2 != Whb.codes.buttons.undefined.code) {
                     keyCode = buttonCode2;
                 }
                     //! fallback to whatever key1 is
@@ -767,13 +759,13 @@ void cb_response_in(struct libusb_transfer *transfer)
                 xhc.currentAxisCode = in_buf[WhbInPackageInfo::ByteType::Axis];
                 *(xhc.hal->jog_counts) += ((signed char) in_buf[WhbInPackageInfo::ByteType::Step]);
                 *(xhc.hal->jog_counts_neg) = -*(xhc.hal->jog_counts);
-                *(xhc.hal->jog_enable_off) = (xhc.currentAxisCode == WHB.codes.axis.off.code);
-                *(xhc.hal->jog_enable_x) = (xhc.currentAxisCode == WHB.codes.axis.x.code);
-                *(xhc.hal->jog_enable_y) = (xhc.currentAxisCode == WHB.codes.axis.y.code);
-                *(xhc.hal->jog_enable_z) = (xhc.currentAxisCode == WHB.codes.axis.z.code);
-                *(xhc.hal->jog_enable_a) = (xhc.currentAxisCode == WHB.codes.axis.a.code);
-                *(xhc.hal->jog_enable_b) = (xhc.currentAxisCode == WHB.codes.axis.b.code);
-                *(xhc.hal->jog_enable_c) = (xhc.currentAxisCode == WHB.codes.axis.c.code);
+                *(xhc.hal->jog_enable_off) = (xhc.currentAxisCode == Whb.codes.axis.off.code);
+                *(xhc.hal->jog_enable_x) = (xhc.currentAxisCode == Whb.codes.axis.x.code);
+                *(xhc.hal->jog_enable_y) = (xhc.currentAxisCode == Whb.codes.axis.y.code);
+                *(xhc.hal->jog_enable_z) = (xhc.currentAxisCode == Whb.codes.axis.z.code);
+                *(xhc.hal->jog_enable_a) = (xhc.currentAxisCode == Whb.codes.axis.a.code);
+                *(xhc.hal->jog_enable_b) = (xhc.currentAxisCode == Whb.codes.axis.b.code);
+                *(xhc.hal->jog_enable_c) = (xhc.currentAxisCode == Whb.codes.axis.c.code);
 
                 //*(xhc.hal->jog_enable_feedrate) = (xhc.currentAxisCode == axis_feed);
                 //*(xhc.hal->jog_enable_spindle) = (xhc.currentAxisCode == axis_spindle);
@@ -808,19 +800,24 @@ void cb_response_in(struct libusb_transfer *transfer)
                     }
                 }
 
-                //detect pendant going to sleep (occurs for 18 button pendant)
-                if (in_buf[0] == 0x04 &&
-                    in_buf[1] == 0 &&
-                    in_buf[2] == 0 &&
-                    in_buf[3] == 0 &&
-                    in_buf[4] == 0 &&
-                    in_buf[5] == 0) {
+                //! detect pendant going to sleep:
+                //! when powering off pedant sends two packages
+                //! 1st: 0x4 0x? 0x0 0x0 0x0 0x0 0x?
+                //! 2nd; 0x4 0x? 0x? 0x? 0x? 0x? 0x?
+
+                if (in_buf[WhbInPackageInfo::ByteType::NA1] == 0x04 &&
+                    in_buf[WhbInPackageInfo::ByteType::Key1] == 0 &&
+                    in_buf[WhbInPackageInfo::ByteType::Key2] == 0 &&
+                    in_buf[WhbInPackageInfo::ByteType::Feed] == 0 &&
+                    in_buf[WhbInPackageInfo::ByteType::Axis] == 0 &&
+                    in_buf[WhbInPackageInfo::ByteType::Step] == 0) {
+                    Whb.sleepState.dropNextInPackage = true;
                     *(xhc.hal->sleeping) = 1;
                     if (simu_mode) {
                         struct timeval now;
                         gettimeofday(&now, nullptr);
-                        fprintf(stderr, "Sleep, idle for %ld seconds\n",
-                                now.tv_sec - xhc.last_wakeup.tv_sec);
+                        fprintf(stderr, "Sleep, %s was idle for %ld seconds\n",
+                                Whb.entity.name, now.tv_sec - xhc.last_wakeup.tv_sec);
                     }
                 } else {
                     gettimeofday(&xhc.last_wakeup, nullptr);
@@ -839,6 +836,7 @@ void cb_response_in(struct libusb_transfer *transfer)
 
         break;
 
+        ___TRUNCATE_PACKAGE:
         case(LIBUSB_TRANSFER_TIMED_OUT):
             if (!do_exit) {
                 setup_async_transfer(transfer->dev_handle);
@@ -938,7 +936,7 @@ static void hal_teardown() {
 
 static void hal_setup()
 {
-	const char* modname = WHB.entity.name;
+	const char* modname = Whb.entity.name;
 
 	if (!simu_mode) {
 		hal_comp_id = hal_init(modname);
@@ -963,7 +961,7 @@ static void hal_setup()
     int buttonsCount = sizeof(xhc.button) / sizeof(WhbSoftwareButton);
     for (int idx = 0; idx < buttonsCount; idx++) {
         const char* buttonName = nullptr;
-        if ( xhc.button[idx].modifier == &WHB.codes.buttons.undefined)
+        if ( xhc.button[idx].modifier == &Whb.codes.buttons.undefined)
         {
             buttonName = xhc.button[idx].key->text;
         } else
@@ -1075,7 +1073,7 @@ static void Usage(char *name)
     fprintf(stderr, "     1: 1,10,100,1000 (default)\n");
     fprintf(stderr, "     2: 1,5,10,20\n\n");
     fprintf(stderr, "Configuration file section format:\n");
-    fprintf(stderr, "[%s]\n", WHB.entity.configSectionName);
+    fprintf(stderr, "[%s]\n", Whb.entity.configSectionName);
     fprintf(stderr, "BUTTON=XX:button-thename\n");
     fprintf(stderr, "...\n");
     fprintf(stderr, "    where XX=hexcode, thename=nameforbutton\n");
@@ -1160,7 +1158,7 @@ int main (int argc,char **argv)
 		}
 		libusb_set_debug(usb.context, 3);
 
-		printf("%s: waiting for %s device\n", WHB.entity.name, WHB.entity.configSectionName);
+		printf("%s: waiting for %s device\n", Whb.entity.name, Whb.entity.configSectionName);
 		*(xhc.hal->connected) = 0;
 		wait_secs = 0;
 		*(xhc.hal->require_pendant) = wait_for_pendant_before_HAL;
@@ -1174,18 +1172,18 @@ int main (int argc,char **argv)
 			}
 
 			usb.deviceHandle = libusb_open_device_with_vid_pid(usb.context,
-                                                               WHB.entity.usbVendorId,
-                                                               WHB.entity.usbProductId);
+                                                               Whb.entity.usbVendorId,
+                                                               Whb.entity.usbProductId);
 			libusb_free_device_list(devs, 1);
 			if (usb.deviceHandle == nullptr) {
 				if (wait_for_pendant_before_HAL) {
 					wait_secs++;
 					if (wait_secs >= MAX_WAIT_SECS/2) {
-						printf("%s: waiting for %s device (%d)\n",  WHB.entity.name,
-							   WHB.entity.configSectionName, wait_secs);
+						printf("%s: waiting for %s device (%d)\n",  Whb.entity.name,
+							   Whb.entity.configSectionName, wait_secs);
 					}
 					if (wait_secs > MAX_WAIT_SECS) {
-						printf("%s: MAX_WAIT_SECS exceeded, exiting\n",  WHB.entity.name);
+						printf("%s: MAX_WAIT_SECS exceeded, exiting\n",  Whb.entity.name);
 						exit(1);
 					}
 				}
@@ -1193,7 +1191,7 @@ int main (int argc,char **argv)
 			}
 		} while(usb.deviceHandle == nullptr && !do_exit);
 
-		printf("%s: found %s device\n", WHB.entity.name, WHB.entity.configSectionName);
+		printf("%s: found %s device\n", Whb.entity.name, Whb.entity.configSectionName);
 
 		if (usb.deviceHandle != nullptr) {
 			if 	(libusb_kernel_driver_active(usb.deviceHandle, 0) == 1) {
@@ -1231,8 +1229,11 @@ int main (int argc,char **argv)
 				xhc_set_display(usb.deviceHandle, &xhc);
 			}
 			*(xhc.hal->connected) = 0;
-            printf("%s: connection lost, cleaning up\n",WHB.entity.name);
-            assert(0 == libusb_handle_events_completed(usb.context, nullptr));
+            printf("%s: connection lost, cleaning up\n",Whb.entity.name);
+            struct timeval tv;
+            tv.tv_sec  = 0;
+            tv.tv_usec = 750000;
+            assert(0 == libusb_handle_events_timeout_completed(usb.context, &tv, nullptr));
 			assert(0 == libusb_release_interface(usb.deviceHandle, 0));
 			libusb_close(usb.deviceHandle);
             usb.deviceHandle = nullptr;
