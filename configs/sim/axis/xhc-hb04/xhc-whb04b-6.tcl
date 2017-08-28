@@ -109,7 +109,7 @@ proc connect_pins {} {
       continue
     }
     # this pin is can specify std behavior
-    if {   ([string tolower $bname] == "start-pause")
+    if {   ([string tolower $bname] == "Start")
         && ([string tolower $thepin] == "std_start_pause")
        } {
       std_start_pause_button
@@ -121,7 +121,7 @@ proc connect_pins {} {
       puts stderr "$::progname: skipping button $bname marked <$thepin>"
       continue
     }
-    set fullbname xhc-whb04b-6.button-$bname
+    set fullbname xhc-whb04b-6.$bname
     if ![pin_exists $fullbname] {
       puts stderr "$::progname: !!! <$fullbname> pin does not exist, continuing"
       continue
@@ -240,29 +240,29 @@ proc wheel_setup {jogmode} {
     }
   }
 
-  setp halui.feed-override.scale 0.01
-  net pendant:jog-counts  => halui.feed-override.counts
+  ##setp halui.feed-override.scale 0.01
+  ##net pendant:jog-counts  => halui.feed-override.counts
 
-  setp halui.spindle-override.scale 0.01
-  net pendant:jog-counts  => halui.spindle-override.counts
+  ##setp halui.spindle-override.scale 0.01
+  ##net pendant:jog-counts  => halui.spindle-override.counts
 
 
-  net pendant:jog-feed      halui.feed-override.count-enable \
+  #net pendant:jog-feed      halui.feed-override.count-enable \
                          <= xhc-whb04b-6.jog.enable-feed-override
-  net pendant:jog-feed2     halui.feed-override.value \
+  ##net pendant:jog-feed2     halui.feed-override.value \
                          => xhc-whb04b-6.feed-override
 
-  net pendant:jog-spindle   halui.spindle-override.count-enable
-  net pendant:jog-spindle   <= xhc-whb04b-6.jog.enable-spindle-override
-  net pendant:jog-spindle2  halui.spindle-override.value \
+  ##net pendant:jog-spindle   halui.spindle-override.count-enable
+  #net pendant:jog-spindle   <= xhc-whb04b-6.jog.enable-spindle-override
+  ##net pendant:jog-spindle2  halui.spindle-override.value \
                          => xhc-whb04b-6.spindle-override
-  net pendant:spindle-rps   motion.spindle-speed-cmd-rps \
+  #net pendant:spindle-rps   motion.spindle-speed-cmd-rps \
                          => xhc-whb04b-6.spindle-rps
 } ;# wheel_setup
 
 proc std_start_pause_button {} {
   # hardcoded setup for button-start-pause
-  net    pendant:start-or-pause <= xhc-whb04b-6.button-start-pause \
+  net    pendant:start-or-pause <= xhc-whb04b-6.Start \
                                 => pendant_util.start-or-pause
 
   net    pendant:is-idle    <= halui.program.is-idle \
@@ -379,7 +379,7 @@ switch $jogmode {
   }
 }
 
-set ct 0; foreach coord {x y z a b c u v w} {
+set ct 0; foreach coord {x y z a b c} {
   set ::XHC_WHB04B_6_CONFIG($coord,axno) $ct;  incr ct
 }
 
@@ -388,7 +388,7 @@ if [info exists ::XHC_WHB04B_6_CONFIG(coords)] {
     err_exit "coords must be unique, not: <$::XHC_WHB04B_6_CONFIG(coords)>"
   }
 } else {
-  set ::XHC_WHB04B_6_CONFIG(coords) {x y z a} ;# default
+  set ::XHC_WHB04B_6_CONFIG(coords) {x y z a b c} ;# default
 }
 
 if ![info exists ::XHC_WHB04B_6_CONFIG(threadname)] {
