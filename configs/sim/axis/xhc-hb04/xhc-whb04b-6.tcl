@@ -394,7 +394,7 @@ if [info exists ::XHC_WHB04B_6_CONFIG(coords)] {
 if ![info exists ::XHC_WHB04B_6_CONFIG(threadname)] {
   set ::XHC_WHB04B_6_CONFIG(threadname) "servo-thread" ;# default
 }
-loadrt xhc_hb04_util names=pendant_util
+loadrt xhc_whb04b_6_util names=pendant_util
 addf   pendant_util $::XHC_WHB04B_6_CONFIG(threadname)
 
 connect_pins    ;# per ini file items: [XHC_WHB04B_6_BUTTONS]buttonname=pin
