@@ -882,6 +882,7 @@ int _hal_pin_float_newf(hal_pin_dir_t dir, hal_float_t **data_ptr_addr, int comp
     	return hal_pin_simu(pin_name, (void**)data_ptr_addr, sizeof(hal_float_t));
     }
     else {
+        printf("registered %s\n", pin_name);
     	return hal_pin_float_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
@@ -898,6 +899,7 @@ int _hal_pin_s32_newf(hal_pin_dir_t dir, hal_s32_t **data_ptr_addr, int comp_id,
     	return hal_pin_simu(pin_name, (void**)data_ptr_addr, sizeof(hal_s32_t));
     }
     else {
+        printf("registered %s\n", pin_name);
     	return hal_pin_s32_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
@@ -914,6 +916,7 @@ int _hal_pin_bit_newf(hal_pin_dir_t dir, hal_bit_t **data_ptr_addr, int comp_id,
     	return hal_pin_simu(pin_name, (void**)data_ptr_addr, sizeof(hal_bit_t));
     }
     else {
+        printf("registered %s\n", pin_name);
     	return hal_pin_bit_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
