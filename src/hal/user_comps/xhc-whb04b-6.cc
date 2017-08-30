@@ -882,7 +882,7 @@ int _hal_pin_float_newf(hal_pin_dir_t dir, hal_float_t **data_ptr_addr, int comp
     	return hal_pin_simu(pin_name, (void**)data_ptr_addr, sizeof(hal_float_t));
     }
     else {
-        printf("registered %s\n", pin_name);
+        //printf("registered %s\n", pin_name);
     	return hal_pin_float_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
@@ -899,7 +899,7 @@ int _hal_pin_s32_newf(hal_pin_dir_t dir, hal_s32_t **data_ptr_addr, int comp_id,
     	return hal_pin_simu(pin_name, (void**)data_ptr_addr, sizeof(hal_s32_t));
     }
     else {
-        printf("registered %s\n", pin_name);
+        //printf("registered %s\n", pin_name);
     	return hal_pin_s32_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
@@ -916,7 +916,7 @@ int _hal_pin_bit_newf(hal_pin_dir_t dir, hal_bit_t **data_ptr_addr, int comp_id,
     	return hal_pin_simu(pin_name, (void**)data_ptr_addr, sizeof(hal_bit_t));
     }
     else {
-        printf("registered %s\n", pin_name);
+        //printf("registered %s\n", pin_name);
     	return hal_pin_bit_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
@@ -1057,6 +1057,12 @@ static void Usage(char *name)
     fprintf(stderr, "    where XX=hexcode, thename=nameforbutton\n");
 }
 
+void registerSignalHandler()
+{
+    signal(SIGINT, quit);
+    signal(SIGTERM, quit);
+}
+
 int main (int argc,char **argv)
 {
 	libusb_device **devs;
@@ -1113,8 +1119,8 @@ int main (int argc,char **argv)
 
 	hal_setup();
 
-    signal(SIGINT, quit);
-	signal(SIGTERM, quit);
+    registerSignalHandler();
+
 
     if (!wait_for_pendant_before_HAL && !Whb.hal.simu_mode) {
     	hal_ready(Whb.hal.entity.hal_comp_id);
@@ -1200,8 +1206,7 @@ int main (int argc,char **argv)
 				struct timeval tv;
 				tv.tv_sec  = 0;
 				tv.tv_usec = 30000;
-                libusb_handle_events_timeout(usb.context, &tv); // hal
-				//libusb_handle_events_timeout_completed(usb.context, &tv, nullptr); // simu
+				libusb_handle_events_timeout_completed(usb.context, &tv, nullptr);
 				compute_velocity(&xhc);
 			    if (Whb.hal.simu_mode) linuxcnc_simu(&xhc);
 				handle_step(&xhc);
@@ -1225,4 +1230,5 @@ int main (int argc,char **argv)
         usb.context = nullptr;
     }
     hal_teardown();
+    return 0;
 }
