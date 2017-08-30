@@ -141,6 +141,8 @@ proc wheel_setup {jogmode} {
   set ::XHC_WHB04B_6_CONFIG(coef,1) 1.0
   set ::XHC_WHB04B_6_CONFIG(coef,2) 1.0
   set ::XHC_WHB04B_6_CONFIG(coef,3) 1.0
+  set ::XHC_WHB04B_6_CONFIG(coef,4) 1.0
+  set ::XHC_WHB04B_6_CONFIG(coef,5) 1.0
   if [info exists ::XHC_WHB04B_6_CONFIG(coefs)] {
     set idx 0
     foreach g $::XHC_WHB04B_6_CONFIG(coefs) {
@@ -162,6 +164,8 @@ proc wheel_setup {jogmode} {
   set ::XHC_WHB04B_6_CONFIG(scale,1) 1.0
   set ::XHC_WHB04B_6_CONFIG(scale,2) 1.0
   set ::XHC_WHB04B_6_CONFIG(scale,3) 1.0
+  set ::XHC_WHB04B_6_CONFIG(scale,5) 1.0
+  set ::XHC_WHB04B_6_CONFIG(scale,4) 1.0
   if [info exists ::XHC_WHB04B_6_CONFIG(scales)] {
     set idx 0
     foreach g $::XHC_WHB04B_6_CONFIG(scales) {
