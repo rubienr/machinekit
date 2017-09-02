@@ -75,12 +75,9 @@ struct WhbHalMemory
     hal_bit_t  * jogEnableA;
     hal_bit_t  * jogEnableB;
     hal_bit_t  * jogEnableC;
-    //hal_bit_t* jog_enable_feedrate;
-    //hal_bit_t* jog_enable_spindle;
     hal_float_t* jogScale;
     hal_s32_t  * jogCount;
     hal_s32_t  * jogCountNeg;
-
     hal_float_t* jogVelocity;
     hal_float_t* jogMaxVelocity;
     hal_float_t* jogIncrement;
@@ -661,68 +658,6 @@ static const int stepsize_sequence_2[] = {1, 5, 10, 20, 0};
 static const int* stepsize_sequence = stepsize_sequence_1; // use the default
 static int stepsize_idx = 0; // start at initial (zeroth) sequence
 
-/*
-typedef struct {
-    //uint8_t currentAxisCode;
-    //WhbSoftwareButton button[31];
-    //unsigned char button_code;
-
-	//unsigned char old_inc_step_status;
-    //! used in simulation mode to handle the STEP increment
-    //unsigned char button_step;
-
-    //! velocity computation
-	//hal_s32_t last_jog_counts;
-
-    //! cleanup references
-    //WhbCleanupRef cleanup;
-
-	//struct timeval last_tv;
-    //struct timeval last_wakeup;
-} xhc_t;
-
-static xhc_t xhc =
-{
-    //.currentAxisCode = Whb.codes.axis.undefined.code,
-    .button = {
-            { .key = &Whb.codes.buttons.reset,          .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.reset,          .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.stop,           .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.stop,           .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.start,          .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.start,          .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.feed_plus,      .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.feed_plus,      .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.feed_minus,     .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.feed_minus,     .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.spindle_plus,   .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.spindle_plus,   .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.spindle_minus,  .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.spindle_minus,  .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.machine_home,   .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.machine_home,   .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.safe_z,         .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.safe_z,         .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.workpiece_home, .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.workpiece_home, .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.spindle_on_off, .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.spindle_on_off, .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.function,       .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.probe_z,        .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.probe_z,        .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.macro10,        .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.macro10,        .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.manual_pulse_generator, .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.manual_pulse_generator, .modifier = &Whb.codes.buttons.function},
-            { .key = &Whb.codes.buttons.step_continuous, .modifier = &Whb.codes.buttons.undefined},
-            { .key = &Whb.codes.buttons.step_continuous, .modifier = &Whb.codes.buttons.function}
-    },
-    //.button_code = 0,
-    //.old_inc_step_status = 0,
-    .button_step = 0,
-    //.last_jog_counts = -1
-};
- */
 
 static bool do_exit                     = false;
 static bool do_reconnect                = false;
@@ -846,7 +781,7 @@ void WhbContext::xhcDisplayEncode(unsigned char* data, int len)
         case 1000:
             buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_1000;
             break;
-            //!stepsize not supported on the display
+            //!step size not supported on the display
         default:
             buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_0;
             break;
@@ -1185,18 +1120,6 @@ void WhbContext::setupAsyncTransfer()
 
 // ----------------------------------------------------------------------
 
-static void quit(int sig)
-{
-    Whb.requestTermination();
-}
-
-// ----------------------------------------------------------------------
-
-void usbInputResponseCallback(struct libusb_transfer* transfer)
-{
-    Whb.cbResponseIn(transfer);
-}
-
 void WhbContext::cbResponseIn(struct libusb_transfer* transfer)
 {
     switch (transfer->status)
@@ -1237,7 +1160,7 @@ void WhbContext::cbResponseIn(struct libusb_transfer* transfer)
                 {
                     keyCode = buttonCode2;
                 }
-                    //! fallback to whatever key1 is
+                    //! fallback to whatever key one is
                 else
                 {
                     keyCode = buttonCode1;
@@ -1432,19 +1355,13 @@ void WhbContext::halTeardown()
 {
     if (hal.simulationMode)
     {
-        //if (hal.memory != nullptr)
-        //{
         for (uint16_t idx = 0; idx < hal.cleanup.nextIndex; idx++)
         {
             free(hal.cleanup.refs[idx]);
             hal.cleanup.refs[idx] = nullptr;
 
         }
-        //free(hal.memory);
-        //}
-
         hal.cleanup.nextIndex = 0;
-        //hal.memory = nullptr;
     }
 }
 
@@ -1462,19 +1379,6 @@ void WhbContext::halSetup()
             fprintf(stderr, "%s: ERROR: hal_init failed\n", modname);
             exit(1);
         }
-
-        /*hal.memory = (WhbHalMemory*)hal_malloc(sizeof(WhbHalMemory));
-		if (hal.memory == nullptr)
-		{
-			fprintf(stderr, "%s: ERROR: unable to allocate HAL shared memory\n", modname);
-            hal_exit(hal.entity.halCompId);
-			exit(1);
-		}*/
-    }
-    else
-    {
-        //hal.memory = (WhbHalMemory*)calloc(sizeof(WhbHalMemory), 1);
-        //memset(hal.memory, 0, sizeof(WhbHalMemory));
     }
 
     // register all known whb04b-6 buttons
@@ -1562,9 +1466,6 @@ void WhbContext::halSetup()
 
 // ----------------------------------------------------------------------
 
-//#define STRINGIFY_IMPL(S) #S
-//#define STRINGIFY(s) STRINGIFY_IMPL(s)
-
 static void Usage(char* name)
 {
     fprintf(stderr, "%s version %s by Frederic RIBLE (frible@teaser.fr)\n", name, PACKAGE_VERSION);
@@ -1593,12 +1494,22 @@ void registerSignalHandler()
 
 // ----------------------------------------------------------------------
 
+static void quit(int sig)
+{
+    Whb.requestTermination();
+}
+
+// ----------------------------------------------------------------------
+
+void usbInputResponseCallback(struct libusb_transfer* transfer)
+{
+    Whb.cbResponseIn(transfer);
+}
+
+// ----------------------------------------------------------------------
+
 int main(int argc, char** argv)
 {
-    //libusb_device **devs;
-    //libusb_device_handle *dev_handle;
-    //libusb_context *ctx = nullptr;
-
     int     r;
     ssize_t cnt;
 #define MAX_WAIT_SECS 10
