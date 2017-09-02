@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include  <iomanip>
 #include <string.h>
 #include "rtapi_math.h"
 #include <assert.h>
@@ -42,6 +43,11 @@
 using std::cout;
 using std::cerr;
 using std::endl;
+using std::setfill;
+using std::setw;
+using std::hex;
+using std::dec;
+using std::ios;
 
 
 //! function for libusb's incoming data callback function
@@ -60,15 +66,9 @@ namespace XhcWhb04b6 {
 
     class WhbHalEntity;
 
-    class WhbCleanupRef;
-
     class WhbHal;
 
     class WhbSleepDetect;
-
-    class WhbInPackageInfo;
-
-    class WhbPackageInfo;
 
     class WhbKeyCode;
 
@@ -77,8 +77,6 @@ namespace XhcWhb04b6 {
     class WhbAxisRotaryButtonCodes;
 
     class WhbFeedRotaryButtonCodes;
-
-    class WhbButtonsCode;
 
     class WhbButtonsState;
 
@@ -101,6 +99,8 @@ namespace XhcWhb04b6 {
     class WhbUsb;
 
     class WhbContext;
+
+    class UsbInputPackageHandler;
 
 // ----------------------------------------------------------------------
 
@@ -212,75 +212,52 @@ namespace XhcWhb04b6 {
 
 // ----------------------------------------------------------------------
 
-//! HAL component parameters
-    class WhbHalEntity
-    {
-        friend XhcWhb04b6::WhbContext;
-
-        int halCompId;
-
-    public:
-
-        int getHalComponentId() const
-        {
-            return halCompId;
-        }
-
-        void setHalCompnentId(int componentId)
-        {
-            this->halCompId = componentId;
-        }
-
-        WhbHalEntity() :
-            halCompId(0)
-        {}
-    };
-
-// ----------------------------------------------------------------------
-
-//! allocated memory reference lookup
-    struct WhbCleanupRef
-    {
-        void* refs[256];
-        uint16_t nextIndex;
-
-        WhbCleanupRef() :
-            refs{0},
-            nextIndex(0)
-        {}
-    };
-
-// ----------------------------------------------------------------------
-
 //! HAL and related parameters
     class WhbHal
     {
-        friend XhcWhb04b6::WhbContext;
-
-        bool          simulationMode;
-        //! if \p simulationMode == true, \p cleanup keeps malloced references for freeing
-        WhbCleanupRef cleanup;
     public:
-        WhbHalEntity entity;
         WhbHalMemory memory;
 
-    public:
-        bool getIsSimulationMode() const
-        {
-            return simulationMode;
-        }
+        WhbHal();
 
-        void setIsSimulationMode(bool isSimulationMode)
-        {
-            this->simulationMode = isSimulationMode;
-        }
+        ~WhbHal();
 
-        WhbHal() :
-            simulationMode(true),
-            cleanup(),
-            entity(),
-            memory()
-        {}
+        //! initializes hal pins according to simulation mode, must not be called twice
+        //! \ref setIsSimulationMode() must be set before accordingly
+        void halInit(WhbSoftwareButton* softwareButtons,
+                     size_t buttonsCount,
+                     const WhbKeyCodes& codes);
+
+
+        bool getIsSimulationMode() const;
+
+        //! indicates the program has been invoked in hal mode or normal
+        void setSimulationMode(bool isSimulationMode);
+
+        int getHalComponentId() const;
+
+        const char* getHalComponentName() const;
+
+    private:
+        bool mIsSimulationMode;
+        const char* mName;
+        int mHalCompId;
+
+
+        //! allocates new hal pin according to \ref mIsSimulationMode
+        int newSimulatedHalPin(char* pin_name, void** ptr, int s);
+
+        //! allocates new hal_float_t according to \ref mIsSimulationMode
+        int newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int comp_id, const char* fmt, ...);
+
+        //! allocates new hal_s32_t pin according to \ref mIsSimulationMode
+        int newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int comp_id, const char* fmt, ...);
+
+        //! allocates new hal_bit_t pin according to \ref mIsSimulationMode
+        int newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_id, const char* fmt, ...);
+
+        //! allocates new hal pin according to \ref mIsSimulationMode
+        void freeSimulatedPin(void** pin);
     };
 
 // ----------------------------------------------------------------------
@@ -288,7 +265,7 @@ namespace XhcWhb04b6 {
 //! pendant sleep/idle state parameters
     class WhbSleepDetect
     {
-        friend XhcWhb04b6::WhbContext;
+        friend XhcWhb04b6::WhbUsb;
 
         bool           dropNextInPackage;
         struct timeval last_wakeup;
@@ -297,47 +274,6 @@ namespace XhcWhb04b6 {
         WhbSleepDetect() :
             dropNextInPackage(false),
             last_wakeup()
-        {}
-    };
-
-// ----------------------------------------------------------------------
-
-//! from pendant coming communication package description
-    struct WhbInPackageInfo
-    {
-        //! names the byte type at the specified position in data stream
-        typedef enum
-        {
-            NA1 = 0, NA2 = 1, Key1 = 2, Key2 = 3, Feed = 4, Axis = 5, Step = 6, CRC = 7
-        }              ByteType;
-        //! inverse type to position map (position to type)
-        const ByteType positionToType[8];
-        const uint8_t  expectedSize;
-
-        WhbInPackageInfo() :
-            positionToType{
-                ByteType::NA1,
-                ByteType::NA2,
-                ByteType::Key1,
-                ByteType::Key2,
-                ByteType::Feed,
-                ByteType::Axis,
-                ByteType::Step,
-                ByteType::CRC
-            },
-            expectedSize(sizeof(positionToType) / sizeof(ByteType))
-        {}
-    };
-
-// ----------------------------------------------------------------------
-
-//! pendant i/o package related parameters
-    struct WhbPackageInfo
-    {
-        const WhbInPackageInfo in;
-
-        WhbPackageInfo() :
-            in()
         {}
     };
 
@@ -471,7 +407,7 @@ namespace XhcWhb04b6 {
             safe_z(0x09, "Safe-Z", "Macro-6"),
             workpiece_home(0x0a, "W-HOME", "Macro-7"),
             spindle_on_off(0x0b, "S-ON/OFF", "Macro-8"),
-            function(0x0c, "Fn", ""),
+            function(0x0c, "Fn", "Fnx"),
             probe_z(0x0d, "Probe-Z", "Macro-9"),
             macro10(0x10, "Macro-10", "Macro-13"),
             manual_pulse_generator(0x0e, "MPG", "Macro-14"),
@@ -479,25 +415,6 @@ namespace XhcWhb04b6 {
             undefined(0x00, "", "")
         {}
 
-    };
-
-// ----------------------------------------------------------------------
-
-//! general pendant description parameters
-    class WhbEntity
-    {
-    public:
-        const char* name;
-        const char* configSectionName;
-        const uint16_t usbVendorId;
-        const uint16_t usbProductId;
-
-        WhbEntity() :
-            name("xhc-whb04b-6"),
-            configSectionName("XHC-WHB04B-6"),
-            usbVendorId(0x10ce),
-            usbProductId(0xeb93)
-        {}
     };
 
 // ----------------------------------------------------------------------
@@ -754,86 +671,353 @@ namespace XhcWhb04b6 {
 
     // ----------------------------------------------------------------------
 
+    //! convenience structure for accessing data in package stream
+    class WhbUsbInPackage
+    {
+    public:
+        const unsigned char notAvailable1;
+        const unsigned char notAvailable2;
+        const unsigned char buttonKeyCode1;
+        const unsigned char buttonKeyCode2;
+        const unsigned char rotaryButtonFeedKeyCode;
+        const unsigned char rotaryButtonAxisKeyCode;
+        const signed char   stepCount;
+        const unsigned char crc;
+
+        WhbUsbInPackage() :
+            notAvailable1(0),
+            notAvailable2(0),
+            buttonKeyCode1(0),
+            buttonKeyCode2(0),
+            rotaryButtonFeedKeyCode(0),
+            rotaryButtonAxisKeyCode(0),
+            stepCount(0),
+            crc(0)
+        {}
+
+        WhbUsbInPackage(const unsigned char notAvailable1,
+                        const unsigned char notAvailable2,
+                        const unsigned char buttonKeyCode1,
+                        const unsigned char buttonKeyCode2,
+                        const unsigned char rotaryButtonFeedKeyCode,
+                        const unsigned char rotaryButtonAxisKeyCode,
+                        const signed char stepCount,
+                        const unsigned char crc) :
+            notAvailable1(notAvailable1),
+            notAvailable2(notAvailable2),
+            buttonKeyCode1(buttonKeyCode1),
+            buttonKeyCode2(buttonKeyCode2),
+            rotaryButtonFeedKeyCode(rotaryButtonFeedKeyCode),
+            rotaryButtonAxisKeyCode(rotaryButtonAxisKeyCode),
+            stepCount(stepCount),
+            crc(crc)
+        {}
+    };
+
+    //! convenience structure for casting data in package stream
+    union WhbUsbInPackageBuffer
+    {
+    public:
+        const WhbUsbInPackage asFields;
+        // todo: investigate why buffer size is not exactly 8 bytes as expected
+        unsigned char         asBuffer[32];
+
+        WhbUsbInPackageBuffer();
+    };
+
+    // ----------------------------------------------------------------------
+
+    WhbUsbInPackageBuffer::WhbUsbInPackageBuffer() :
+        asBuffer{0}
+    {}
+
+    //! This package is sent as last but one package before xhc-whb04-6 is powered off,
+    //! and is meant to be used with operator== for comparison.
+    class WhbUsbEmptyPackage :
+        public WhbUsbInPackage
+    {
+    public:
+
+        WhbUsbEmptyPackage() :
+            WhbUsbInPackage(0x04, 0xff, 0, 0, 0, 0, 0, 0xff)
+        {}
+
+        //! caution: it is not guaranteed that (this == \p other) == (\p other == this)
+        bool operator==(const WhbUsbInPackage& other) const
+        {
+            // equality constraints: 0x4 0x? 0x0 0x0 0x0 0x0 0x0 0x?
+            if ((notAvailable1 == other.notAvailable1)
+                // && (notAvailable2 == other.notAvailable2)
+                && (buttonKeyCode1 == other.buttonKeyCode1)
+                && (buttonKeyCode2 == other.buttonKeyCode2)
+                && (rotaryButtonFeedKeyCode == other.rotaryButtonFeedKeyCode)
+                && (rotaryButtonAxisKeyCode == other.rotaryButtonAxisKeyCode)
+                && (stepCount == other.stepCount)
+                // && (crc == other.crc)
+                )
+            {
+                return true;
+            }
+            return false;
+        }
+
+        //! \see operator==(const WhbUsbInPackage&)
+        bool operator!=(const WhbUsbInPackage& other) const
+        {
+            return !((*this) == other);
+        }
+    };
+
+
+    //! This package is sent as last package before xhc-whb04-6 is powered off,
+    //! and is meant to be used with operator== for comparison.
+    class WhbUsbSleepPackage :
+        public WhbUsbInPackage
+    {
+    public:
+        WhbUsbSleepPackage() :
+            WhbUsbInPackage(0x04, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff)
+        {}
+
+        //! caution: it is not guaranteed that (this == \p other) == (\p other == this)
+        bool operator==(const WhbUsbInPackage& other) const
+        {
+            // equality constraints: 0x4 0x? 0x? 0x? 0x? 0x? 0x? 0x?
+            if ((notAvailable1 == other.notAvailable1)
+                // && (notAvailable2 == other.notAvailable2)
+                // && (buttonKeyCode1 == other.buttonKeyCode1)
+                // && (buttonKeyCode2 == other.buttonKeyCode2)
+                // && (rotaryButtonFeedKeyCode == other.rotaryButtonFeedKeyCode)
+                // && (rotaryButtonAxisKeyCode == other.rotaryButtonAxisKeyCode)
+                // && (stepCount == other.stepCount)
+                // && (crc == other.crc)
+                )
+            {
+                return true;
+            }
+            return false;
+        }
+
+        //! \see operator==(const WhbUsbInPackage&)
+        bool operator!=(const WhbUsbInPackage& other) const
+        {
+            return !((*this) == other);
+        }
+    };
+
+    //! set of constant usb packages
+    class WhbConstantUsbPackages
+    {
+    public:
+        const WhbUsbSleepPackage sleepPackage;
+        const WhbUsbEmptyPackage emptyPackage;
+
+        WhbConstantUsbPackages() :
+            sleepPackage(),
+            emptyPackage()
+        {}
+    };
+
+
     //! USB related parameters
     class WhbUsb
     {
         friend XhcWhb04b6::WhbContext;
 
+        const uint16_t usbVendorId;
+        const uint16_t usbProductId;
         libusb_context      * context;
         libusb_device_handle* deviceHandle;
-        bool          do_reconnect;
-        bool          wait_for_pendant_before_HAL;
-        unsigned char inputBuffer[32];
-
+        bool                  do_reconnect;
+        bool                  wait_for_pendant_before_HAL;
+        bool                  mIsSimulationMode;
+        WhbSleepDetect        sleepState;
+        bool                  mIsRunning;
+        WhbUsbInPackageBuffer inputPackage;
+        UsbInputPackageHandler& mDataHandler;
+        WhbHalMemory          & mHalMemory;
 
     public:
 
-        const bool isDeviceOpen() const
-        {
-            return deviceHandle != nullptr;
-        }
+        static const WhbConstantUsbPackages ConstantPackages;
 
-        libusb_context** getContextReference()
-        {
-            return &context;
-        }
+        uint16_t getUsbVendorId() const;
 
-        libusb_context* getContext()
-        {
-            return context;
-        }
+        uint16_t getUsbProductId() const;
 
-        void setContext(libusb_context* context)
-        {
-            this->context = context;
-        }
+        const bool isDeviceOpen() const;
 
+        libusb_context** getContextReference();
 
-        libusb_device_handle* getDeviceHandle()
-        {
-            return deviceHandle;
-        }
+        libusb_context* getContext();
 
-        void setDeviceHandle(libusb_device_handle* deviceHandle)
-        {
-            this->deviceHandle = deviceHandle;
-        }
+        void setContext(libusb_context* context);
 
-        void setWaitForPendantBeforeHAL(bool waitForPendantBeforeHAL)
-        {
-            wait_for_pendant_before_HAL = waitForPendantBeforeHAL;
-        }
+        libusb_device_handle* getDeviceHandle();
 
-        bool getWaitForPendantBeforeHAL() const
-        {
-            return wait_for_pendant_before_HAL;
-        }
+        void setDeviceHandle(libusb_device_handle* deviceHandle);
 
-        bool getDoReconnect() const
-        {
-            return do_reconnect;
-        }
+        void setWaitForPendantBeforeHAL(bool waitForPendantBeforeHAL);
 
-        void setDoReconnect(bool doReconnect)
-        {
-            this->do_reconnect = doReconnect;
-        }
+        bool getWaitForPendantBeforeHAL() const;
 
-        WhbUsb() :
-            context(nullptr),
-            deviceHandle(nullptr),
-            do_reconnect(false),
-            wait_for_pendant_before_HAL(false),
-            inputBuffer{0}
-        {}
+        bool getDoReconnect() const;
+
+        void setDoReconnect(bool doReconnect);
+
+        void cbResponseIn(struct libusb_transfer* transfer);
+
+        void setSimulationMode(bool isSimulationMode);
+
+        void setIsRunning(bool enableRunning);
+
+        void requestTermination();
+
+        void setupAsyncTransfer();
+
+        WhbUsb(UsbInputPackageHandler& onDataReceivedCallback, WhbHalMemory& halMemory);
     };
 
     // ----------------------------------------------------------------------
 
-    //! program context
-    class WhbContext
+    uint16_t WhbUsb::getUsbVendorId() const
+    {
+        return usbVendorId;
+    }
+
+    // ----------------------------------------------------------------------
+
+
+    uint16_t WhbUsb::getUsbProductId() const
+    {
+        return usbProductId;
+    }
+
+    // ----------------------------------------------------------------------
+
+
+    const bool WhbUsb::isDeviceOpen() const
+    {
+        return deviceHandle != nullptr;
+    }
+
+    // ----------------------------------------------------------------------
+
+
+    libusb_context** WhbUsb::getContextReference()
+    {
+        return &context;
+    }
+
+    // ----------------------------------------------------------------------
+
+
+    libusb_context* WhbUsb::getContext()
+    {
+        return context;
+    }
+
+    // ----------------------------------------------------------------------
+
+
+    void WhbUsb::setContext(libusb_context* context)
+    {
+        this->context = context;
+    }
+
+    // ----------------------------------------------------------------------
+
+    libusb_device_handle* WhbUsb::getDeviceHandle()
+    {
+        return deviceHandle;
+    }
+
+    // ----------------------------------------------------------------------
+
+
+    void WhbUsb::setDeviceHandle(libusb_device_handle* deviceHandle)
+    {
+        this->deviceHandle = deviceHandle;
+    }
+
+    // ----------------------------------------------------------------------
+
+    void WhbUsb::setWaitForPendantBeforeHAL(bool waitForPendantBeforeHAL)
+    {
+        wait_for_pendant_before_HAL = waitForPendantBeforeHAL;
+    }
+
+    // ----------------------------------------------------------------------
+
+    bool WhbUsb::getWaitForPendantBeforeHAL() const
+    {
+        return wait_for_pendant_before_HAL;
+    }
+
+    // ----------------------------------------------------------------------
+
+    bool WhbUsb::getDoReconnect() const
+    {
+        return do_reconnect;
+    }
+
+    // ----------------------------------------------------------------------
+
+    void WhbUsb::setDoReconnect(bool doReconnect)
+    {
+        this->do_reconnect = doReconnect;
+    }
+
+    // ----------------------------------------------------------------------
+
+    const WhbConstantUsbPackages WhbUsb::ConstantPackages;
+
+    // ----------------------------------------------------------------------
+
+    WhbUsb::WhbUsb(UsbInputPackageHandler& onDataReceivedCallback, WhbHalMemory& halMemory) :
+        usbVendorId(0x10ce),
+        usbProductId(0xeb93),
+        context(nullptr),
+        deviceHandle(nullptr),
+        do_reconnect(false),
+        wait_for_pendant_before_HAL(false),
+        mIsSimulationMode(false),
+        sleepState(),
+        mIsRunning(false),
+        inputPackage(),
+        mDataHandler(onDataReceivedCallback),
+        mHalMemory(halMemory)
+    {
+        gettimeofday(&sleepState.last_wakeup, nullptr);
+    }
+
+    // ----------------------------------------------------------------------
+
+    class UsbInputPackageHandler
     {
     public:
+        virtual void handleInputData(const WhbUsbInPackage& inPackage) = 0;
+
+        virtual ~UsbInputPackageHandler()
+        {}
+    };
+
+    //! program context
+    class WhbContext :
+        public UsbInputPackageHandler
+    {
+    public:
+        WhbHal hal;
+
+        //! \return the name as specified to \ref WhbContext
+        const char* getName() const;
+
+        //! \return the name as specified to \ref hal
+        const char* getHalName() const;
+
+        //! callback method received by \ref WhbUsb when a \ref libusb_transfer is received
+        virtual void handleInputData(const WhbUsbInPackage& inPackage) override;
+
         //! todo: doxy
         void initWhb();
 
@@ -867,89 +1051,23 @@ namespace XhcWhb04b6 {
         //! todo: doxy, move
         bool isRunning() const;
 
+        void setSimulationMode(bool enableSimulationMode);
 
-        WhbContext() :
-            entity(),
-            hal(),
-            usb(),
-            codes(),
-            stepHandler(),
-            softwareButtons{
-                WhbSoftwareButton(codes.buttons.reset, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.reset, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.stop, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.stop, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.start, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.start, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.feed_plus, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.feed_plus, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.feed_minus, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.feed_minus, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.spindle_plus, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.spindle_plus, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.spindle_minus, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.spindle_minus, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.machine_home, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.machine_home, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.safe_z, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.safe_z, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.workpiece_home, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.workpiece_home, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.spindle_on_off, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.spindle_on_off, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.function, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.probe_z, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.probe_z, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.macro10, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.macro10, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.manual_pulse_generator, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.manual_pulse_generator, codes.buttons.function),
-                WhbSoftwareButton(codes.buttons.step_continuous, codes.buttons.undefined),
-                WhbSoftwareButton(codes.buttons.step_continuous, codes.buttons.function)
-            },
-            previousButtonCodes(codes.buttons,
-                                codes.axis,
-                                codes.feed,
-                                stepHandler.stepSize.step,
-                                stepHandler.stepSize.continuous),
-            currentButtonCodes(codes.buttons,
-                               codes.axis,
-                               codes.feed,
-                               stepHandler.stepSize.step,
-                               stepHandler.stepSize.continuous),
-            packageInfo(),
-            velocityComputation(),
-            sleepState(),
-            doRun(false)
-        {}
+        WhbContext();
 
-        const WhbEntity entity;
-        WhbHal          hal;
-        WhbUsb          usb;
+        virtual ~WhbContext();
 
+        WhbUsb usb;
     private:
-
+        const char* mName;
         const WhbKeyCodes      codes;
         WhbStepHandler         stepHandler;
         WhbSoftwareButton      softwareButtons[31];
         WhbButtonsState        previousButtonCodes;
         WhbButtonsState        currentButtonCodes;
-        const WhbPackageInfo   packageInfo;
         WhbVelocityComputation velocityComputation;
-        WhbSleepDetect         sleepState;
         bool                   doRun;
-
-        //! todo: doxy
-        void printPushButtonText(uint8_t keyCode, uint8_t modifierCode);
-
-        //! todo: doxy
-        void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode);
-
-        //! todo: doxy
-        void printData(const unsigned char* data, int length);
-
-        //! todo: doxy
-        void printHexdump(unsigned char* data, int len);
+        bool                   mIsSimulationMode;
 
         //! todo: doxy
         int encodeFloat(float value, unsigned char* buffer);
@@ -960,20 +1078,21 @@ namespace XhcWhb04b6 {
         // todo: refactor me
         void xhcDisplayEncode(unsigned char* data, int len);
 
-        //! todo: doxy
-        int newSimulatedHalPin(char* pin_name, void** ptr, int s);
-
-        //! todo: doxy
-        int newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int comp_id, const char* fmt, ...);
-
-        //! todo: doxy
-        int newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int comp_id, const char* fmt, ...);
-
-        //! todo: doxy
-        int newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_id, const char* fmt, ...);
 
         //! todo: doxy
         void halTeardown();
+
+        //! todo: doxy
+        void printPushButtonText(uint8_t keyCode, uint8_t modifierCode);
+
+        //! todo: doxy
+        void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode);
+
+        //! todo: doxy
+        void printData(const WhbUsbInPackage& inPackage);
+
+        //! todo: doxy
+        void printHexdump(const WhbUsbInPackage& inPackage);
 
     };
 
@@ -1007,12 +1126,10 @@ namespace XhcWhb04b6 {
 
 // -- end garbage
 
-    extern "C" const char*
-    iniFind(FILE* fp, const char* tag, const char* configSecitonName)
+    // ----------------------------------------------------------------------
+    void WhbContext::halInit()
     {
-        IniFile f(false, fp);
-
-        return (f.Find(tag, configSecitonName));
+        hal.halInit(softwareButtons, sizeof(softwareButtons) / sizeof(WhbSoftwareButton), codes);
     }
 
     // ----------------------------------------------------------------------
@@ -1020,15 +1137,117 @@ namespace XhcWhb04b6 {
     void WhbContext::halExit()
     {
         halTeardown();
-        hal_exit(hal.entity.halCompId);
+        hal_exit(hal.getHalComponentId());
     }
+
+    // ----------------------------------------------------------------------
+
+    const char* WhbContext::getName() const
+    {
+        return mName;
+    }
+
+    // ----------------------------------------------------------------------
+
+    const char* WhbContext::getHalName() const
+    {
+        return hal.getHalComponentName();
+    }
+
+    // ----------------------------------------------------------------------
+
+    void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
+    {
+        if (mIsSimulationMode)
+        {
+            printHexdump(inPackage);
+        }
+
+        uint8_t modifierCode       = codes.buttons.undefined.code;
+        uint8_t keyCode            = codes.buttons.undefined.code;
+
+        //! found modifier at key one, key two is the key
+        if (inPackage.buttonKeyCode1 == codes.buttons.function.code)
+        {
+            modifierCode = codes.buttons.function.code;
+            keyCode      = inPackage.buttonKeyCode2;
+        }
+            //! found modifier at key two, key one is the key
+        else if (inPackage.buttonKeyCode2 == codes.buttons.function.code)
+        {
+            modifierCode = codes.buttons.function.code;
+            keyCode      = inPackage.buttonKeyCode1;
+        }
+            //! no modifier, key one and key two are defined, fallback to key two which is the lastly one pressed
+        else if (inPackage.buttonKeyCode2 != codes.buttons.undefined.code)
+        {
+            keyCode = inPackage.buttonKeyCode2;
+        }
+            //! fallback to whatever key one is
+        else
+        {
+            keyCode = inPackage.buttonKeyCode1;
+        }
+
+        // update current axis and step to hal
+        *(hal.memory.jogCount) += inPackage.stepCount;
+        *(hal.memory.jogCountNeg)  = -*(hal.memory.jogCount);
+        *(hal.memory.jogEnableOff) = (inPackage.rotaryButtonAxisKeyCode == codes.axis.off.code);
+        *(hal.memory.jogEnableX)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.x.code);
+        *(hal.memory.jogEnableY)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.y.code);
+        *(hal.memory.jogEnableZ)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.z.code);
+        *(hal.memory.jogEnableA)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.a.code);
+        *(hal.memory.jogEnableB)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.b.code);
+        *(hal.memory.jogEnableC)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.c.code);
+
+        //! print human readable data
+        if (hal.getIsSimulationMode())
+        {
+            if (inPackage.rotaryButtonFeedKeyCode != 0)
+            {
+                ios init(NULL);
+                init.copyfmt(cout);
+                cout << " delta " << setfill(' ') << setw(2) << (unsigned short)inPackage.rotaryButtonFeedKeyCode;
+                cout.copyfmt(init);
+            }
+            cout << " => ";
+            printData(inPackage);
+        }
+
+        //! update all buttons state to hal
+        int      buttonsCount = sizeof(softwareButtons) / sizeof(WhbSoftwareButton);
+        for (int idx          = 0; idx < buttonsCount; idx++)
+        {
+            if ((softwareButtons[idx].key.code == keyCode) &&
+                (softwareButtons[idx].modifier.code == modifierCode))
+            {
+                *(hal.memory.button_pin[idx]) = true;
+                if (hal.getIsSimulationMode())
+                {
+                    cout << " pressed ";
+                    printPushButtonText(keyCode, modifierCode);
+                }
+            }
+            else
+            {
+                *(hal.memory.button_pin[idx]) = false;
+            }
+        }
+
+        if (hal.getIsSimulationMode())
+        {
+            cout << endl;
+        }
+    }
+
     // ----------------------------------------------------------------------
 
     void WhbContext::initWhb()
     {
         stepHandler.old_inc_step_status = -1;
-        gettimeofday(&sleepState.last_wakeup, nullptr);
+        //gettimeofday(&sleepState.last_wakeup, nullptr);
         doRun = true;
+        usb.setIsRunning(true);
     }
 
     //! writes \p value to \p buffer
@@ -1054,7 +1273,7 @@ namespace XhcWhb04b6 {
         return sizeof(int16_t);
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
     void WhbContext::xhcDisplayEncode(unsigned char* data, int len)
     {
@@ -1148,7 +1367,7 @@ namespace XhcWhb04b6 {
         }
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
     void WhbContext::requestTermination(int signal)
     {
@@ -1160,17 +1379,76 @@ namespace XhcWhb04b6 {
         {
             cout << "termination requested ... " << endl;
         }
+        usb.requestTermination();
         doRun = false;
+
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
     bool WhbContext::isRunning() const
     {
         return doRun;
     }
 
-    // ----------------------------------------------------------------------
+    WhbContext::WhbContext() :
+        hal(),
+        usb(*this, hal.memory),
+        mName("XHC-WHB04B-6"),
+        codes(),
+        stepHandler(),
+        softwareButtons{
+            WhbSoftwareButton(codes.buttons.reset, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.reset, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.stop, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.stop, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.start, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.start, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.feed_plus, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.feed_plus, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.feed_minus, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.feed_minus, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.spindle_plus, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.spindle_plus, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.spindle_minus, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.spindle_minus, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.machine_home, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.machine_home, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.safe_z, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.safe_z, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.workpiece_home, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.workpiece_home, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.spindle_on_off, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.spindle_on_off, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.undefined, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.probe_z, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.probe_z, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.macro10, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.macro10, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.manual_pulse_generator, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.manual_pulse_generator, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.step_continuous, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.step_continuous, codes.buttons.function)
+        },
+        previousButtonCodes(codes.buttons,
+                            codes.axis,
+                            codes.feed,
+                            stepHandler.stepSize.step,
+                            stepHandler.stepSize.continuous),
+        currentButtonCodes(codes.buttons,
+                           codes.axis,
+                           codes.feed,
+                           stepHandler.stepSize.step,
+                           stepHandler.stepSize.continuous),
+        velocityComputation(),
+        doRun(false),
+        mIsSimulationMode(false)
+    {}
+
+    WhbContext::~WhbContext()
+    {}
+
+// ----------------------------------------------------------------------
 
     void WhbContext::xhcSetDisplay()
     {
@@ -1196,35 +1474,33 @@ namespace XhcWhb04b6 {
         }
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
     void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
     {
-        uint8_t indent = 10;
-        const WhbKeyCode* keyCodeBase = (WhbKeyCode*)&codes.buttons;
-        // no key
+        ios init(NULL);
+        init.copyfmt(cout);
+        int indent = 10;
+        cout << setfill(' ');
+
+        // no key code
         if (keyCode == codes.buttons.undefined.code)
         {
+            // modifier specified
             if (modifierCode == codes.buttons.function.code)
             {
-                printf("%*s", indent, codes.buttons.undefined.altText);
+                cout << setw(indent) << codes.buttons.function.text;
             }
+                // no modifier specified
             else
             {
-                printf("%*s", indent, codes.buttons.undefined.text);
+                cout << setw(indent) << codes.buttons.undefined.text;
             }
-            return;
-        }
-
-        // key is modifier key itself
-        if (keyCode == codes.buttons.function.code)
-        {
-            printf("%*s", indent, codes.buttons.function.text);
             return;
         }
 
         // find key code
-        const WhbKeyCode* whbKeyCode = keyCodeBase;
+        const WhbKeyCode* whbKeyCode = (WhbKeyCode*)&codes.buttons;
         while (whbKeyCode->code != 0)
         {
             if (whbKeyCode->code == keyCode)
@@ -1233,21 +1509,25 @@ namespace XhcWhb04b6 {
             }
             whbKeyCode++;
         }
-
+        // print key text
         if (modifierCode == codes.buttons.function.code)
         {
-            printf("%*s", indent, whbKeyCode->altText);
+            cout << setw(indent) << whbKeyCode->altText;
         }
         else
         {
-            printf("%*s", indent, whbKeyCode->text);
+            cout << setw(indent) << whbKeyCode->text;
         }
+        cout.copyfmt(init);
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
     void WhbContext::printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode)
     {
+        ios init(NULL);
+        init.copyfmt(cout);
+
         // find key code
         const WhbKeyCode* whbKeyCode = keyCodeBase;
         while (whbKeyCode->code != 0)
@@ -1258,62 +1538,58 @@ namespace XhcWhb04b6 {
             }
             whbKeyCode++;
         }
-        printf("%*s (%*s)", 5, whbKeyCode->text, 4, whbKeyCode->altText);
+        cout << setw(5) << whbKeyCode->text << "(" << setw(4) << whbKeyCode->altText << ")";
+        cout.copyfmt(init);
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
-    void WhbContext::printData(const unsigned char* data, int length)
+    void WhbContext::printData(const WhbUsbInPackage& inPackage)
     {
-        if (length != packageInfo.in.expectedSize) return;
+        ios init(NULL);
+        init.copyfmt(cout);
 
-        for (uint8_t idx = 0; idx < packageInfo.in.expectedSize; idx++)
-        {
-            WhbInPackageInfo::ByteType dataType = packageInfo.in.positionToType[idx];
-            switch (dataType)
-            {
-                case WhbInPackageInfo::ByteType::NA1:
-                    printf("| %02X | ", data[idx]);
-                    break;
-                case WhbInPackageInfo::ByteType::NA2:
-                    printf("%02X | ", data[idx]);
-                    break;
-                case WhbInPackageInfo::ByteType::Key1:
-                    printPushButtonText((uint8_t)data[idx], (uint8_t)data[idx + 1]);
-                    printf(" | ");
-                    break;
-                case WhbInPackageInfo::ByteType::Key2:
-                    printPushButtonText((uint8_t)data[idx], (uint8_t)data[idx - 1]);
-                    printf(" | ");
-                    break;
-                case WhbInPackageInfo::ByteType::Feed:
-                    printRotaryButtonText((WhbKeyCode*)&codes.feed, (uint8_t)data[idx]);
-                    printf(" | ");
-                    break;
-                case WhbInPackageInfo::ByteType::Axis:
-                    printRotaryButtonText((WhbKeyCode*)&codes.axis, (uint8_t)data[idx]);
-                    printf(" | ");
-                    break;
-                case WhbInPackageInfo::ByteType::Step:
-                    printf("%*d | ", 3, (int8_t)data[idx]);
-                    break;
-                case WhbInPackageInfo::ByteType::CRC:
-                    printf("%02X |", data[idx]);
-                    break;
-                default:
-                    break;
-            }
-        }
+        cout << "| " << setfill('0') << hex
+             << setw(2) << static_cast<unsigned short>(inPackage.notAvailable1)
+             << " | " << setw(2) << static_cast<unsigned short>(inPackage.notAvailable2)
+             << " | ";
+        cout.copyfmt(init);
+        printPushButtonText(inPackage.buttonKeyCode1, inPackage.buttonKeyCode2);
+        cout << " | ";
+        printPushButtonText(inPackage.buttonKeyCode2, inPackage.buttonKeyCode1);
+        cout << " | ";
+        printRotaryButtonText((WhbKeyCode*)&codes.feed, inPackage.rotaryButtonFeedKeyCode);
+        cout << " | ";
+        printRotaryButtonText((WhbKeyCode*)&codes.axis, inPackage.rotaryButtonAxisKeyCode);
+        cout << " | "
+             << setfill(' ') << setw(3) << static_cast<short>(inPackage.stepCount)
+             << " | "
+             << hex << setfill('0') << setw(2) << static_cast<unsigned short>(inPackage.crc);
+
+        cout.copyfmt(init);
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
-    void WhbContext::printHexdump(unsigned char* data, int len)
+    void WhbContext::printHexdump(const WhbUsbInPackage& inPackage)
     {
-        for (int i = 0; i < len; i++) printf("%02X ", data[i]);
+        ios init(NULL);
+        init.copyfmt(cout);
+
+        cout << setfill('0') << hex << "0x"
+             << setw(2) << static_cast<unsigned short>(inPackage.notAvailable1) << " "
+             << setw(2) << static_cast<unsigned short>(inPackage.notAvailable2) << " "
+             << setw(2) << static_cast<unsigned short>(inPackage.buttonKeyCode1) << " "
+             << setw(2) << static_cast<unsigned short>(inPackage.buttonKeyCode2) << " "
+             << setw(2) << static_cast<unsigned short>(inPackage.rotaryButtonFeedKeyCode) << " "
+             << setw(2) << static_cast<unsigned short>(inPackage.rotaryButtonAxisKeyCode) << " "
+             << setw(2) << static_cast<unsigned short>(inPackage.stepCount & 0xff) << " "
+             << setw(2) << static_cast<unsigned short>(inPackage.crc);
+
+        cout.copyfmt(init);
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
     void WhbContext::linuxcncSimulate()
     {
@@ -1378,7 +1654,7 @@ namespace XhcWhb04b6 {
         }
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
     void WhbContext::computeVelocity()
     {
@@ -1442,7 +1718,7 @@ namespace XhcWhb04b6 {
         }
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
     void WhbContext::handleStep()
     {
@@ -1467,148 +1743,137 @@ namespace XhcWhb04b6 {
         *(hal.memory.jogScale) = *(hal.memory.stepsize);// * 0.001f;
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
     void WhbContext::setupAsyncTransfer()
     {
-        libusb_transfer* transfer = libusb_alloc_transfer(0);
-        assert(transfer != nullptr);
-        libusb_fill_bulk_transfer(transfer,
-                                  usb.deviceHandle,
-                                  (0x1 | LIBUSB_ENDPOINT_IN),
-                                  usb.inputBuffer,
-                                  sizeof(usb.inputBuffer),
-                                  usbInputResponseCallback, nullptr, // no user data
-                                  750); // timeout
-        int r = libusb_submit_transfer(transfer);
-        assert(0 == r);
+        usb.setupAsyncTransfer();
+    }
+
+// ----------------------------------------------------------------------
+
+    void WhbContext::cbResponseIn(struct libusb_transfer* transfer)
+    {
+        // pass transfer to usb data parser
+        usb.cbResponseIn(transfer);
+    }
+
+// ----------------------------------------------------------------------
+
+    void WhbUsb::setSimulationMode(bool isSimulationMode)
+    {
+        mIsSimulationMode = isSimulationMode;
+    }
+
+// ----------------------------------------------------------------------
+
+    void WhbUsb::setIsRunning(bool enableRunning)
+    {
+        mIsRunning = enableRunning;
+    }
+
+// ----------------------------------------------------------------------
+
+    void WhbUsb::requestTermination()
+    {
+        mIsRunning = false;
     }
 
     // ----------------------------------------------------------------------
 
-    void WhbContext::cbResponseIn(struct libusb_transfer* transfer)
+    void WhbUsb::setupAsyncTransfer()
     {
+        libusb_transfer* transfer = libusb_alloc_transfer(0);
+        assert(transfer != nullptr);
+        libusb_fill_bulk_transfer(transfer,
+                                  deviceHandle,
+                                  (0x1 | LIBUSB_ENDPOINT_IN),
+                                  inputPackage.asBuffer,
+                                  sizeof(inputPackage.asBuffer),
+                                  usbInputResponseCallback,
+                                  nullptr,
+                                  750); // timeout
+        int r = libusb_submit_transfer(transfer);
+        assert(0 == r);
+    }
+// ----------------------------------------------------------------------
+
+    void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
+    {
+        int expectedPckageSize = static_cast<int>(sizeof(WhbUsbInPackage));
+        ios init(NULL);
+        init.copyfmt(cout);
         switch (transfer->status)
         {
             case (LIBUSB_TRANSFER_COMPLETED):
-                // detetec sleep mode, truncate subsequent package once
+                // sleep mode was previously detected, drop current package
                 if (sleepState.dropNextInPackage)
                 {
+                    if (WhbUsb::ConstantPackages.sleepPackage != inputPackage.asFields)
+                    {
+                        cout << "expected sleep package starting with "
+                             << hex << setfill('0') << setw(2)
+                             << static_cast<unsigned short>(WhbUsb::ConstantPackages.sleepPackage.notAvailable1)
+                             << " but got "
+                             << hex << setfill('0') << setw(2)
+                             << static_cast<unsigned short>(inputPackage.asFields.notAvailable1)
+                             << endl;
+                        cout.copyfmt(init);
+                    }
+
                     sleepState.dropNextInPackage = false;
                     goto ___TRUNCATE_PACKAGE;
                 }
 
-                if (transfer->actual_length > 0)
+
+                if (transfer->actual_length == expectedPckageSize)
                 {
-                    if (hal.getIsSimulationMode()) printHexdump(usb.inputBuffer, transfer->actual_length);
-
-                    // clarify modifier and key
-                    uint8_t buttonCode1 = usb.inputBuffer[WhbInPackageInfo::ByteType::Key1];
-                    uint8_t buttonCode2 = usb.inputBuffer[WhbInPackageInfo::ByteType::Key2];
-
-                    uint8_t modifierCode = codes.buttons.undefined.code;
-                    uint8_t keyCode      = codes.buttons.undefined.code;
-
-                    //! found modifier on key1, key2 is the key
-                    if (buttonCode1 == codes.buttons.function.code)
-                    {
-                        modifierCode = codes.buttons.function.code;
-                        keyCode      = buttonCode2;
-                    }
-                        //! found modifier on key2, key1 is the key
-                    else if (buttonCode2 == codes.buttons.function.code)
-                    {
-                        modifierCode = codes.buttons.function.code;
-                        keyCode      = buttonCode1;
-                    }
-                        //! no modifier, key1 and key2 are defined, fallback to key2
-                    else if (buttonCode2 != codes.buttons.undefined.code)
-                    {
-                        keyCode = buttonCode2;
-                    }
-                        //! fallback to whatever key one is
-                    else
-                    {
-                        keyCode = buttonCode1;
-                    }
-
-                    // update current axis and step to hal
-                    currentButtonCodes.currentAxisCode = usb.inputBuffer[WhbInPackageInfo::ByteType::Axis];
-                    *(hal.memory.jogCount) += ((signed char)usb.inputBuffer[WhbInPackageInfo::ByteType::Step]);
-                    *(hal.memory.jogCountNeg)          = -*(hal.memory.jogCount);
-                    *(hal.memory.jogEnableOff)         = (currentButtonCodes.currentAxisCode == codes.axis.off.code);
-                    *(hal.memory.jogEnableX)           = (currentButtonCodes.currentAxisCode == codes.axis.x.code);
-                    *(hal.memory.jogEnableY)           = (currentButtonCodes.currentAxisCode == codes.axis.y.code);
-                    *(hal.memory.jogEnableZ)           = (currentButtonCodes.currentAxisCode == codes.axis.z.code);
-                    *(hal.memory.jogEnableA)           = (currentButtonCodes.currentAxisCode == codes.axis.a.code);
-                    *(hal.memory.jogEnableB)           = (currentButtonCodes.currentAxisCode == codes.axis.b.code);
-                    *(hal.memory.jogEnableC)           = (currentButtonCodes.currentAxisCode == codes.axis.c.code);
-
-                    //! print human readable data
-                    if (hal.getIsSimulationMode())
-                    {
-                        if ((char)usb.inputBuffer[4] != 0) printf(" delta %+3d", (char)usb.inputBuffer[4]);
-                        printf(" => ");
-                        printData(usb.inputBuffer, transfer->actual_length);
-                        printf("\n");
-                    }
-
-                    //! update button state to hal
-                    int      buttonsCount = sizeof(softwareButtons) / sizeof(WhbSoftwareButton);
-                    for (int idx          = 0; idx < buttonsCount; idx++)
-                    {
-                        if ((softwareButtons[idx].key.code == keyCode) &&
-                            (softwareButtons[idx].modifier.code == modifierCode))
-                        {
-                            *(hal.memory.button_pin[idx]) = true;
-                            if (hal.getIsSimulationMode())
-                            {
-                                printPushButtonText(keyCode, modifierCode);
-                                printf(" pressed\n");
-                            }
-                        }
-                        else
-                        {
-                            *(hal.memory.button_pin[idx]) = false;
-                        }
-                    }
-
                     //! detect pendant going to sleep:
                     //! when powering off pedant sends two packages
-                    //! 1st: 0x4 0x? 0x0 0x0 0x0 0x0 0x?
-                    //! 2nd; 0x4 0x? 0x? 0x? 0x? 0x? 0x?
-                    if (usb.inputBuffer[WhbInPackageInfo::ByteType::NA1] == 0x04 &&
-                        usb.inputBuffer[WhbInPackageInfo::ByteType::Key1] == 0 &&
-                        usb.inputBuffer[WhbInPackageInfo::ByteType::Key2] == 0 &&
-                        usb.inputBuffer[WhbInPackageInfo::ByteType::Feed] == 0 &&
-                        usb.inputBuffer[WhbInPackageInfo::ByteType::Axis] == 0 &&
-                        usb.inputBuffer[WhbInPackageInfo::ByteType::Step] == 0)
+                    //! 1st: \ref WhbUsbEmptyPackage
+                    //! 2nd: \ref WhbUsbSleepPackage
+                    if (WhbUsb::ConstantPackages.emptyPackage == inputPackage.asFields)
                     {
                         sleepState.dropNextInPackage = true;
-                        *(hal.memory.sleeping) = 1;
-                        if (hal.getIsSimulationMode())
+                        *(mHalMemory.sleeping) = 1;
+                        if (mIsSimulationMode)
                         {
                             struct timeval now;
                             gettimeofday(&now, nullptr);
-                            fprintf(stderr, "Sleep, %s was idle for %ld seconds\n",
-                                    entity.name, now.tv_sec - sleepState.last_wakeup.tv_sec);
+                            cout << "going to sleep: device was idle for "
+                                 << (now.tv_sec - sleepState.last_wakeup.tv_sec)
+                                 << " seconds" << endl;
                         }
                     }
+                        // on regular package
                     else
                     {
-                        gettimeofday(&sleepState.last_wakeup, nullptr);
-                        if (*(hal.memory.sleeping))
+                        if (*(mHalMemory.sleeping) == 1)
                         {
-                            if (hal.getIsSimulationMode())
+                            *(mHalMemory.sleeping) = 0;
+                            if (mIsSimulationMode)
                             {
-                                fprintf(stderr, "Wake\n");
+                                struct timeval now;
+                                gettimeofday(&now, nullptr);
+                                cout << "woke up: device was sleeping for "
+                                     << (now.tv_sec - sleepState.last_wakeup.tv_sec)
+                                     << " seconds" << endl;
                             }
+                            gettimeofday(&sleepState.last_wakeup, nullptr);
                         }
-                        *(hal.memory.sleeping) = 0;
+
                     }
+                    // pass structured transfer to usb data handler
+                    mDataHandler.handleInputData(inputPackage.asFields);
+                }
+                else
+                {
+                    cout << "received unexpected package size: expected="
+                         << (transfer->actual_length)
+                         << ", current=" << expectedPckageSize << endl;
                 }
 
-                if (isRunning())
+                if (mIsRunning)
                 {
                     setupAsyncTransfer();
                 }
@@ -1617,22 +1882,25 @@ namespace XhcWhb04b6 {
 
             ___TRUNCATE_PACKAGE:
             case (LIBUSB_TRANSFER_TIMED_OUT):
-                if (isRunning())
+                if (mIsRunning)
                 {
                     setupAsyncTransfer();
                 }
                 break;
+
             case (LIBUSB_TRANSFER_CANCELLED):
                 break;
+
             case (LIBUSB_TRANSFER_STALL):
             case (LIBUSB_TRANSFER_NO_DEVICE):
             case (LIBUSB_TRANSFER_OVERFLOW):
             case (LIBUSB_TRANSFER_ERROR):
-                printf("transfer error: %d", transfer->status);
+                cout << "transfer error: " << transfer->status << endl;
                 requestTermination();
                 break;
+
             default:
-                printf("unknown transfer status %d\n", transfer->status);
+                cout << "unknown transfer status: " << transfer->status << endl;
                 requestTermination();
                 break;
         }
@@ -1640,21 +1908,120 @@ namespace XhcWhb04b6 {
         libusb_free_transfer(transfer);
     }
 
-    // ----------------------------------------------------------------------
 
-    int WhbContext::newSimulatedHalPin(char* pin_name, void** ptr, int s)
+// ----------------------------------------------------------------------
+
+    void WhbContext::setSimulationMode(bool enableSimulationMode)
+    {
+        mIsSimulationMode = enableSimulationMode;
+        hal.setSimulationMode(mIsSimulationMode);
+        usb.setSimulationMode(mIsSimulationMode);
+    }
+
+// ----------------------------------------------------------------------
+
+    void WhbContext::halTeardown()
+    {
+
+    }
+
+// ----------------------------------------------------------------------
+
+    void WhbHal::freeSimulatedPin(void** pin)
+    {
+        if (*pin != nullptr)
+        {
+            free(*pin);
+            pin = nullptr;
+        }
+    }
+
+// ----------------------------------------------------------------------
+
+    WhbHal::WhbHal() :
+        memory(),
+        mIsSimulationMode(true),
+        mName("xhc-whb04b-6"),
+        mHalCompId(-1)
+    {}
+
+// ----------------------------------------------------------------------
+
+
+    WhbHal::~WhbHal()
+    {
+        if (mIsSimulationMode == false)
+        {
+            // do not free hal pins
+            return;
+        }
+
+        freeSimulatedPin((void**)(&memory.xWorkpieceCoordinate));
+        freeSimulatedPin((void**)(&memory.yWorkpieceCoordinate));
+        freeSimulatedPin((void**)(&memory.zWorkpieceCoordinate));
+        freeSimulatedPin((void**)(&memory.aWorkpieceCoordinate));
+        freeSimulatedPin((void**)(&memory.bWorkpieceCoordinate));
+        freeSimulatedPin((void**)(&memory.cWorkpieceCoordinate));
+        freeSimulatedPin((void**)(&memory.xMachineCoordinate));
+        freeSimulatedPin((void**)(&memory.yMachineCoordinate));
+        freeSimulatedPin((void**)(&memory.zMachineCoordinate));
+        freeSimulatedPin((void**)(&memory.aMachineCoordinate));
+        freeSimulatedPin((void**)(&memory.bMachineCoordinate));
+        freeSimulatedPin((void**)(&memory.cMachineCoordinate));
+        freeSimulatedPin((void**)(&memory.feedrateOverride));
+        freeSimulatedPin((void**)(&memory.feedrate));
+        freeSimulatedPin((void**)(&memory.spindleOverride));
+        freeSimulatedPin((void**)(&memory.spindleRps));
+        for (size_t idx = 0; idx < (sizeof(memory.button_pin) / sizeof(hal_bit_t * )); idx++)
+        {
+            freeSimulatedPin((void**)(&memory.button_pin[idx]));
+        }
+        freeSimulatedPin((void**)(&memory.jogEnableOff));
+        freeSimulatedPin((void**)(&memory.jogEnableX));
+        freeSimulatedPin((void**)(&memory.jogEnableY));
+        freeSimulatedPin((void**)(&memory.jogEnableZ));
+        freeSimulatedPin((void**)(&memory.jogEnableA));
+        freeSimulatedPin((void**)(&memory.jogEnableB));
+        freeSimulatedPin((void**)(&memory.jogEnableC));
+        freeSimulatedPin((void**)(&memory.jogScale));
+        freeSimulatedPin((void**)(&memory.jogCount));
+        freeSimulatedPin((void**)(&memory.jogCountNeg));
+        freeSimulatedPin((void**)(&memory.jogVelocity));
+        freeSimulatedPin((void**)(&memory.jogMaxVelocity));
+        freeSimulatedPin((void**)(&memory.jogIncrement));
+        freeSimulatedPin((void**)(&memory.jogPlusX));
+        freeSimulatedPin((void**)(&memory.jogPlusY));
+        freeSimulatedPin((void**)(&memory.jogPlusZ));
+        freeSimulatedPin((void**)(&memory.jogPlusA));
+        freeSimulatedPin((void**)(&memory.jogPlusB));
+        freeSimulatedPin((void**)(&memory.jogPlusC));
+        freeSimulatedPin((void**)(&memory.jogMinusX));
+        freeSimulatedPin((void**)(&memory.jogMinusY));
+        freeSimulatedPin((void**)(&memory.jogMinusZ));
+        freeSimulatedPin((void**)(&memory.jogMinusA));
+        freeSimulatedPin((void**)(&memory.jogMinusB));
+        freeSimulatedPin((void**)(&memory.jogMinusC));
+        freeSimulatedPin((void**)(&memory.stepsizeUp));
+        freeSimulatedPin((void**)(&memory.stepsize));
+        freeSimulatedPin((void**)(&memory.sleeping));
+        freeSimulatedPin((void**)(&memory.isPendantConnected));
+        freeSimulatedPin((void**)(&memory.isPendantRequired));
+    }
+
+// ----------------------------------------------------------------------
+
+    int WhbHal::newSimulatedHalPin(char* pin_name, void** ptr, int s)
     {
         *ptr = calloc(s, 1);
         assert(*ptr != nullptr);
         memset(*ptr, 0, s);
-        hal.cleanup.refs[hal.cleanup.nextIndex++] = *ptr;
-        printf("registered %s\n", pin_name);
+        cout << "registered " << pin_name << endl;
         return 0;
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
-    int WhbContext::newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int comp_id, const char* fmt, ...)
+    int WhbHal::newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int comp_id, const char* fmt, ...)
     {
         char    pin_name[256];
         va_list args;
@@ -1662,20 +2029,20 @@ namespace XhcWhb04b6 {
         vsprintf(pin_name, fmt, args);
         va_end(args);
 
-        if (hal.simulationMode)
+        if (mIsSimulationMode)
         {
             return newSimulatedHalPin(pin_name, (void**)data_ptr_addr, sizeof(hal_float_t));
         }
         else
         {
-            //printf("registered %s\n", pin_name);
+            //cout << "registered " << pin_name << endl;
             return hal_pin_float_new(pin_name, dir, data_ptr_addr, comp_id);
         }
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
-    int WhbContext::newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int comp_id, const char* fmt, ...)
+    int WhbHal::newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int comp_id, const char* fmt, ...)
     {
         char    pin_name[256];
         va_list args;
@@ -1683,20 +2050,20 @@ namespace XhcWhb04b6 {
         vsprintf(pin_name, fmt, args);
         va_end(args);
 
-        if (hal.simulationMode)
+        if (mIsSimulationMode)
         {
             return newSimulatedHalPin(pin_name, (void**)data_ptr_addr, sizeof(hal_s32_t));
         }
         else
         {
-            //printf("registered %s\n", pin_name);
+            //cout << "registered " << pin_name << endl;
             return hal_pin_s32_new(pin_name, dir, data_ptr_addr, comp_id);
         }
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
-    int WhbContext::newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_id, const char* fmt, ...)
+    int WhbHal::newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_id, const char* fmt, ...)
     {
         char    pin_name[256];
         va_list args;
@@ -1704,52 +2071,63 @@ namespace XhcWhb04b6 {
         vsprintf(pin_name, fmt, args);
         va_end(args);
 
-        if (hal.simulationMode)
+        if (mIsSimulationMode)
         {
             return newSimulatedHalPin(pin_name, (void**)data_ptr_addr, sizeof(hal_bit_t));
         }
         else
         {
-            //printf("registered %s\n", pin_name);
+            //cout << "registered " << pin_name << endl;
             return hal_pin_bit_new(pin_name, dir, data_ptr_addr, comp_id);
         }
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
-    void WhbContext::halTeardown()
+    bool WhbHal::getIsSimulationMode() const
     {
-        if (hal.simulationMode)
-        {
-            for (uint16_t idx = 0; idx < hal.cleanup.nextIndex; idx++)
-            {
-                free(hal.cleanup.refs[idx]);
-                hal.cleanup.refs[idx] = nullptr;
-
-            }
-            hal.cleanup.nextIndex = 0;
-        }
+        return mIsSimulationMode;
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
-    void WhbContext::halInit()
+    void WhbHal::setSimulationMode(bool isSimulationMode)
     {
-        const char* modname = entity.name;
+        this->mIsSimulationMode = isSimulationMode;
+    }
 
-        if (!hal.simulationMode)
+// ----------------------------------------------------------------------
+
+    int WhbHal::getHalComponentId() const
+    {
+        return mHalCompId;
+    }
+
+// ----------------------------------------------------------------------
+
+    const char* WhbHal::getHalComponentName() const
+    {
+        return mName;
+    }
+
+// ----------------------------------------------------------------------
+
+    void WhbHal::halInit(WhbSoftwareButton* softwareButtons,
+                         size_t buttonsCount,
+                         const WhbKeyCodes& codes)
+    {
+        if (!mIsSimulationMode)
         {
-            hal.entity.halCompId = hal_init(modname);
-            if (hal.entity.halCompId < 1)
+            mHalCompId = hal_init(mName);
+            if (mHalCompId < 1)
             {
-                fprintf(stderr, "%s: ERROR: hal_init failed\n", modname);
+                cerr << mName << ": ERROR: hal_init failed " << endl;
                 exit(EXIT_FAILURE);
             }
         }
 
-        // register all known whb04b-6 buttons
-        int      buttonsCount = sizeof(softwareButtons) / sizeof(WhbSoftwareButton);
-        for (int idx          = 0; idx < buttonsCount; idx++)
+        // register all known xhc-whb04b-6 buttons
+        for (size_t idx = 0; idx < buttonsCount; idx++)
         {
             const char* buttonName = nullptr;
             if (&softwareButtons[idx].modifier == &codes.buttons.undefined)
@@ -1760,99 +2138,90 @@ namespace XhcWhb04b6 {
             {
                 buttonName = softwareButtons[idx].key.altText;
             }
-            int r = newBitHalPin(HAL_OUT, &(hal.memory.button_pin[idx]), hal.entity.halCompId,
-                                 "%s.%s", modname, buttonName);
+            int r = newBitHalPin(HAL_OUT, &(memory.button_pin[idx]), mHalCompId,
+                                 "%s.%s", mName, buttonName);
             assert(0 == r);
         }
 
-        int halCompId = hal.entity.halCompId;
-        int r         = 0;
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.xMachineCoordinate), halCompId, "%s.x.pos-absolute", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.yMachineCoordinate), halCompId, "%s.y.pos-absolute", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.zMachineCoordinate), halCompId, "%s.z.pos-absolute", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.aMachineCoordinate), halCompId, "%s.a.pos-absolute", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.bMachineCoordinate), halCompId, "%s.b.pos-absolute", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.cMachineCoordinate), halCompId, "%s.c.pos-absolute", modname);
+        int r = 0;
+        r |= newFloatHalPin(HAL_IN, &(memory.xMachineCoordinate), mHalCompId, "%s.x.pos-absolute", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.yMachineCoordinate), mHalCompId, "%s.y.pos-absolute", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.zMachineCoordinate), mHalCompId, "%s.z.pos-absolute", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.aMachineCoordinate), mHalCompId, "%s.a.pos-absolute", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.bMachineCoordinate), mHalCompId, "%s.b.pos-absolute", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.cMachineCoordinate), mHalCompId, "%s.c.pos-absolute", mName);
 
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.yWorkpieceCoordinate), halCompId, "%s.y.pos-relative", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.xWorkpieceCoordinate), halCompId, "%s.x.pos-relative", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.zWorkpieceCoordinate), halCompId, "%s.z.pos-relative", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.aWorkpieceCoordinate), halCompId, "%s.a.pos-relative", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.bWorkpieceCoordinate), halCompId, "%s.b.pos-relative", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.cWorkpieceCoordinate), halCompId, "%s.c.pos-relative", modname);
+        r |= newFloatHalPin(HAL_IN, &(memory.yWorkpieceCoordinate), mHalCompId, "%s.y.pos-relative", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.xWorkpieceCoordinate), mHalCompId, "%s.x.pos-relative", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.zWorkpieceCoordinate), mHalCompId, "%s.z.pos-relative", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.aWorkpieceCoordinate), mHalCompId, "%s.a.pos-relative", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.bWorkpieceCoordinate), mHalCompId, "%s.b.pos-relative", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.cWorkpieceCoordinate), mHalCompId, "%s.c.pos-relative", mName);
 
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.feedrate), halCompId, "%s.feed-value", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.feedrateOverride), halCompId, "%s.feed-override", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.spindleRps), halCompId, "%s.spindle-rps", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.spindleOverride), halCompId, "%s.spindle-override", modname);
+        r |= newFloatHalPin(HAL_IN, &(memory.feedrate), mHalCompId, "%s.feed-value", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.feedrateOverride), mHalCompId, "%s.feed-override", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.spindleRps), mHalCompId, "%s.spindle-rps", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.spindleOverride), mHalCompId, "%s.spindle-override", mName);
 
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.sleeping), halCompId, "%s.sleeping", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.isPendantConnected), halCompId, "%s.connected", modname);
-        r |= newBitHalPin(HAL_IN, &(hal.memory.stepsizeUp), halCompId, "%s.stepsize-up", modname);
-        r |= newSigned32HalPin(HAL_OUT, &(hal.memory.stepsize), halCompId, "%s.stepsize", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.isPendantRequired), halCompId, "%s.require_pendant", modname);
+        r |= newBitHalPin(HAL_OUT, &(memory.sleeping), mHalCompId, "%s.sleeping", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.isPendantConnected), mHalCompId, "%s.connected", mName);
+        r |= newBitHalPin(HAL_IN, &(memory.stepsizeUp), mHalCompId, "%s.stepsize-up", mName);
+        r |= newSigned32HalPin(HAL_OUT, &(memory.stepsize), mHalCompId, "%s.stepsize", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.isPendantRequired), mHalCompId, "%s.require_pendant", mName);
 
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableOff), halCompId, "%s.jog.enable-off", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableX), halCompId, "%s.jog.enable-x", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableY), halCompId, "%s.jog.enable-y", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableZ), halCompId, "%s.jog.enable-z", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableA), halCompId, "%s.jog.enable-a", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableB), halCompId, "%s.jog.enable-b", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableC), halCompId, "%s.jog.enable-c", modname);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogEnableOff), mHalCompId, "%s.jog.enable-off", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogEnableX), mHalCompId, "%s.jog.enable-x", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogEnableY), mHalCompId, "%s.jog.enable-y", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogEnableZ), mHalCompId, "%s.jog.enable-z", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogEnableA), mHalCompId, "%s.jog.enable-a", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogEnableB), mHalCompId, "%s.jog.enable-b", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogEnableC), mHalCompId, "%s.jog.enable-c", mName);
 
         //r |= _hal_pin_bit_newf(HAL_OUT, &(hal.memory.jog_enable_feedrate), hal_comp_id, "%s.jog.enable-feed-override", modname);
         //r |= _hal_pin_bit_newf(HAL_OUT, &(hal.memory.jog_enable_spindle), hal_comp_id, "%s.jog.enable-spindle-override", modname);
 
-        r |= newFloatHalPin(HAL_OUT, &(hal.memory.jogScale), halCompId, "%s.jog.scale", modname);
-        r |= newSigned32HalPin(HAL_OUT, &(hal.memory.jogCount), halCompId, "%s.jog.counts", modname);
-        r |= newSigned32HalPin(HAL_OUT, &(hal.memory.jogCountNeg), halCompId, "%s.jog.counts-neg", modname);
+        r |= newFloatHalPin(HAL_OUT, &(memory.jogScale), mHalCompId, "%s.jog.scale", mName);
+        r |= newSigned32HalPin(HAL_OUT, &(memory.jogCount), mHalCompId, "%s.jog.counts", mName);
+        r |= newSigned32HalPin(HAL_OUT, &(memory.jogCountNeg), mHalCompId, "%s.jog.counts-neg", mName);
 
-        r |= newFloatHalPin(HAL_OUT, &(hal.memory.jogVelocity), halCompId, "%s.jog.velocity", modname);
-        r |= newFloatHalPin(HAL_IN, &(hal.memory.jogMaxVelocity), halCompId, "%s.jog.max-velocity", modname);
-        r |= newFloatHalPin(HAL_OUT, &(hal.memory.jogIncrement), halCompId, "%s.jog.increment", modname);
+        r |= newFloatHalPin(HAL_OUT, &(memory.jogVelocity), mHalCompId, "%s.jog.velocity", mName);
+        r |= newFloatHalPin(HAL_IN, &(memory.jogMaxVelocity), mHalCompId, "%s.jog.max-velocity", mName);
+        r |= newFloatHalPin(HAL_OUT, &(memory.jogIncrement), mHalCompId, "%s.jog.increment", mName);
 
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusX), halCompId, "%s.jog.plus-x", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusY), halCompId, "%s.jog.plus-y", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusZ), halCompId, "%s.jog.plus-z", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusA), halCompId, "%s.jog.plus-a", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusB), halCompId, "%s.jog.plus-b", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusC), halCompId, "%s.jog.plus-c", modname);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogPlusX), mHalCompId, "%s.jog.plus-x", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogPlusY), mHalCompId, "%s.jog.plus-y", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogPlusZ), mHalCompId, "%s.jog.plus-z", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogPlusA), mHalCompId, "%s.jog.plus-a", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogPlusB), mHalCompId, "%s.jog.plus-b", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogPlusC), mHalCompId, "%s.jog.plus-c", mName);
 
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusX), halCompId, "%s.jog.minus-x", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusY), halCompId, "%s.jog.minus-y", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusZ), halCompId, "%s.jog.minus-z", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusA), halCompId, "%s.jog.minus-a", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusB), halCompId, "%s.jog.minus-b", modname);
-        r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusC), halCompId, "%s.jog.minus-c", modname);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogMinusX), mHalCompId, "%s.jog.minus-x", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogMinusY), mHalCompId, "%s.jog.minus-y", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogMinusZ), mHalCompId, "%s.jog.minus-z", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogMinusA), mHalCompId, "%s.jog.minus-a", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogMinusB), mHalCompId, "%s.jog.minus-b", mName);
+        r |= newBitHalPin(HAL_OUT, &(memory.jogMinusC), mHalCompId, "%s.jog.minus-c", mName);
 
         assert (r == 0);
-
-        return;
     }
+
 }
 
 // ----------------------------------------------------------------------
 
-XhcWhb04b6::WhbContext Whb;
+XhcWhb04b6::WhbContext
+
+    Whb;
 
 // ----------------------------------------------------------------------
 
 static void Usage(char* name)
 {
-    fprintf(stderr, "%s version %s by Frederic RIBLE (frible@teaser.fr)\n", name, PACKAGE_VERSION);
-    fprintf(stderr, "Usage: %s [-I ini-file] [-h] [-H] [-s 1|2]\n", name);
-    //fprintf(stderr, " -I ini-file: configuration file defining the MPG keyboard layout\n");
-    fprintf(stderr, " -h: usage (this)\n");
-    fprintf(stderr, " -H: run in real-time HAL mode (run in simulation mode by default)\n");
-    fprintf(stderr, " -x: wait for pendant detection before creating HAL pins\n");
-    //fprintf(stderr, " -s: step sequence (*.001 unit):\n");
-    fprintf(stderr, "     1: 1,10,100,1000 (default)\n");
-    fprintf(stderr, "     2: 1,5,10,20\n\n");
-    fprintf(stderr, "Configuration file section format:\n");
-    fprintf(stderr, "[%s]\n", Whb.entity.configSectionName);
-    fprintf(stderr, "BUTTON=XX:button-thename\n");
-    fprintf(stderr, "...\n");
-    fprintf(stderr, "    where XX=hexcode, thename=nameforbutton\n");
+    cerr << name << " version " << PACKAGE_VERSION << " 2017 by Raoul Rubien (github.com/rubienr)" << endl;
+    cerr << "Usage: " << name << " [-h] [-H] " << endl;
+    cerr << " -h: usage (this)" << endl;
+    cerr << " -H: run in real-time HAL mode (run in simulation mode by default)" << endl;
+    cerr << " -x: wait for pendant detection before creating HAL pins" << endl;
 }
 
 // ----------------------------------------------------------------------
@@ -1874,6 +2243,7 @@ static void quit(int signal)
 
 void usbInputResponseCallback(struct libusb_transfer* transfer)
 {
+    // pass transfer to usb data parser
     Whb.cbResponseIn(transfer);
 }
 
@@ -1890,36 +2260,13 @@ int main(int argc, char** argv)
     bool hal_ready_done = false;
 
     Whb.initWhb();
-
+    Whb.setSimulationMode(true);
     while ((opt = getopt(argc, argv, "HhI:xs:")) != -1)
     {
         switch (opt)
         {
-            case 'I':
-                /*if (read_ini_file(optarg)) {
-                    printf("Problem reading ini file: %s\n\n",optarg);
-                    Usage(argv[0]);
-                    exit(EXIT_FAILURE);
-                }*/
-                break;
             case 'H':
-                Whb.hal.setIsSimulationMode(false);
-                break;
-            case 's':
-                /*switch (optarg[0])
-                {
-                    case '1':
-                        stepsize_sequence = stepsize_sequence_1;
-                        break;
-                    case '2':
-                        stepsize_sequence = stepsize_sequence_2;
-                        break;
-                    default:
-                        printf("Unknown sequence: %s\n\n", optarg);
-                        Usage(argv[0]);
-                        exit(EXIT_FAILURE);
-                        break;
-                }*/
+                Whb.setSimulationMode(false);
                 break;
             case 'x':
                 Whb.usb.setWaitForPendantBeforeHAL(true);
@@ -1937,7 +2284,7 @@ int main(int argc, char** argv)
 
     if (!Whb.usb.getWaitForPendantBeforeHAL() && !Whb.hal.getIsSimulationMode())
     {
-        hal_ready(Whb.hal.entity.getHalComponentId());
+        hal_ready(Whb.hal.getHalComponentId());
         hal_ready_done = true;
     }
 
@@ -1960,7 +2307,7 @@ int main(int argc, char** argv)
         }
         libusb_set_debug(Whb.usb.getContext(), 3);
 
-        printf("%s: waiting for %s device\n", Whb.entity.name, Whb.entity.configSectionName);
+        cout << Whb.getName() << "waiting for device ..." << endl;
         *(Whb.hal.memory.isPendantConnected) = 0;
         wait_secs = 0;
         *(Whb.hal.memory.isPendantRequired) = Whb.usb.getWaitForPendantBeforeHAL();
@@ -1978,8 +2325,8 @@ int main(int argc, char** argv)
 
             // todo: refactor me
             Whb.usb.setDeviceHandle(libusb_open_device_with_vid_pid(Whb.usb.getContext(),
-                                                                    Whb.entity.usbVendorId,
-                                                                    Whb.entity.usbProductId));
+                                                                    Whb.usb.getUsbVendorId(),
+                                                                    Whb.usb.getUsbProductId()));
             libusb_free_device_list(devs, 1);
             if (Whb.usb.isDeviceOpen() == false)
             {
@@ -1988,12 +2335,13 @@ int main(int argc, char** argv)
                     wait_secs++;
                     if (wait_secs >= MAX_WAIT_SECS / 2)
                     {
-                        printf("%s: waiting for %s device (%d)\n", Whb.entity.name,
-                               Whb.entity.configSectionName, wait_secs);
+                        cout << Whb.getName() << ": waiting " << wait_secs << "s for device " << Whb.getName()
+                             << "..." << endl;
                     }
                     if (wait_secs > MAX_WAIT_SECS)
                     {
-                        printf("%s: MAX_WAIT_SECS exceeded, exiting\n", Whb.entity.name);
+                        cout << Whb.getName() << ": MAX_WAIT_SECS=" << MAX_WAIT_SECS << " exceeded, exiting"
+                             << endl;
                         exit(EXIT_FAILURE);
                     }
                 }
@@ -2001,7 +2349,7 @@ int main(int argc, char** argv)
             }
         } while ((Whb.usb.isDeviceOpen() == false) && Whb.isRunning());
 
-        printf("%s: found %s device\n", Whb.entity.name, Whb.entity.configSectionName);
+        cout << Whb.getName() << ": found " << Whb.getName() << " device" << endl;
 
         if (Whb.usb.isDeviceOpen() != false)
         {
@@ -2024,7 +2372,7 @@ int main(int argc, char** argv)
 
         if (!hal_ready_done && !Whb.hal.getIsSimulationMode())
         {
-            hal_ready(Whb.hal.entity.getHalComponentId());
+            hal_ready(Whb.hal.getHalComponentId());
             hal_ready_done = true;
         }
 
@@ -2052,7 +2400,7 @@ int main(int argc, char** argv)
             }
 
             *(Whb.hal.memory.isPendantConnected) = 0;
-            printf("%s: connection lost, cleaning up\n", Whb.entity.name);
+            cout << Whb.getName() << ": connection lost, cleaning up" << endl;
             struct timeval tv;
             tv.tv_sec  = 0;
             tv.tv_usec = 750000;
