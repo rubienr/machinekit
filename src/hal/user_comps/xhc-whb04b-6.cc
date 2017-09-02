@@ -1,10 +1,10 @@
 /*
    XHC-HB04 Wireless MPG pendant LinuxCNC HAL module for LinuxCNC
 
+   Copyright (C) 2017 Raoul Rubien (github.com/rubienr)
+   Copyright (C) 2014 Marius Alksnys (marius.alksnys@gmail.com)
    Copyright (C) 2013 Frederic Rible (frible@teaser.fr)
    Copyright (C) 2013 Rene Hopf (renehopf@mac.com)
-   Copyright (C) 2014 Marius Alksnys (marius.alksnys@gmail.com)
-   Copyright (C) 2017 Raoul Rubien (github.com/rubienr)
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -34,104 +34,299 @@
 #include <stdarg.h>
 #include <hal.h>
 #include <inifile.hh>
-
 #include "config.h"
 #include "../lib/hal.h"
 
-typedef struct {
-    hal_float_t *x_wc, *y_wc, *z_wc, *a_wc, *b_wc, *c_wc;
-    hal_float_t *x_mc, *y_mc, *z_mc, *a_mc, *b_mc, *c_mc;
+//! callback function for libusb's incoming data transfer
+void usbInputResponseCallback(struct libusb_transfer* transfer);
 
-    hal_float_t *feedrate_override, *feedrate;
-    hal_float_t *spindle_override,  *spindle_rps;
+//! registers signal haldner
+void registerSignalHandler();
 
-    hal_bit_t *button_pin[64];
+// ----------------------------------------------------------------------
 
-    hal_bit_t *jog_enable_off;
-    hal_bit_t *jog_enable_x;
-    hal_bit_t *jog_enable_y;
-    hal_bit_t *jog_enable_z;
-    hal_bit_t *jog_enable_a;
-    hal_bit_t *jog_enable_b;
-    hal_bit_t *jog_enable_c;
-    //hal_bit_t *jog_enable_feedrate;
-    //hal_bit_t *jog_enable_spindle;
-    hal_float_t *jog_scale;
-    hal_s32_t *jog_counts, *jog_counts_neg;
+struct WhbHalMemory
+{
+    hal_float_t* xWorkpieceCoordinate;
+    hal_float_t* yWorkpieceCoordinate;
+    hal_float_t* zWorkpieceCoordinate;
+    hal_float_t* aWorkpieceCoordinate;
+    hal_float_t* bWorkpieceCoordinate;
+    hal_float_t* cWorkpieceCoordinate;
+    hal_float_t* xMachineCoordinate;
+    hal_float_t* yMachineCoordinate;
+    hal_float_t* zMachineCoordinate;
+    hal_float_t* aMachineCoordinate;
+    hal_float_t* bMachineCoordinate;
+    hal_float_t* cMachineCoordinate;
 
-    hal_float_t *jog_velocity;
-    hal_float_t *jog_max_velocity;
-    hal_float_t *jog_increment;
-    hal_bit_t *jog_plus_x,  *jog_plus_y,  *jog_plus_z,  *jog_plus_a,  *jog_plus_b,  *jog_plus_c;
-    hal_bit_t *jog_minus_x, *jog_minus_y, *jog_minus_z, *jog_minus_a, *jog_minus_b, *jog_minus_c;
+    hal_float_t* feedrateOverride;
+    hal_float_t* feedrate;
+    hal_float_t* spindleOverride;
+    hal_float_t* spindleRps;
 
-    hal_bit_t *stepsize_up;
-    hal_s32_t *stepsize;
-    hal_bit_t *sleeping;
-    hal_bit_t *connected;
-    hal_bit_t *require_pendant;
-} WhbHalMemory;
+    hal_bit_t* button_pin[64];
 
+    hal_bit_t  * jogEnableOff;
+    hal_bit_t  * jogEnableX;
+    hal_bit_t  * jogEnableY;
+    hal_bit_t  * jogEnableZ;
+    hal_bit_t  * jogEnableA;
+    hal_bit_t  * jogEnableB;
+    hal_bit_t  * jogEnableC;
+    //hal_bit_t* jog_enable_feedrate;
+    //hal_bit_t* jog_enable_spindle;
+    hal_float_t* jogScale;
+    hal_s32_t  * jogCount;
+    hal_s32_t  * jogCountNeg;
 
-typedef struct {
-    int hal_comp_id;
-} WhbHalEntity;
+    hal_float_t* jogVelocity;
+    hal_float_t* jogMaxVelocity;
+    hal_float_t* jogIncrement;
+    hal_bit_t  * jogPlusX;
+    hal_bit_t  * jogPlusY;
+    hal_bit_t  * jogPlusZ;
+    hal_bit_t  * jogPlusA;
+    hal_bit_t  * jogPlusB;
+    hal_bit_t  * jogPlusC;
+    hal_bit_t  * jogMinusX;
+    hal_bit_t  * jogMinusY;
+    hal_bit_t  * jogMinusZ;
+    hal_bit_t  * jogMinusA;
+    hal_bit_t  * jogMinusB;
+    hal_bit_t  * jogMinusC;
 
+    hal_bit_t* stepsizeUp;
+    hal_s32_t* stepsize;
+    hal_bit_t* sleeping;
+    hal_bit_t* isPendantConnected;
+    hal_bit_t* isPendantRequired;
 
-typedef struct {
-    WhbHalEntity entity;
-    WhbHalMemory *memory;
-    bool simu_mode;
-} WhbHal;
+    WhbHalMemory() :
+        xWorkpieceCoordinate(nullptr),
+        yWorkpieceCoordinate(nullptr),
+        zWorkpieceCoordinate(nullptr),
+        aWorkpieceCoordinate(nullptr),
+        bWorkpieceCoordinate(nullptr),
+        cWorkpieceCoordinate(nullptr),
+        xMachineCoordinate(nullptr),
+        yMachineCoordinate(nullptr),
+        zMachineCoordinate(nullptr),
+        aMachineCoordinate(nullptr),
+        bMachineCoordinate(nullptr),
+        cMachineCoordinate(nullptr),
+        feedrateOverride(nullptr),
+        feedrate(nullptr),
+        spindleOverride(nullptr),
+        spindleRps(nullptr),
+        button_pin{0},
+        jogEnableOff(nullptr),
+        jogEnableX(nullptr),
+        jogEnableY(nullptr),
+        jogEnableZ(nullptr),
+        jogEnableA(nullptr),
+        jogEnableB(nullptr),
+        jogEnableC(nullptr),
+        jogScale(nullptr),
+        jogCount(nullptr),
+        jogCountNeg(nullptr),
+        jogVelocity(nullptr),
+        jogMaxVelocity(nullptr),
+        jogIncrement(nullptr),
+        jogPlusX(nullptr),
+        jogPlusY(nullptr),
+        jogPlusZ(nullptr),
+        jogPlusA(nullptr),
+        jogPlusB(nullptr),
+        jogPlusC(nullptr),
+        jogMinusX(nullptr),
+        jogMinusY(nullptr),
+        jogMinusZ(nullptr),
+        jogMinusA(nullptr),
+        jogMinusB(nullptr),
+        jogMinusC(nullptr),
+        stepsizeUp(nullptr),
+        stepsize(nullptr),
+        sleeping(nullptr),
+        isPendantConnected(nullptr),
+        isPendantRequired(nullptr)
+    {}
+};
 
+// ----------------------------------------------------------------------
 
-typedef struct {
-    libusb_context *context;
-    libusb_device_handle *deviceHandle;
-} XhbUsb;
+//! HAL component parameters
+struct WhbHalEntity
+{
+    int halCompId;
 
-typedef struct {
-    bool dropNextInPackage;
-} WhbSleepDetect;
+    WhbHalEntity() :
+        halCompId(0)
+    {}
+};
 
-typedef struct {
-    typedef enum { NA1=0, NA2=1, Key1=2, Key2=3, Feed=4, Axis=5, Step=6, CRC=7 } ByteType;
+// ----------------------------------------------------------------------
 
+//! allocated memory reference lookup
+struct WhbCleanupRef
+{
+    void* refs[256];
+    uint16_t nextIndex;
+
+    WhbCleanupRef() :
+        refs{0},
+        nextIndex(0)
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! HAL and related parameters
+struct WhbHal
+{
+    WhbHalEntity  entity;
+    WhbHalMemory  memory;
+    bool          simulationMode;
+    //! if \p simulationMode == true, \p cleanup keeps malloced references for freeing
+    WhbCleanupRef cleanup;
+
+    WhbHal() :
+        entity(),
+        memory(),
+        simulationMode(true),
+        cleanup()
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! pendant sleep/idle state parameters
+struct WhbSleepDetect
+{
+    bool           dropNextInPackage;
+    struct timeval last_wakeup;
+
+    WhbSleepDetect() :
+        dropNextInPackage(false),
+        last_wakeup()
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! from pendant coming communication package description
+struct WhbInPackageInfo
+{
+    //! names the byte type at the specified position in data stream
+    typedef enum
+    {
+        NA1 = 0, NA2 = 1, Key1 = 2, Key2 = 3, Feed = 4, Axis = 5, Step = 6, CRC = 7
+    }              ByteType;
+    //! inverse type to position map (position to type)
     const ByteType positionToType[8];
-    const uint8_t expectedSize;
-} WhbInPackageInfo;
+    const uint8_t  expectedSize;
 
+    WhbInPackageInfo() :
+        positionToType{
+            ByteType::NA1,
+            ByteType::NA2,
+            ByteType::Key1,
+            ByteType::Key2,
+            ByteType::Feed,
+            ByteType::Axis,
+            ByteType::Step,
+            ByteType::CRC
+        },
+        expectedSize(sizeof(positionToType) / sizeof(ByteType))
+    {}
+};
 
-typedef struct {
+// ----------------------------------------------------------------------
+
+//! pendant i/o package related parameters
+struct WhbPackageInfo
+{
     const WhbInPackageInfo in;
-} WhbPackageInfo;
 
+    WhbPackageInfo() :
+        in()
+    {}
+};
 
-typedef struct {
+// ----------------------------------------------------------------------
+
+//! pendant button key code description
+struct WhbKeyCode
+{
     const uint8_t code;
-    const char *text;
-    const char *altText;
-} WhbKeyCode;
+    //! default button text as written on pendant (if available)
+    const char* text;
+    //! alternative button text as written on pendant (if available)
+    const char* altText;
 
-typedef struct WhbSoftwareButton{
-    const WhbKeyCode *key;
-    const WhbKeyCode *modifier;
-} WhbSoftwareButton;
+    WhbKeyCode(uint8_t code, const char* text, const char* altText) :
+        code(code),
+        text(text),
+        altText(altText)
+    {}
 
-typedef struct {
-    typedef enum { Off=0, X=1, Y=2, Z=3, A=4, B=5, C=6 } AxisIndexName;
+    WhbKeyCode(const WhbKeyCode& other) :
+        code(other.code),
+        text(other.text),
+        altText(other.altText)
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! meta-button state which is dependent on the "Fn" modifier button's state
+struct WhbSoftwareButton
+{
+    const WhbKeyCode& key;
+    const WhbKeyCode& modifier;
+
+    WhbSoftwareButton(const WhbKeyCode& key, const WhbKeyCode& modifier) :
+        key(key),
+        modifier(modifier)
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! rotary axis selection button related parameters
+struct WhbAxisRotaryButtonCodes
+{
+    typedef enum
+    {
+        Off = 0, X = 1, Y = 2, Z = 3, A = 4, B = 5, C = 6
+    } AxisIndexName;
 
     const WhbKeyCode off;
-	const WhbKeyCode x;
-	const WhbKeyCode y;
-	const WhbKeyCode z;
-	const WhbKeyCode a;
-	const WhbKeyCode b;
-	const WhbKeyCode c;
+    const WhbKeyCode x;
+    const WhbKeyCode y;
+    const WhbKeyCode z;
+    const WhbKeyCode a;
+    const WhbKeyCode b;
+    const WhbKeyCode c;
     const WhbKeyCode undefined;
-} WhbAxisButtonCodes;
 
-typedef struct {
+    WhbAxisRotaryButtonCodes() :
+        off(0x06, "OFF", ""),
+        x(0x11, "X", ""),
+        y(0x12, "Y", ""),
+        z(0x13, "Z", ""),
+        a(0x14, "A", ""),
+        b(0x15, "B", ""),
+        c(0x16, "C", ""),
+        undefined(0x00, "", "")
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! rotary feed button related parameters
+struct WhbFeedRotaryButtonCodes
+{
     const WhbKeyCode speed_0_001;
     const WhbKeyCode speed_0_01;
     const WhbKeyCode speed_0_1;
@@ -140,9 +335,24 @@ typedef struct {
     const WhbKeyCode percent_100;
     const WhbKeyCode lead;
     const WhbKeyCode undefined;
-} WhbFeedButtonCodes;
 
-typedef struct {
+    WhbFeedRotaryButtonCodes() :
+        speed_0_001(0x0d, "0.001", "2%"),
+        speed_0_01(0x0e, "0.01", "5%"),
+        speed_0_1(0x0f, "0.1", "10%"),
+        speed_1(0x10, "1", "30%"),
+        percent_60(0x1a, "", "60%"),
+        percent_100(0x1b, "", "100%"),
+        lead(0x1c, "Lead", ""),
+        undefined(0x00, "", "")
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! pendant button related parameters
+struct WhbButtonsCode
+{
     const WhbKeyCode reset;
     const WhbKeyCode stop;
     const WhbKeyCode start;
@@ -161,101 +371,243 @@ typedef struct {
     const WhbKeyCode step_continuous;
     const WhbKeyCode undefined;
 
-} WhbButtonCodes;
+    WhbButtonsCode() :
+        reset(0x01, "RESET", "Macro-11"),
+        stop(0x02, "STOP", "Macro-12"),
+        start(0x03, "Start", "Pause"),
+        feed_plus(0x04, "Feed+", "Macro-1"),
+        feed_minus(0x05, "Feed-", "Macro-2"),
+        spindle_plus(0x06, "Spindle+", "Macro-3"),
+        spindle_minus(0x07, "Spindle-", "Macro-4"),
+        machine_home(0x08, "M-HOME", "Macro-5"),
+        safe_z(0x09, "Safe-Z", "Macro-6"),
+        workpiece_home(0x0a, "W-HOME", "Macro-7"),
+        spindle_on_off(0x0b, "S-ON/OFF", "Macro-8"),
+        function(0x0c, "Fn", ""),
+        probe_z(0x0d, "Probe-Z", "Macro-9"),
+        macro10(0x10, "Macro-10", "Macro-13"),
+        manual_pulse_generator(0x0e, "MPG", "Macro-14"),
+        step_continuous(0x0f, "STEP", "Continuous"),
+        undefined(0x00, "", "")
+    {}
 
-typedef struct {
-	const char *name;
-	const char *configSectionName;
-	const uint16_t usbVendorId;
-	const uint16_t usbProductId;
-} WhbEntity;
-
-typedef struct {
-    WhbButtonCodes buttons;
-	WhbAxisButtonCodes axis;
-	WhbFeedButtonCodes feed;
-} WhbKeyCodes;
-
-typedef struct {
-	const WhbEntity entity;
-    const WhbKeyCodes codes;
-    const WhbPackageInfo packageInfo;
-    WhbSleepDetect sleepState;
-    WhbHal hal;
-} WhbContext;
-
-
-WhbContext Whb = {
-	.entity = {
-		.name = "xhc-whb04b-6",
-		.configSectionName = "XHC-WHB04B-6",
-		.usbVendorId = 0x10ce,
-		.usbProductId = 0xeb93
-	},
-	.codes = {
-        .buttons = {
-            .reset                  = {.code=0x01, .text="RESET", .altText= "Macro-11"},
-            .stop                   = {.code=0x02, .text="STOP", .altText= "Macro-12"},
-            .start                  = {.code=0x03, .text="Start", .altText= "Pause"},
-            .feed_plus              = {.code=0x04, .text="Feed+", .altText= "Macro-1"},
-            .feed_minus             = {.code=0x05, .text="Feed-", .altText= "Macro-2"},
-            .spindle_plus           = {.code=0x06, .text="Spindle+", .altText= "Macro-3"},
-            .spindle_minus          = {.code=0x07, .text="Spindle-", .altText= "Macro-4"},
-            .machine_home           = {.code=0x08, .text="M-HOME", .altText= "Macro-5"},
-            .safe_z                 = {.code=0x09, .text="Safe-Z", .altText= "Macro-6"},
-            .workpiece_home         = {.code=0x0a, .text="W-HOME", .altText= "Macro-7"},
-            .spindle_on_off         = {.code=0x0b, .text="S-ON/OFF", .altText= "Macro-8"},
-            .function               = {.code=0x0c, .text="Fn", .altText= ""},
-            .probe_z                = {.code=0x0d, .text="Probe-Z", .altText= "Macro-9"},
-            .macro10                = {.code=0x10, .text="Macro-10", .altText= "Macro-13"},
-            .manual_pulse_generator = {.code=0x0e, .text="MPG", .altText= "Macro-14"},
-            .step_continuous        = {.code=0x0f, .text="STEP", .altText= "Continuous"},
-            .undefined              = {.code=0x00, .text="", .altText= ""}
-        },
-		.axis = {
-			.off = {.code=0x06, .text="OFF", .altText= ""},
-			.x   = {.code=0x11, .text="X", .altText= ""},
-			.y   = {.code=0x12, .text="Y", .altText= ""},
-			.z   = {.code=0x13, .text="Z", .altText= ""},
-			.a   = {.code=0x14, .text="A", .altText= ""},
-			.b   = {.code=0x15, .text="B", .altText= ""},
-			.c   = {.code=0x16, .text="C", .altText= ""},
-            .undefined = {.code=0x00, .text="", .altText= ""}
-		},
-		.feed = {
-			.speed_0_001 = {.code=0x0d, .text="0.001", .altText= "2%"},
-			.speed_0_01  = {.code=0x0e, .text="0.01", .altText= "5%"},
-			.speed_0_1   = {.code=0x0f, .text="0.1", .altText= "10%"},
-			.speed_1     = {.code=0x10, .text="1", .altText= "30%"},
-			.percent_60  = {.code=0x1a, .text="", .altText= "60%"},
-			.percent_100 = {.code=0x1b, .text="", .altText= "100%"},
-			.lead        = {.code=0x1c, .text="Lead", .altText= ""},
-            .undefined   = {.code=0x00, .text="", .altText= ""}
-		},
-	},
-    .packageInfo = {
-        .in = {
-            .positionToType = {
-                WhbInPackageInfo::ByteType::NA1,
-                WhbInPackageInfo::ByteType::NA2,
-                WhbInPackageInfo::ByteType::Key1,
-                WhbInPackageInfo::ByteType::Key2,
-                WhbInPackageInfo::ByteType::Feed,
-                WhbInPackageInfo::ByteType::Axis,
-                WhbInPackageInfo::ByteType::Step,
-                WhbInPackageInfo::ByteType::CRC
-            },
-            .expectedSize = (sizeof(WhbInPackageInfo::positionToType)/sizeof(WhbInPackageInfo::ByteType))
-        }
-    },
-    .sleepState = {.dropNextInPackage = false },
-    .hal = {
-        .entity = {.hal_comp_id = 0},
-        .memory = nullptr,
-        .simu_mode = true
-    },
 };
 
+// ----------------------------------------------------------------------
+
+//! general pendant description parameters
+struct WhbEntity
+{
+public:
+    const char* name;
+    const char* configSectionName;
+    const uint16_t usbVendorId;
+    const uint16_t usbProductId;
+
+    WhbEntity() :
+        name("xhc-whb04b-6"),
+        configSectionName("XHC-WHB04B-6"),
+        usbVendorId(0x10ce),
+        usbProductId(0xeb93)
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! whb button and rotary button codes
+struct WhbKeyCodes
+{
+public:
+    WhbButtonsCode           buttons;
+    WhbAxisRotaryButtonCodes axis;
+    WhbFeedRotaryButtonCodes feed;
+
+    WhbKeyCodes() :
+        buttons(),
+        axis(),
+        feed()
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+struct WhbVelocityComputation
+{
+public:
+    hal_s32_t      last_jog_counts;
+    struct timeval last_tv;
+
+    WhbVelocityComputation() :
+        last_jog_counts(-1),
+        last_tv()
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! step handling related parameters
+struct WhbStepHandler
+{
+    unsigned char old_inc_step_status;
+
+    WhbStepHandler() :
+        old_inc_step_status(0)
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! current buttons state
+struct WhbCurrentButtonsState
+{
+    uint8_t currentButton1Code;
+    uint8_t currentButton2Code;
+    uint8_t currentAxisCode;
+    uint8_t currentFeedCode;
+
+    WhbCurrentButtonsState(uint8_t buttonCode1,
+                           uint8_t buttonCode2,
+                           uint8_t axisCode,
+                           uint8_t feedCode) :
+        currentButton1Code(buttonCode1),
+        currentButton2Code(buttonCode2),
+        currentAxisCode(axisCode),
+        currentFeedCode(feedCode)
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! USB related parameters
+struct WhbUsb
+{
+    libusb_context      * context;
+    libusb_device_handle* deviceHandle;
+
+    WhbUsb() :
+        context(nullptr),
+        deviceHandle(nullptr)
+    {}
+};
+
+// ----------------------------------------------------------------------
+
+//! program context
+class WhbContext
+{
+public:
+    void initWhb();
+
+    void halSetup();
+
+    void halTeardown();
+
+    void cbResponseIn(struct libusb_transfer* transfer);
+
+    void setupAsyncTransfer();
+
+    void computeVelocity();
+
+    // todo: refactor me
+    void xhcSetDisplay();
+
+    void handleStep();
+
+    void linuxcncSimulate();
+
+    void requestTermination();
+
+    WhbContext() :
+        entity(),
+        hal(),
+        usb(),
+        codes(),
+        currentButtonCodes(codes.buttons.undefined.code,
+                           codes.buttons.undefined.code,
+                           codes.axis.undefined.code,
+                           codes.feed.undefined.code),
+        softwareButtons{
+            WhbSoftwareButton(codes.buttons.reset, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.reset, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.stop, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.stop, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.start, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.start, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.feed_plus, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.feed_plus, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.feed_minus, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.feed_minus, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.spindle_plus, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.spindle_plus, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.spindle_minus, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.spindle_minus, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.machine_home, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.machine_home, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.safe_z, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.safe_z, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.workpiece_home, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.workpiece_home, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.spindle_on_off, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.spindle_on_off, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.function, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.probe_z, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.probe_z, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.macro10, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.macro10, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.manual_pulse_generator, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.manual_pulse_generator, codes.buttons.function),
+            WhbSoftwareButton(codes.buttons.step_continuous, codes.buttons.undefined),
+            WhbSoftwareButton(codes.buttons.step_continuous, codes.buttons.function)
+        },
+        packageInfo(),
+        velocityComputation(),
+        stepHandler(),
+        sleepState()
+    {}
+
+    const WhbEntity entity;
+    WhbHal          hal;
+    WhbUsb          usb;
+private:
+
+    const WhbKeyCodes      codes;
+    WhbCurrentButtonsState currentButtonCodes;
+    WhbSoftwareButton      softwareButtons[31];
+    const WhbPackageInfo   packageInfo;
+    WhbVelocityComputation velocityComputation;
+    WhbStepHandler         stepHandler;
+    WhbSleepDetect         sleepState;
+
+    void printPushButtonText(uint8_t keyCode, uint8_t modifierCode);
+
+    void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode);
+
+    void printData(const unsigned char* data, int length);
+
+    void printHexdump(unsigned char* data, int len);
+
+    int encodeFloat(float value, unsigned char* buffer);
+
+    int encodeInt16(int16_t value, unsigned char* buffer);
+
+    // todo: refactor me
+    void xhcDisplayEncode(unsigned char* data, int len);
+
+    int newSimulatedHalPin(char* pin_name, void** ptr, int s);
+
+    int newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int comp_id, const char* fmt, ...);
+
+    int newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int comp_id, const char* fmt, ...);
+
+    int newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_id, const char* fmt, ...);
+
+};
+
+//! program context initialization
+WhbContext Whb;
+
+
+// -- begin garbage
 
 #define STEPSIZE_BYTE 35
 
@@ -284,41 +636,34 @@ WhbContext Whb = {
 #define STEPSIZE_DISPLAY_UNKNOWN_0F 0x0F
 
 // alternate stepsize sequences (use STEPSIZE_DISPLAY_*), terminate with 0:
-static const int  stepsize_sequence_1[] = {1,10,100,1000,0}; // default
-static const int  stepsize_sequence_2[] = {1,5,10,20,0};
-static const int *stepsize_sequence = stepsize_sequence_1; // use the default
+static const int stepsize_sequence_1[] = {1, 10, 100, 1000, 0}; // default
+static const int stepsize_sequence_2[] = {1, 5, 10, 20, 0};
+static const int* stepsize_sequence = stepsize_sequence_1; // use the default
 static int stepsize_idx = 0; // start at initial (zeroth) sequence
 
-
-
+/*
 typedef struct {
-    void *refs[256];
-    uint16_t nextIndex;
-} WhbCleanupRef;
+    //uint8_t currentAxisCode;
+    //WhbSoftwareButton button[31];
+    //unsigned char button_code;
 
-
-typedef struct {
-    uint8_t currentAxisCode;
-    WhbSoftwareButton button[31];
-    unsigned char button_code;
-
-	unsigned char old_inc_step_status;
+	//unsigned char old_inc_step_status;
     //! used in simulation mode to handle the STEP increment
-    unsigned char button_step;
+    //unsigned char button_step;
 
     //! velocity computation
-	hal_s32_t last_jog_counts;
+	//hal_s32_t last_jog_counts;
 
     //! cleanup references
-    WhbCleanupRef cleanup;
+    //WhbCleanupRef cleanup;
 
-	struct timeval last_tv;
-    struct timeval last_wakeup;
+	//struct timeval last_tv;
+    //struct timeval last_wakeup;
 } xhc_t;
 
 static xhc_t xhc =
 {
-    .currentAxisCode = Whb.codes.axis.undefined.code,
+    //.currentAxisCode = Whb.codes.axis.undefined.code,
     .button = {
             { .key = &Whb.codes.buttons.reset,          .modifier = &Whb.codes.buttons.undefined},
             { .key = &Whb.codes.buttons.reset,          .modifier = &Whb.codes.buttons.function},
@@ -352,173 +697,245 @@ static xhc_t xhc =
             { .key = &Whb.codes.buttons.step_continuous, .modifier = &Whb.codes.buttons.undefined},
             { .key = &Whb.codes.buttons.step_continuous, .modifier = &Whb.codes.buttons.function}
     },
-    .button_code = 0,
-    .old_inc_step_status = 0,
+    //.button_code = 0,
+    //.old_inc_step_status = 0,
     .button_step = 0,
-    .last_jog_counts = -1,
-    .cleanup = {.refs= {0}, .nextIndex = 0}
+    //.last_jog_counts = -1
 };
+ */
 
-static bool do_exit = false;
-static bool do_reconnect = false;
+static bool do_exit                     = false;
+static bool do_reconnect                = false;
 static bool wait_for_pendant_before_HAL = false;
 
 unsigned char in_buf[32];
-void cb_transfer_in(struct libusb_transfer *transfer);
-void cb_response_in(struct libusb_transfer *transfer);
 
-extern "C" const char *
-iniFind(FILE *fp, const char *tag, const char *configSecitonName)
+// -- end garbage
+
+extern "C" const char*
+iniFind(FILE* fp, const char* tag, const char* configSecitonName)
 {
-    IniFile                     f(false, fp);
+    IniFile f(false, fp);
 
-    return(f.Find(tag, configSecitonName));
+    return (f.Find(tag, configSecitonName));
 }
 
-void init_xhc(xhc_t *xhc)
+// ----------------------------------------------------------------------
+
+void WhbContext::initWhb()
 {
-	//memset(xhc, 0, sizeof(*xhc));
-	xhc->old_inc_step_status = -1;
-	gettimeofday(&xhc->last_wakeup, nullptr);
+    stepHandler.old_inc_step_status = -1;
+    gettimeofday(&sleepState.last_wakeup, nullptr);
 }
 
-int xhc_encode_float(float v, unsigned char *buf)
+//! writes \p value to \p buffer
+//! \return sizeof(float)
+int WhbContext::encodeFloat(float value, unsigned char* buffer)
 {
-	unsigned int int_v = (int)rtapi_rint(rtapi_fabs(v) * 10000.0);
-	unsigned short int_part = int_v / 10000;
-	unsigned short fract_part = int_v % 10000;
-	if (v < 0) fract_part = fract_part | 0x8000;
-	*(short *)buf = int_part;
-	*((short *)buf+1) = fract_part;
-	return 4;
+    unsigned int   int_v      = (int)rtapi_rint(rtapi_fabs(value) * 10000.0);
+    unsigned short int_part   = int_v / 10000;
+    unsigned short fract_part = int_v % 10000;
+    if (value < 0) fract_part = fract_part | 0x8000;
+    *(short*)buffer       = int_part;
+    *((short*)buffer + 1) = fract_part;
+    return sizeof(float);
 }
 
-int xhc_encode_s16(int v, unsigned char *buf)
+// ----------------------------------------------------------------------
+
+//! writes \p value on position \p buffer
+//! \return the sizeof(int16_t)
+int WhbContext::encodeInt16(int16_t value, unsigned char* buffer)
 {
-	*(short *)buf = v;
-	return 2;
+    *((int16_t*)buffer) = value;
+    return sizeof(int16_t);
 }
 
-void xhc_display_encode(xhc_t *xhc, unsigned char *data, int len)
+// ----------------------------------------------------------------------
+
+void WhbContext::xhcDisplayEncode(unsigned char* data, int len)
 {
-	unsigned char buf[6*7];
-	unsigned char *p = buf;
-	int i;
-	int packet;
+    unsigned char buffer[6 * 7];
+    unsigned char* iter = buffer;
 
-	assert(len == 6*8);
+    assert(len == 6 * 8);
 
-	memset(buf, 0, sizeof(buf));
+    memset(buffer, 0, sizeof(buffer));
 
-	*p++ = 0xFE;
-	*p++ = 0xFD;
-	*p++ = 0x0C;
+    *(iter++) = 0xFE;
+    *(iter++) = 0xFD;
+    *(iter++) = 0x0C;
 
-	if (xhc->currentAxisCode == Whb.codes.axis.a.code) p += xhc_encode_float(rtapi_rint(1000 * *(Whb.hal.memory->a_wc)) / 1000, p);
-	else p += xhc_encode_float(rtapi_rint(1000 * *(Whb.hal.memory->x_wc)) / 1000, p);
-	p += xhc_encode_float(rtapi_rint(1000 * *(Whb.hal.memory->y_wc)) / 1000, p);
-	p += xhc_encode_float(rtapi_rint(1000 * *(Whb.hal.memory->z_wc)) / 1000, p);
-	if (xhc->currentAxisCode == Whb.codes.axis.a.code) p += xhc_encode_float(rtapi_rint(1000 * *(Whb.hal.memory->a_mc)) / 1000, p);
-	else p += xhc_encode_float(rtapi_rint(1000 * *(Whb.hal.memory->x_mc)) / 1000, p);
-	p += xhc_encode_float(rtapi_rint(1000 * *(Whb.hal.memory->y_mc)) / 1000, p);
-	p += xhc_encode_float(rtapi_rint(1000 * *(Whb.hal.memory->z_mc)) / 1000, p);
-	p += xhc_encode_s16((int)rtapi_rint(100.0 * *(Whb.hal.memory->feedrate_override)), p);
-	p += xhc_encode_s16((int)rtapi_rint(100.0 * *(Whb.hal.memory->spindle_override)), p);
-	p += xhc_encode_s16((int)rtapi_rint(60.0 * *(Whb.hal.memory->feedrate)), p);
-	p += xhc_encode_s16((int)rtapi_rint(60.0 * *(Whb.hal.memory->spindle_rps)), p);
+    if (currentButtonCodes.currentAxisCode == codes.axis.a.code)
+    {
+        iter += encodeFloat(rtapi_rint(1000 * *(hal.memory.aWorkpieceCoordinate)) / 1000, iter);
+    }
+    else
+    {
+        iter += encodeFloat(rtapi_rint(1000 * *(hal.memory.xWorkpieceCoordinate)) / 1000, iter);
+    }
+    iter += encodeFloat(rtapi_rint(1000 * *(hal.memory.yWorkpieceCoordinate)) / 1000, iter);
+    iter += encodeFloat(rtapi_rint(1000 * *(hal.memory.zWorkpieceCoordinate)) / 1000, iter);
+    if (currentButtonCodes.currentAxisCode == codes.axis.a.code)
+    {
+        iter += encodeFloat(rtapi_rint(1000 * *(hal.memory.aMachineCoordinate)) / 1000, iter);
+    }
+    else
+    {
+        iter += encodeFloat(rtapi_rint(1000 * *(hal.memory.xMachineCoordinate)) / 1000, iter);
+    }
+    iter += encodeFloat(rtapi_rint(1000 * *(hal.memory.yMachineCoordinate)) / 1000, iter);
+    iter += encodeFloat(rtapi_rint(1000 * *(hal.memory.zMachineCoordinate)) / 1000, iter);
+    iter += encodeInt16((int16_t)rtapi_rint(100.0 * *(hal.memory.feedrateOverride)), iter);
+    iter += encodeInt16((int16_t)rtapi_rint(100.0 * *(hal.memory.spindleOverride)), iter);
+    iter += encodeInt16((int16_t)rtapi_rint(60.0 * *(hal.memory.feedrate)), iter);
+    iter += encodeInt16((int16_t)rtapi_rint(60.0 * *(hal.memory.spindleRps)), iter);
 
-	switch (*(Whb.hal.memory->stepsize)) {
-	case    0: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_0; break;
-	case    1: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_1; break;
-	case    5: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_5; break;
-	case   10: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_10; break;
-	case   20: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_20; break;
-	case   30: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_30; break;
-	case   40: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_40; break;
-	case   50: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_50; break;
-	case  100: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_100; break;
-	case  500: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_500; break;
-	case 1000: buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_1000; break;
-	default:   //stepsize not supported on the display:
-			   buf[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_0; break;
-	}
+    switch (*(hal.memory.stepsize))
+    {
+        case 0:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_0;
+            break;
+        case 1:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_1;
+            break;
+        case 5:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_5;
+            break;
+        case 10:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_10;
+            break;
+        case 20:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_20;
+            break;
+        case 30:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_30;
+            break;
+        case 40:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_40;
+            break;
+        case 50:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_50;
+            break;
+        case 100:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_100;
+            break;
+        case 500:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_500;
+            break;
+        case 1000:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_1000;
+            break;
+            //!stepsize not supported on the display
+        default:
+            buffer[STEPSIZE_BYTE] = STEPSIZE_DISPLAY_0;
+            break;
+    }
 
-	// Multiplex to 6 USB transactions
+    // Multiplex to 6 USB transactions
 
-	p = buf;
-	for (packet=0; packet<6; packet++) {
-		for (i=0; i<8; i++) {
-			if (i == 0) data[i+8*packet] = 6;
-			else data[i+8*packet] = *p++;
-		}
-	}
+    iter = buffer;
+    for (int packet = 0; packet < 6; packet++)
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            if (i == 0) data[i + 8 * packet] = 6;
+            else data[i + 8 * packet] = *iter++;
+        }
+    }
 }
 
-void xhc_set_display(libusb_device_handle *dev_handle, xhc_t *xhc)
+// ----------------------------------------------------------------------
+
+void WhbContext::requestTermination()
 {
-	unsigned char data[6*8];
-	int packet;
-
-	xhc_display_encode(xhc, data, sizeof(data));
-
-	for (packet=0; packet<6; packet++) {
-		int r = libusb_control_transfer(dev_handle,
-		              LIBUSB_DT_HID, //bmRequestType 0x21
-		              LIBUSB_REQUEST_SET_CONFIGURATION, //bRequest 0x09
-		              0x0306,         //wValue
-		              0x00,           //wIndex
-		              data+8*packet,  //*data
-		              8,              //wLength
-		              0);             //timeout
-		if (r < 0) {
-			do_reconnect = true;
-		}
-	}
+    do_exit = true;
 }
 
-void printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
+// ----------------------------------------------------------------------
+
+void WhbContext::xhcSetDisplay()
+{
+    unsigned char data[6 * 8];
+    int           packet;
+
+    xhcDisplayEncode(data, sizeof(data));
+
+    for (packet = 0; packet < 6; packet++)
+    {
+        int r = libusb_control_transfer(usb.deviceHandle,
+                                        LIBUSB_DT_HID, //bmRequestType 0x21
+                                        LIBUSB_REQUEST_SET_CONFIGURATION, //bRequest 0x09
+                                        0x0306,         //wValue
+                                        0x00,           //wIndex
+                                        data + 8 * packet,  //*data
+                                        8,              //wLength
+                                        0);             //timeout
+        if (r < 0)
+        {
+            do_reconnect = true;
+        }
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
 {
     uint8_t indent = 10;
-    const WhbKeyCode* keyCodeBase = (WhbKeyCode*)&Whb.codes.buttons;
+    const WhbKeyCode* keyCodeBase = (WhbKeyCode*)&codes.buttons;
     // no key
-    if (keyCode == Whb.codes.buttons.undefined.code)
+    if (keyCode == codes.buttons.undefined.code)
     {
-        if (modifierCode == Whb.codes.buttons.function.code) {
-            printf("%*s", indent, Whb.codes.buttons.undefined.altText);
-        } else {
-            printf("%*s", indent, Whb.codes.buttons.undefined.text);
+        if (modifierCode == codes.buttons.function.code)
+        {
+            printf("%*s", indent, codes.buttons.undefined.altText);
+        }
+        else
+        {
+            printf("%*s", indent, codes.buttons.undefined.text);
         }
         return;
     }
 
     // key is modifier key itself
-    if (keyCode == Whb.codes.buttons.function.code)
+    if (keyCode == codes.buttons.function.code)
     {
-        printf("%*s", indent, Whb.codes.buttons.function.text);
+        printf("%*s", indent, codes.buttons.function.text);
         return;
     }
 
     // find key code
     const WhbKeyCode* whbKeyCode = keyCodeBase;
-    while (whbKeyCode->code != 0) {
-        if (whbKeyCode->code == keyCode) {
+    while (whbKeyCode->code != 0)
+    {
+        if (whbKeyCode->code == keyCode)
+        {
             break;
         }
         whbKeyCode++;
     }
 
-    if (modifierCode == Whb.codes.buttons.function.code) {
-        printf("%*s", indent,whbKeyCode->altText);
-    } else {
-        printf("%*s", indent,whbKeyCode->text);
+    if (modifierCode == codes.buttons.function.code)
+    {
+        printf("%*s", indent, whbKeyCode->altText);
+    }
+    else
+    {
+        printf("%*s", indent, whbKeyCode->text);
     }
 }
 
-void printTwistButtonText(const WhbKeyCode *keyCodeBase, uint8_t keyCode) {
+// ----------------------------------------------------------------------
+
+void WhbContext::printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode)
+{
     // find key code
-    const WhbKeyCode *whbKeyCode = keyCodeBase;
-    while (whbKeyCode->code != 0) {
-        if (whbKeyCode->code == keyCode) {
+    const WhbKeyCode* whbKeyCode = keyCodeBase;
+    while (whbKeyCode->code != 0)
+    {
+        if (whbKeyCode->code == keyCode)
+        {
             break;
         }
         whbKeyCode++;
@@ -526,13 +943,15 @@ void printTwistButtonText(const WhbKeyCode *keyCodeBase, uint8_t keyCode) {
     printf("%*s (%*s)", 5, whbKeyCode->text, 4, whbKeyCode->altText);
 }
 
+// ----------------------------------------------------------------------
 
-void printData(const unsigned char *data, int length)
+void WhbContext::printData(const unsigned char* data, int length)
 {
-    if (length != Whb.packageInfo.in.expectedSize) return;
+    if (length != packageInfo.in.expectedSize) return;
 
-    for (uint8_t idx = 0; idx < Whb.packageInfo.in.expectedSize; idx++) {
-        WhbInPackageInfo::ByteType dataType = Whb.packageInfo.in.positionToType[idx];
+    for (uint8_t idx = 0; idx < packageInfo.in.expectedSize; idx++)
+    {
+        WhbInPackageInfo::ByteType dataType = packageInfo.in.positionToType[idx];
         switch (dataType)
         {
             case WhbInPackageInfo::ByteType::NA1:
@@ -542,19 +961,19 @@ void printData(const unsigned char *data, int length)
                 printf("%02X | ", data[idx]);
                 break;
             case WhbInPackageInfo::ByteType::Key1:
-                printPushButtonText((uint8_t)data[idx], (uint8_t)data[idx+1]);
+                printPushButtonText((uint8_t)data[idx], (uint8_t)data[idx + 1]);
                 printf(" | ");
                 break;
             case WhbInPackageInfo::ByteType::Key2:
-                printPushButtonText((uint8_t)data[idx], (uint8_t)data[idx-1]);
+                printPushButtonText((uint8_t)data[idx], (uint8_t)data[idx - 1]);
                 printf(" | ");
                 break;
             case WhbInPackageInfo::ByteType::Feed:
-                printTwistButtonText((WhbKeyCode*)&Whb.codes.feed, (uint8_t)data[idx]);
+                printRotaryButtonText((WhbKeyCode*)&codes.feed, (uint8_t)data[idx]);
                 printf(" | ");
                 break;
             case WhbInPackageInfo::ByteType::Axis:
-                printTwistButtonText((WhbKeyCode*)&Whb.codes.axis, (uint8_t)data[idx]);
+                printRotaryButtonText((WhbKeyCode*)&codes.axis, (uint8_t)data[idx]);
                 printf(" | ");
                 break;
             case WhbInPackageInfo::ByteType::Step:
@@ -569,233 +988,279 @@ void printData(const unsigned char *data, int length)
     }
 }
 
-void hexdump(unsigned char *data, int len)
-{
-	int i;
+// ----------------------------------------------------------------------
 
-	for (i=0; i<len; i++) printf("%02X ", data[i]);
+void WhbContext::printHexdump(unsigned char* data, int len)
+{
+    for (int i = 0; i < len; i++) printf("%02X ", data[i]);
 }
 
-void linuxcnc_simu(xhc_t *xhc)
+// ----------------------------------------------------------------------
+
+void WhbContext::linuxcncSimulate()
 {
-	static int last_jog_counts = 0;
-    WhbHalMemory *hal = Whb.hal.memory;
+    static int last_jog_counts = 0; // todo: move to class field
+    //*(hal->stepsizeUp) = ((xhc->button_step != 0) && (currentButtonCodes.currentButton1Code == xhc->button_step));
 
-	*(hal->stepsize_up) = ((xhc->button_step != 0) && (xhc->button_code == xhc->button_step));
-
-	if (*(hal->jog_counts) != last_jog_counts) {
-		int delta_int = *(hal->jog_counts) - last_jog_counts;
-		float delta = delta_int * *(hal->jog_scale);
-		if (*(hal->jog_enable_x)) {
-			*(hal->x_mc) += delta;
-			*(hal->x_wc) += delta;
-		}
-
-		if (*(hal->jog_enable_y)) {
-			*(hal->y_mc) += delta;
-			*(hal->y_wc) += delta;
-		}
-
-		if (*(hal->jog_enable_z)) {
-			*(hal->z_mc) += delta;
-			*(hal->z_wc) += delta;
-		}
-
-        if (*(hal->jog_enable_a)) {
-            *(hal->a_mc) += delta;
-            *(hal->a_wc) += delta;
+    if (*(hal.memory.jogCount) != last_jog_counts)
+    {
+        int   delta_int = *(hal.memory.jogCount) - last_jog_counts;
+        float delta     = delta_int * *(hal.memory.jogScale);
+        if (*(hal.memory.jogEnableX))
+        {
+            *(hal.memory.xMachineCoordinate) += delta;
+            *(hal.memory.xWorkpieceCoordinate) += delta;
         }
 
-        if (*(hal->jog_enable_b)) {
-            *(hal->b_mc) += delta;
-            *(hal->b_wc) += delta;
+        if (*(hal.memory.jogEnableY))
+        {
+            *(hal.memory.yMachineCoordinate) += delta;
+            *(hal.memory.yWorkpieceCoordinate) += delta;
         }
 
-        if (*(hal->jog_enable_c)) {
-            *(hal->c_mc) += delta;
-            *(hal->c_wc) += delta;
+        if (*(hal.memory.jogEnableZ))
+        {
+            *(hal.memory.zMachineCoordinate) += delta;
+            *(hal.memory.zWorkpieceCoordinate) += delta;
         }
 
-		/*if (*(hal->jog_enable_spindle)) {
-			*(hal->spindle_override) += delta_int * 0.01;
-			if (*(hal->spindle_override) > 1) *(hal->spindle_override) = 1;
-			if (*(hal->spindle_override) < 0) *(hal->spindle_override) = 0;
-			*(hal->spindle_rps) = 25000.0/60.0 * *(hal->spindle_override);
-		}
+        if (*(hal.memory.jogEnableA))
+        {
+            *(hal.memory.aMachineCoordinate) += delta;
+            *(hal.memory.aWorkpieceCoordinate) += delta;
+        }
 
-		if (*(hal->jog_enable_feedrate)) {
-			*(hal->feedrate_override) += delta_int * 0.01;
-			if (*(hal->feedrate_override) > 1) *(hal->feedrate_override) = 1;
-			if (*(hal->feedrate_override) < 0) *(hal->feedrate_override) = 0;
-			*(hal->feedrate) = 3000.0/60.0 * *(hal->feedrate_override);
-		}*/
+        if (*(hal.memory.jogEnableB))
+        {
+            *(hal.memory.bMachineCoordinate) += delta;
+            *(hal.memory.bWorkpieceCoordinate) += delta;
+        }
 
-		last_jog_counts = *(hal->jog_counts);
-	}
+        if (*(hal.memory.jogEnableC))
+        {
+            *(hal.memory.cMachineCoordinate) += delta;
+            *(hal.memory.cWorkpieceCoordinate) += delta;
+        }
+
+        /*if (*(hal->jog_enable_spindle)) {
+            *(hal->spindle_override) += delta_int * 0.01;
+            if (*(hal->spindle_override) > 1) *(hal->spindle_override) = 1;
+            if (*(hal->spindle_override) < 0) *(hal->spindle_override) = 0;
+            *(hal->spindle_rps) = 25000.0/60.0 * *(hal->spindle_override);
+        }
+
+        if (*(hal->jog_enable_feedrate)) {
+            *(hal->feedrate_override) += delta_int * 0.01;
+            if (*(hal->feedrate_override) > 1) *(hal->feedrate_override) = 1;
+            if (*(hal->feedrate_override) < 0) *(hal->feedrate_override) = 0;
+            *(hal->feedrate) = 3000.0/60.0 * *(hal->feedrate_override);
+        }*/
+
+        last_jog_counts = *(hal.memory.jogCount);
+    }
 }
 
-void compute_velocity(xhc_t *xhc)
+// ----------------------------------------------------------------------
+
+void WhbContext::computeVelocity()
 {
-	timeval now, delta_tv;
-	gettimeofday(&now, nullptr);
+    timeval now, delta_tv;
+    gettimeofday(&now, nullptr);
 
-	if (xhc->last_tv.tv_sec == 0) xhc->last_tv = now;
-	timersub(&now, &xhc->last_tv, &delta_tv);
-	float elapsed = delta_tv.tv_sec + 1e-6f*delta_tv.tv_usec;
-	if (elapsed <= 0) return;
+    if (velocityComputation.last_tv.tv_sec == 0)
+    {
+        velocityComputation.last_tv = now;
+    }
+    timersub(&now, &velocityComputation.last_tv, &delta_tv);
+    float elapsed = delta_tv.tv_sec + 1e-6f * delta_tv.tv_usec;
+    if (elapsed <= 0) return;
 
-	float delta_pos = (*(Whb.hal.memory->jog_counts) - xhc->last_jog_counts) * *(Whb.hal.memory->jog_scale);
-	float velocity = *(Whb.hal.memory->jog_max_velocity) * 60.0f * *(Whb.hal.memory->jog_scale);
-	float k = 0.05f;
+    float delta_pos = (*(hal.memory.jogCount) -
+                       velocityComputation.last_jog_counts) *
+                      *(hal.memory.jogScale);
+    float velocity  = *(hal.memory.jogMaxVelocity) *
+                      60.0f *
+                      *(hal.memory.jogScale);
+    float k         = 0.05f;
 
-	if (delta_pos) {
-		*(Whb.hal.memory->jog_velocity) = (1 - k) * *(Whb.hal.memory->jog_velocity) + k * velocity;
-		*(Whb.hal.memory->jog_increment) = rtapi_fabs(delta_pos);
-		*(Whb.hal.memory->jog_plus_x) = (delta_pos > 0) && *(Whb.hal.memory->jog_enable_x);
-		*(Whb.hal.memory->jog_minus_x) = (delta_pos < 0) && *(Whb.hal.memory->jog_enable_x);
-		*(Whb.hal.memory->jog_plus_y) = (delta_pos > 0) && *(Whb.hal.memory->jog_enable_y);
-		*(Whb.hal.memory->jog_minus_y) = (delta_pos < 0) && *(Whb.hal.memory->jog_enable_y);
-		*(Whb.hal.memory->jog_plus_z) = (delta_pos > 0) && *(Whb.hal.memory->jog_enable_z);
-		*(Whb.hal.memory->jog_minus_z) = (delta_pos < 0) && *(Whb.hal.memory->jog_enable_z);
-        *(Whb.hal.memory->jog_plus_a) = (delta_pos > 0) && *(Whb.hal.memory->jog_enable_a);
-        *(Whb.hal.memory->jog_minus_a) = (delta_pos < 0) && *(Whb.hal.memory->jog_enable_a);
-        *(Whb.hal.memory->jog_plus_b) = (delta_pos > 0) && *(Whb.hal.memory->jog_enable_b);
-        *(Whb.hal.memory->jog_minus_b) = (delta_pos < 0) && *(Whb.hal.memory->jog_enable_b);
-        *(Whb.hal.memory->jog_plus_c) = (delta_pos > 0) && *(Whb.hal.memory->jog_enable_c);
-        *(Whb.hal.memory->jog_minus_c) = (delta_pos < 0) && *(Whb.hal.memory->jog_enable_c);
-		xhc->last_jog_counts = *(Whb.hal.memory->jog_counts);
-		xhc->last_tv = now;
-	}
-	else {
-		*(Whb.hal.memory->jog_velocity) = (1 - k) * *(Whb.hal.memory->jog_velocity);
-		if (elapsed > 0.25) {
-			*(Whb.hal.memory->jog_velocity) = 0;
-			*(Whb.hal.memory->jog_plus_x) = 0;
-			*(Whb.hal.memory->jog_minus_x) = 0;
-			*(Whb.hal.memory->jog_plus_y) = 0;
-			*(Whb.hal.memory->jog_minus_y) = 0;
-			*(Whb.hal.memory->jog_plus_z) = 0;
-			*(Whb.hal.memory->jog_minus_z) = 0;
-            *(Whb.hal.memory->jog_plus_a) = 0;
-            *(Whb.hal.memory->jog_minus_a) = 0;
-            *(Whb.hal.memory->jog_plus_b) = 0;
-            *(Whb.hal.memory->jog_minus_b) = 0;
-            *(Whb.hal.memory->jog_plus_c) = 0;
-            *(Whb.hal.memory->jog_minus_c) = 0;
-		}
-	}
+    if (delta_pos)
+    {
+        *(hal.memory.jogVelocity)  = (1 - k) * *(hal.memory.jogVelocity) + k * velocity;
+        *(hal.memory.jogIncrement) = rtapi_fabs(delta_pos);
+        *(hal.memory.jogPlusX)     = (delta_pos > 0) && *(hal.memory.jogEnableX);
+        *(hal.memory.jogMinusX)    = (delta_pos < 0) && *(hal.memory.jogEnableX);
+        *(hal.memory.jogPlusY)     = (delta_pos > 0) && *(hal.memory.jogEnableY);
+        *(hal.memory.jogMinusY)    = (delta_pos < 0) && *(hal.memory.jogEnableY);
+        *(hal.memory.jogPlusZ)     = (delta_pos > 0) && *(hal.memory.jogEnableZ);
+        *(hal.memory.jogMinusZ)    = (delta_pos < 0) && *(hal.memory.jogEnableZ);
+        *(hal.memory.jogPlusA)     = (delta_pos > 0) && *(hal.memory.jogEnableA);
+        *(hal.memory.jogMinusA)    = (delta_pos < 0) && *(hal.memory.jogEnableA);
+        *(hal.memory.jogPlusB)     = (delta_pos > 0) && *(hal.memory.jogEnableB);
+        *(hal.memory.jogMinusB)    = (delta_pos < 0) && *(hal.memory.jogEnableB);
+        *(hal.memory.jogPlusC)     = (delta_pos > 0) && *(hal.memory.jogEnableC);
+        *(hal.memory.jogMinusC)    = (delta_pos < 0) && *(hal.memory.jogEnableC);
+        velocityComputation.last_jog_counts = *(hal.memory.jogCount);
+        velocityComputation.last_tv         = now;
+    }
+    else
+    {
+        *(hal.memory.jogVelocity) = (1 - k) * *(hal.memory.jogVelocity);
+        if (elapsed > 0.25)
+        {
+            *(hal.memory.jogVelocity) = 0;
+            *(hal.memory.jogPlusX)    = 0;
+            *(hal.memory.jogMinusX)   = 0;
+            *(hal.memory.jogPlusY)    = 0;
+            *(hal.memory.jogMinusY)   = 0;
+            *(hal.memory.jogPlusZ)    = 0;
+            *(hal.memory.jogMinusZ)   = 0;
+            *(hal.memory.jogPlusA)    = 0;
+            *(hal.memory.jogMinusA)   = 0;
+            *(hal.memory.jogPlusB)    = 0;
+            *(hal.memory.jogMinusB)   = 0;
+            *(hal.memory.jogPlusC)    = 0;
+            *(hal.memory.jogMinusC)   = 0;
+        }
+    }
 }
 
-void handle_step(xhc_t *xhc)
+// ----------------------------------------------------------------------
+
+void WhbContext::handleStep()
 {
-	int inc_step_status = *(Whb.hal.memory->stepsize_up);
+    int inc_step_status = *(hal.memory.stepsizeUp);
     //! Use a local variable to avoid STEP display as 0 on pendant during transitions
-    int stepSize = *(Whb.hal.memory->stepsize);
+    int stepSize        = *(hal.memory.stepsize);
 
-	if (inc_step_status  &&  ! xhc->old_inc_step_status) {
-		stepsize_idx++;
-		// restart idx when 0 terminator reached:
-		if (stepsize_sequence[stepsize_idx] == 0) stepsize_idx = 0;
-		stepSize = stepsize_sequence[stepsize_idx];
-	}
+    if (inc_step_status && !stepHandler.old_inc_step_status)
+    {
+        stepsize_idx++;
+        // restart idx when 0 terminator reached:
+        if (stepsize_sequence[stepsize_idx] == 0) stepsize_idx = 0;
+        stepSize = stepsize_sequence[stepsize_idx];
+    }
 
-	xhc->old_inc_step_status = inc_step_status;
+    stepHandler.old_inc_step_status = inc_step_status;
 
-	*(Whb.hal.memory->stepsize) = stepSize;
-	*(Whb.hal.memory->jog_scale) = *(Whb.hal.memory->stepsize) * 0.001f;
+    *(hal.memory.stepsize) = stepSize;
+    *(hal.memory.jogScale) = *(hal.memory.stepsize) * 0.001f;
 }
 
-static void quit(int sig)
-{
-    do_exit = true;
-}
+// ----------------------------------------------------------------------
 
-
-void setup_async_transfer(libusb_device_handle *dev_handle)
+void WhbContext::setupAsyncTransfer()
 {
     libusb_transfer* transfer = libusb_alloc_transfer(0);
     assert(transfer != nullptr);
     libusb_fill_bulk_transfer(transfer,
-                              dev_handle,
+                              usb.deviceHandle,
                               (0x1 | LIBUSB_ENDPOINT_IN),
                               in_buf,
                               sizeof(in_buf),
-                              cb_response_in, nullptr, // no user data
+                              usbInputResponseCallback, nullptr, // no user data
                               750); // timeout
-    assert(0 == libusb_submit_transfer(transfer));
+    int r = libusb_submit_transfer(transfer);
+    assert(0 == r);
 }
 
+// ----------------------------------------------------------------------
 
-void cb_response_in(struct libusb_transfer *transfer)
+static void quit(int sig)
 {
-    switch (transfer->status) {
-        case(LIBUSB_TRANSFER_COMPLETED):
+    Whb.requestTermination();
+}
+
+// ----------------------------------------------------------------------
+
+void usbInputResponseCallback(struct libusb_transfer* transfer)
+{
+    Whb.cbResponseIn(transfer);
+}
+
+void WhbContext::cbResponseIn(struct libusb_transfer* transfer)
+{
+    switch (transfer->status)
+    {
+        case (LIBUSB_TRANSFER_COMPLETED):
             // detetec sleep mode, truncate subsequent package once
-            if (Whb.sleepState.dropNextInPackage) {
-                Whb.sleepState.dropNextInPackage = false;
+            if (sleepState.dropNextInPackage)
+            {
+                sleepState.dropNextInPackage = false;
                 goto ___TRUNCATE_PACKAGE;
             }
 
-            if (transfer->actual_length > 0) {
-                if (Whb.hal.simu_mode) hexdump(in_buf, transfer->actual_length);
+            if (transfer->actual_length > 0)
+            {
+                if (hal.simulationMode) printHexdump(in_buf, transfer->actual_length);
 
                 // clarify modifier and key
                 uint8_t buttonCode1 = in_buf[WhbInPackageInfo::ByteType::Key1];
                 uint8_t buttonCode2 = in_buf[WhbInPackageInfo::ByteType::Key2];
 
-                uint8_t modifierCode = Whb.codes.buttons.undefined.code;
-                uint8_t keyCode = Whb.codes.buttons.undefined.code;
+                uint8_t modifierCode = codes.buttons.undefined.code;
+                uint8_t keyCode      = codes.buttons.undefined.code;
 
                 //! found modifier on key1, key2 is the key
-                if (buttonCode1 == Whb.codes.buttons.function.code) {
-                    modifierCode = Whb.codes.buttons.function.code;
-                    keyCode = buttonCode2;
+                if (buttonCode1 == codes.buttons.function.code)
+                {
+                    modifierCode = codes.buttons.function.code;
+                    keyCode      = buttonCode2;
                 }
                     //! found modifier on key2, key1 is the key
-                else if (buttonCode2 == Whb.codes.buttons.function.code) {
-                    modifierCode = Whb.codes.buttons.function.code;
-                    keyCode = buttonCode1;
+                else if (buttonCode2 == codes.buttons.function.code)
+                {
+                    modifierCode = codes.buttons.function.code;
+                    keyCode      = buttonCode1;
                 }
                     //! no modifier, key1 and key2 are defined, fallback to key2
-                else if (buttonCode2 != Whb.codes.buttons.undefined.code) {
+                else if (buttonCode2 != codes.buttons.undefined.code)
+                {
                     keyCode = buttonCode2;
                 }
                     //! fallback to whatever key1 is
-                else {
+                else
+                {
                     keyCode = buttonCode1;
                 }
 
                 // update current axis and step to hal
-                xhc.currentAxisCode = in_buf[WhbInPackageInfo::ByteType::Axis];
-                *(Whb.hal.memory->jog_counts)    += ((signed char) in_buf[WhbInPackageInfo::ByteType::Step]);
-                *(Whb.hal.memory->jog_counts_neg) = -*(Whb.hal.memory->jog_counts);
-                *(Whb.hal.memory->jog_enable_off) = (xhc.currentAxisCode == Whb.codes.axis.off.code);
-                *(Whb.hal.memory->jog_enable_x)   = (xhc.currentAxisCode == Whb.codes.axis.x.code);
-                *(Whb.hal.memory->jog_enable_y)   = (xhc.currentAxisCode == Whb.codes.axis.y.code);
-                *(Whb.hal.memory->jog_enable_z)   = (xhc.currentAxisCode == Whb.codes.axis.z.code);
-                *(Whb.hal.memory->jog_enable_a)   = (xhc.currentAxisCode == Whb.codes.axis.a.code);
-                *(Whb.hal.memory->jog_enable_b)   = (xhc.currentAxisCode == Whb.codes.axis.b.code);
-                *(Whb.hal.memory->jog_enable_c)   = (xhc.currentAxisCode == Whb.codes.axis.c.code);
+                currentButtonCodes.currentAxisCode = in_buf[WhbInPackageInfo::ByteType::Axis];
+                *(hal.memory.jogCount) += ((signed char)in_buf[WhbInPackageInfo::ByteType::Step]);
+                *(hal.memory.jogCountNeg)          = -*(hal.memory.jogCount);
+                *(hal.memory.jogEnableOff)         = (currentButtonCodes.currentAxisCode == codes.axis.off.code);
+                *(hal.memory.jogEnableX)           = (currentButtonCodes.currentAxisCode == codes.axis.x.code);
+                *(hal.memory.jogEnableY)           = (currentButtonCodes.currentAxisCode == codes.axis.y.code);
+                *(hal.memory.jogEnableZ)           = (currentButtonCodes.currentAxisCode == codes.axis.z.code);
+                *(hal.memory.jogEnableA)           = (currentButtonCodes.currentAxisCode == codes.axis.a.code);
+                *(hal.memory.jogEnableB)           = (currentButtonCodes.currentAxisCode == codes.axis.b.code);
+                *(hal.memory.jogEnableC)           = (currentButtonCodes.currentAxisCode == codes.axis.c.code);
 
                 //! print human readable data
-                if (Whb.hal.simu_mode) {
-                    if ((char) in_buf[4] != 0) printf(" delta %+3d", (char) in_buf[4]);
+                if (hal.simulationMode)
+                {
+                    if ((char)in_buf[4] != 0) printf(" delta %+3d", (char)in_buf[4]);
                     printf(" => ");
                     printData(in_buf, transfer->actual_length);
                     printf("\n");
                 }
 
                 //! update button state to hal
-                int buttonsCount = sizeof(xhc.button) / sizeof(WhbSoftwareButton);
-                for (int idx = 0; idx < buttonsCount; idx++) {
-                    if ((xhc.button[idx].key->code == keyCode) && (xhc.button[idx].modifier->code == modifierCode)) {
-                        *(Whb.hal.memory->button_pin[idx]) = true;
-                        if (Whb.hal.simu_mode) {
+                int      buttonsCount = sizeof(softwareButtons) / sizeof(WhbSoftwareButton);
+                for (int idx          = 0; idx < buttonsCount; idx++)
+                {
+                    if ((softwareButtons[idx].key.code == keyCode) &&
+                        (softwareButtons[idx].modifier.code == modifierCode))
+                    {
+                        *(hal.memory.button_pin[idx]) = true;
+                        if (hal.simulationMode)
+                        {
                             printPushButtonText(keyCode, modifierCode);
                             printf(" pressed\n");
                         }
-                    } else {
-                        *(Whb.hal.memory->button_pin[idx]) = false;
+                    }
+                    else
+                    {
+                        *(hal.memory.button_pin[idx]) = false;
                     }
                 }
 
@@ -808,44 +1273,52 @@ void cb_response_in(struct libusb_transfer *transfer)
                     in_buf[WhbInPackageInfo::ByteType::Key2] == 0 &&
                     in_buf[WhbInPackageInfo::ByteType::Feed] == 0 &&
                     in_buf[WhbInPackageInfo::ByteType::Axis] == 0 &&
-                    in_buf[WhbInPackageInfo::ByteType::Step] == 0) {
-                    Whb.sleepState.dropNextInPackage = true;
-                    *(Whb.hal.memory->sleeping) = 1;
-                    if (Whb.hal.simu_mode) {
+                    in_buf[WhbInPackageInfo::ByteType::Step] == 0)
+                {
+                    sleepState.dropNextInPackage = true;
+                    *(hal.memory.sleeping) = 1;
+                    if (hal.simulationMode)
+                    {
                         struct timeval now;
                         gettimeofday(&now, nullptr);
                         fprintf(stderr, "Sleep, %s was idle for %ld seconds\n",
-                                Whb.entity.name, now.tv_sec - xhc.last_wakeup.tv_sec);
+                                entity.name, now.tv_sec - sleepState.last_wakeup.tv_sec);
                     }
-                } else {
-                    gettimeofday(&xhc.last_wakeup, nullptr);
-                    if (*(Whb.hal.memory->sleeping)) {
-                        if (Whb.hal.simu_mode) {
+                }
+                else
+                {
+                    gettimeofday(&sleepState.last_wakeup, nullptr);
+                    if (*(hal.memory.sleeping))
+                    {
+                        if (hal.simulationMode)
+                        {
                             fprintf(stderr, "Wake\n");
                         }
                     }
-                    *(Whb.hal.memory->sleeping) = 0;
+                    *(hal.memory.sleeping) = 0;
                 }
             }
 
-            if (!do_exit) {
-                setup_async_transfer(transfer->dev_handle);
+            if (!do_exit)
+            {
+                setupAsyncTransfer();
             }
 
-        break;
+            break;
 
         ___TRUNCATE_PACKAGE:
-        case(LIBUSB_TRANSFER_TIMED_OUT):
-            if (!do_exit) {
-                setup_async_transfer(transfer->dev_handle);
+        case (LIBUSB_TRANSFER_TIMED_OUT):
+            if (!do_exit)
+            {
+                setupAsyncTransfer();
             }
             break;
-        case(LIBUSB_TRANSFER_CANCELLED):
+        case (LIBUSB_TRANSFER_CANCELLED):
             break;
-        case(LIBUSB_TRANSFER_STALL):
-        case(LIBUSB_TRANSFER_NO_DEVICE):
-        case(LIBUSB_TRANSFER_OVERFLOW):
-        case(LIBUSB_TRANSFER_ERROR):
+        case (LIBUSB_TRANSFER_STALL):
+        case (LIBUSB_TRANSFER_NO_DEVICE):
+        case (LIBUSB_TRANSFER_OVERFLOW):
+        case (LIBUSB_TRANSFER_ERROR):
             printf("transfer error: %d", transfer->status);
             quit(0);
             break;
@@ -858,190 +1331,223 @@ void cb_response_in(struct libusb_transfer *transfer)
     libusb_free_transfer(transfer);
 }
 
+// ----------------------------------------------------------------------
 
-
-static int hal_pin_simu(char *pin_name, void **ptr, int s)
+int WhbContext::newSimulatedHalPin(char* pin_name, void** ptr, int s)
 {
     *ptr = calloc(s, 1);
     assert(*ptr != nullptr);
     memset(*ptr, 0, s);
-    xhc.cleanup.refs[xhc.cleanup.nextIndex++] = *ptr;
+    hal.cleanup.refs[hal.cleanup.nextIndex++] = *ptr;
     printf("registered %s\n", pin_name);
     return 0;
 }
 
-int _hal_pin_float_newf(hal_pin_dir_t dir, hal_float_t **data_ptr_addr, int comp_id, const char *fmt, ...)
-{
-	char pin_name[256];
-    va_list args;
-    va_start(args,fmt);
-	vsprintf(pin_name, fmt, args);
-	va_end(args);
+// ----------------------------------------------------------------------
 
-    if (Whb.hal.simu_mode) {
-    	return hal_pin_simu(pin_name, (void**)data_ptr_addr, sizeof(hal_float_t));
+int WhbContext::newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int comp_id, const char* fmt, ...)
+{
+    char    pin_name[256];
+    va_list args;
+    va_start(args, fmt);
+    vsprintf(pin_name, fmt, args);
+    va_end(args);
+
+    if (hal.simulationMode)
+    {
+        return newSimulatedHalPin(pin_name, (void**)data_ptr_addr, sizeof(hal_float_t));
     }
-    else {
+    else
+    {
         //printf("registered %s\n", pin_name);
-    	return hal_pin_float_new(pin_name, dir, data_ptr_addr, comp_id);
+        return hal_pin_float_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
 
-int _hal_pin_s32_newf(hal_pin_dir_t dir, hal_s32_t **data_ptr_addr, int comp_id, const char *fmt, ...)
-{
-	char pin_name[256];
-    va_list args;
-    va_start(args,fmt);
-	vsprintf(pin_name, fmt, args);
-	va_end(args);
+// ----------------------------------------------------------------------
 
-    if (Whb.hal.simu_mode) {
-    	return hal_pin_simu(pin_name, (void**)data_ptr_addr, sizeof(hal_s32_t));
+int WhbContext::newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int comp_id, const char* fmt, ...)
+{
+    char    pin_name[256];
+    va_list args;
+    va_start(args, fmt);
+    vsprintf(pin_name, fmt, args);
+    va_end(args);
+
+    if (hal.simulationMode)
+    {
+        return newSimulatedHalPin(pin_name, (void**)data_ptr_addr, sizeof(hal_s32_t));
     }
-    else {
+    else
+    {
         //printf("registered %s\n", pin_name);
-    	return hal_pin_s32_new(pin_name, dir, data_ptr_addr, comp_id);
+        return hal_pin_s32_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
 
-int _hal_pin_bit_newf(hal_pin_dir_t dir, hal_bit_t **data_ptr_addr, int comp_id, const char *fmt, ...)
-{
-	char pin_name[256];
-    va_list args;
-    va_start(args,fmt);
-	vsprintf(pin_name, fmt, args);
-	va_end(args);
+// ----------------------------------------------------------------------
 
-    if (Whb.hal.simu_mode) {
-    	return hal_pin_simu(pin_name, (void**)data_ptr_addr, sizeof(hal_bit_t));
+int WhbContext::newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_id, const char* fmt, ...)
+{
+    char    pin_name[256];
+    va_list args;
+    va_start(args, fmt);
+    vsprintf(pin_name, fmt, args);
+    va_end(args);
+
+    if (hal.simulationMode)
+    {
+        return newSimulatedHalPin(pin_name, (void**)data_ptr_addr, sizeof(hal_bit_t));
     }
-    else {
+    else
+    {
         //printf("registered %s\n", pin_name);
-    	return hal_pin_bit_new(pin_name, dir, data_ptr_addr, comp_id);
+        return hal_pin_bit_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
 
-static void hal_teardown() {
-    if (Whb.hal.simu_mode) {
-        if (Whb.hal.memory != nullptr) {
-            for (uint16_t idx = 0; idx < xhc.cleanup.nextIndex; idx++)
-            {
-                free(xhc.cleanup.refs[idx]);
-            }
-            free(Whb.hal.memory);
+// ----------------------------------------------------------------------
+
+void WhbContext::halTeardown()
+{
+    if (hal.simulationMode)
+    {
+        //if (hal.memory != nullptr)
+        //{
+        for (uint16_t idx = 0; idx < hal.cleanup.nextIndex; idx++)
+        {
+            free(hal.cleanup.refs[idx]);
+            hal.cleanup.refs[idx] = nullptr;
+
+        }
+        //free(hal.memory);
+        //}
+
+        hal.cleanup.nextIndex = 0;
+        //hal.memory = nullptr;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::halSetup()
+{
+    const char* modname = entity.name;
+
+    if (!hal.simulationMode)
+    {
+        hal.entity.halCompId = hal_init(modname);
+        if (hal.entity.halCompId < 1)
+        {
+            fprintf(stderr, "%s: ERROR: hal_init failed\n", modname);
+            exit(1);
         }
 
-        xhc.cleanup.nextIndex = 0;
-        Whb.hal.memory = nullptr;
-    }
-}
-
-static void hal_setup()
-{
-	const char *modname = Whb.entity.name;
-
-	if (!Whb.hal.simu_mode) {
-        Whb.hal.entity.hal_comp_id = hal_init(modname);
-		if (Whb.hal.entity.hal_comp_id < 1) {
-			fprintf(stderr, "%s: ERROR: hal_init failed\n", modname);
-			exit(1);
-		}
-
-        Whb.hal.memory = (WhbHalMemory*)hal_malloc(sizeof(WhbHalMemory));
-		if (Whb.hal.memory == nullptr) {
+        /*hal.memory = (WhbHalMemory*)hal_malloc(sizeof(WhbHalMemory));
+		if (hal.memory == nullptr)
+		{
 			fprintf(stderr, "%s: ERROR: unable to allocate HAL shared memory\n", modname);
-            hal_exit(Whb.hal.entity.hal_comp_id);
+            hal_exit(hal.entity.halCompId);
 			exit(1);
-		}
-	}
-	else {
-        Whb.hal.memory = (WhbHalMemory*)calloc(sizeof(WhbHalMemory), 1);
-        memset(Whb.hal.memory, 0, sizeof(WhbHalMemory));
-	}
+		}*/
+    }
+    else
+    {
+        //hal.memory = (WhbHalMemory*)calloc(sizeof(WhbHalMemory), 1);
+        //memset(hal.memory, 0, sizeof(WhbHalMemory));
+    }
 
     // register all known whb04b-6 buttons
-    int buttonsCount = sizeof(xhc.button) / sizeof(WhbSoftwareButton);
-    for (int idx = 0; idx < buttonsCount; idx++) {
-        const char *buttonName = nullptr;
-        if ( xhc.button[idx].modifier == &Whb.codes.buttons.undefined)
+    int      buttonsCount = sizeof(softwareButtons) / sizeof(WhbSoftwareButton);
+    for (int idx          = 0; idx < buttonsCount; idx++)
+    {
+        const char* buttonName = nullptr;
+        if (&softwareButtons[idx].modifier == &codes.buttons.undefined)
         {
-            buttonName = xhc.button[idx].key->text;
-        } else
-        {
-            buttonName = xhc.button[idx].key->altText;
+            buttonName = softwareButtons[idx].key.text;
         }
-        assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->button_pin[idx]), Whb.hal.entity.hal_comp_id,
-                               "%s.%s", modname, buttonName));
+        else
+        {
+            buttonName = softwareButtons[idx].key.altText;
+        }
+        int r = newBitHalPin(HAL_OUT, &(hal.memory.button_pin[idx]), hal.entity.halCompId,
+                             "%s.%s", modname, buttonName);
+        assert(0 == r);
     }
 
-    int hal_comp_id =  Whb.hal.entity.hal_comp_id;
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->x_mc), hal_comp_id, "%s.x.pos-absolute", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->y_mc), hal_comp_id, "%s.y.pos-absolute", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->z_mc), hal_comp_id, "%s.z.pos-absolute", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->a_mc), hal_comp_id, "%s.a.pos-absolute", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->b_mc), hal_comp_id, "%s.b.pos-absolute", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->c_mc), hal_comp_id, "%s.c.pos-absolute", modname));
+    int halCompId = hal.entity.halCompId;
+    int r         = 0;
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.xMachineCoordinate), halCompId, "%s.x.pos-absolute", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.yMachineCoordinate), halCompId, "%s.y.pos-absolute", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.zMachineCoordinate), halCompId, "%s.z.pos-absolute", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.aMachineCoordinate), halCompId, "%s.a.pos-absolute", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.bMachineCoordinate), halCompId, "%s.b.pos-absolute", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.cMachineCoordinate), halCompId, "%s.c.pos-absolute", modname);
 
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->y_wc), hal_comp_id, "%s.y.pos-relative", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->x_wc), hal_comp_id, "%s.x.pos-relative", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->z_wc), hal_comp_id, "%s.z.pos-relative", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->a_wc), hal_comp_id, "%s.a.pos-relative", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->b_wc), hal_comp_id, "%s.b.pos-relative", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->c_wc), hal_comp_id, "%s.c.pos-relative", modname));
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.yWorkpieceCoordinate), halCompId, "%s.y.pos-relative", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.xWorkpieceCoordinate), halCompId, "%s.x.pos-relative", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.zWorkpieceCoordinate), halCompId, "%s.z.pos-relative", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.aWorkpieceCoordinate), halCompId, "%s.a.pos-relative", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.bWorkpieceCoordinate), halCompId, "%s.b.pos-relative", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.cWorkpieceCoordinate), halCompId, "%s.c.pos-relative", modname);
 
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->feedrate),          hal_comp_id, "%s.feed-value", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->feedrate_override), hal_comp_id, "%s.feed-override", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->spindle_rps),       hal_comp_id, "%s.spindle-rps", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->spindle_override),  hal_comp_id, "%s.spindle-override", modname));
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.feedrate), halCompId, "%s.feed-value", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.feedrateOverride), halCompId, "%s.feed-override", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.spindleRps), halCompId, "%s.spindle-rps", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.spindleOverride), halCompId, "%s.spindle-override", modname);
 
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->sleeping),        hal_comp_id, "%s.sleeping", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->connected),       hal_comp_id, "%s.connected", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_IN,  &(Whb.hal.memory->stepsize_up),     hal_comp_id, "%s.stepsize-up", modname));
-    assert(0 == _hal_pin_s32_newf(HAL_OUT, &(Whb.hal.memory->stepsize),        hal_comp_id, "%s.stepsize", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->require_pendant), hal_comp_id, "%s.require_pendant", modname));
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.sleeping), halCompId, "%s.sleeping", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.isPendantConnected), halCompId, "%s.connected", modname);
+    r |= newBitHalPin(HAL_IN, &(hal.memory.stepsizeUp), halCompId, "%s.stepsize-up", modname);
+    r |= newSigned32HalPin(HAL_OUT, &(hal.memory.stepsize), halCompId, "%s.stepsize", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.isPendantRequired), halCompId, "%s.require_pendant", modname);
 
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_enable_off), hal_comp_id, "%s.jog.enable-off", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_enable_x),   hal_comp_id, "%s.jog.enable-x", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_enable_y),   hal_comp_id, "%s.jog.enable-y", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_enable_z),   hal_comp_id, "%s.jog.enable-z", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_enable_a),   hal_comp_id, "%s.jog.enable-a", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_enable_b),   hal_comp_id, "%s.jog.enable-b", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_enable_c),   hal_comp_id, "%s.jog.enable-c", modname));
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableOff), halCompId, "%s.jog.enable-off", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableX), halCompId, "%s.jog.enable-x", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableY), halCompId, "%s.jog.enable-y", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableZ), halCompId, "%s.jog.enable-z", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableA), halCompId, "%s.jog.enable-a", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableB), halCompId, "%s.jog.enable-b", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogEnableC), halCompId, "%s.jog.enable-c", modname);
 
-    //r |= _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_enable_feedrate), hal_comp_id, "%s.jog.enable-feed-override", modname);
-    //r |= _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_enable_spindle), hal_comp_id, "%s.jog.enable-spindle-override", modname);
+    //r |= _hal_pin_bit_newf(HAL_OUT, &(hal.memory.jog_enable_feedrate), hal_comp_id, "%s.jog.enable-feed-override", modname);
+    //r |= _hal_pin_bit_newf(HAL_OUT, &(hal.memory.jog_enable_spindle), hal_comp_id, "%s.jog.enable-spindle-override", modname);
 
-    assert(0 == _hal_pin_float_newf(HAL_OUT, &(Whb.hal.memory->jog_scale),    hal_comp_id, "%s.jog.scale", modname));
-    assert(0 == _hal_pin_s32_newf(HAL_OUT, &(Whb.hal.memory->jog_counts),     hal_comp_id, "%s.jog.counts", modname));
-    assert(0 == _hal_pin_s32_newf(HAL_OUT, &(Whb.hal.memory->jog_counts_neg), hal_comp_id, "%s.jog.counts-neg", modname));
+    r |= newFloatHalPin(HAL_OUT, &(hal.memory.jogScale), halCompId, "%s.jog.scale", modname);
+    r |= newSigned32HalPin(HAL_OUT, &(hal.memory.jogCount), halCompId, "%s.jog.counts", modname);
+    r |= newSigned32HalPin(HAL_OUT, &(hal.memory.jogCountNeg), halCompId, "%s.jog.counts-neg", modname);
 
-    assert(0 == _hal_pin_float_newf(HAL_OUT, &(Whb.hal.memory->jog_velocity),    hal_comp_id, "%s.jog.velocity", modname));
-    assert(0 == _hal_pin_float_newf(HAL_IN, &(Whb.hal.memory->jog_max_velocity), hal_comp_id, "%s.jog.max-velocity", modname));
-    assert(0 == _hal_pin_float_newf(HAL_OUT, &(Whb.hal.memory->jog_increment),   hal_comp_id, "%s.jog.increment", modname));
+    r |= newFloatHalPin(HAL_OUT, &(hal.memory.jogVelocity), halCompId, "%s.jog.velocity", modname);
+    r |= newFloatHalPin(HAL_IN, &(hal.memory.jogMaxVelocity), halCompId, "%s.jog.max-velocity", modname);
+    r |= newFloatHalPin(HAL_OUT, &(hal.memory.jogIncrement), halCompId, "%s.jog.increment", modname);
 
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_plus_x), hal_comp_id, "%s.jog.plus-x", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_plus_y), hal_comp_id, "%s.jog.plus-y", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_plus_z), hal_comp_id, "%s.jog.plus-z", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_plus_a), hal_comp_id, "%s.jog.plus-a", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_plus_b), hal_comp_id, "%s.jog.plus-b", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_plus_c), hal_comp_id, "%s.jog.plus-c", modname));
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusX), halCompId, "%s.jog.plus-x", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusY), halCompId, "%s.jog.plus-y", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusZ), halCompId, "%s.jog.plus-z", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusA), halCompId, "%s.jog.plus-a", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusB), halCompId, "%s.jog.plus-b", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogPlusC), halCompId, "%s.jog.plus-c", modname);
 
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_minus_x), hal_comp_id, "%s.jog.minus-x", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_minus_y), hal_comp_id, "%s.jog.minus-y", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_minus_z), hal_comp_id, "%s.jog.minus-z", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_minus_a), hal_comp_id, "%s.jog.minus-a", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_minus_b), hal_comp_id, "%s.jog.minus-b", modname));
-    assert(0 == _hal_pin_bit_newf(HAL_OUT, &(Whb.hal.memory->jog_minus_c), hal_comp_id, "%s.jog.minus-c", modname));
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusX), halCompId, "%s.jog.minus-x", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusY), halCompId, "%s.jog.minus-y", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusZ), halCompId, "%s.jog.minus-z", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusA), halCompId, "%s.jog.minus-a", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusB), halCompId, "%s.jog.minus-b", modname);
+    r |= newBitHalPin(HAL_OUT, &(hal.memory.jogMinusC), halCompId, "%s.jog.minus-c", modname);
 
-	return;
+    assert (r == 0);
+
+    return;
 }
 
-#define STRINGIFY_IMPL(S) #S
-#define STRINGIFY(s) STRINGIFY_IMPL(s)
+// ----------------------------------------------------------------------
 
-static void Usage(char *name)
+//#define STRINGIFY_IMPL(S) #S
+//#define STRINGIFY(s) STRINGIFY_IMPL(s)
+
+static void Usage(char* name)
 {
-	fprintf(stderr, "%s version %s by Frederic RIBLE (frible@teaser.fr)\n", name, PACKAGE_VERSION);
+    fprintf(stderr, "%s version %s by Frederic RIBLE (frible@teaser.fr)\n", name, PACKAGE_VERSION);
     fprintf(stderr, "Usage: %s [-I ini-file] [-h] [-H] [-s 1|2]\n", name);
     //fprintf(stderr, " -I ini-file: configuration file defining the MPG keyboard layout\n");
     fprintf(stderr, " -h: usage (this)\n");
@@ -1057,178 +1563,208 @@ static void Usage(char *name)
     fprintf(stderr, "    where XX=hexcode, thename=nameforbutton\n");
 }
 
+// ----------------------------------------------------------------------
+
 void registerSignalHandler()
 {
     signal(SIGINT, quit);
     signal(SIGTERM, quit);
 }
 
-int main (int argc,char **argv)
+// ----------------------------------------------------------------------
+
+int main(int argc, char** argv)
 {
-	libusb_device **devs;
+    //libusb_device **devs;
     //libusb_device_handle *dev_handle;
-	//libusb_context *ctx = nullptr;
+    //libusb_context *ctx = nullptr;
 
-    XhbUsb usb = {
-        .context = nullptr,
-        .deviceHandle = nullptr
-    };
-
-
-	int r;
-	ssize_t cnt;
+    int     r;
+    ssize_t cnt;
 #define MAX_WAIT_SECS 10
-	int wait_secs = 0;
+    int wait_secs       = 0;
 
-    int opt;
+    int  opt;
     bool hal_ready_done = false;
 
-    init_xhc(&xhc);
+    Whb.initWhb();
 
-    while ((opt = getopt(argc, argv, "HhI:xs:")) != -1) {
-        switch (opt) {
-        case 'I':
-            /*if (read_ini_file(optarg)) {
-                printf("Problem reading ini file: %s\n\n",optarg);
-                Usage(argv[0]);
-                exit(EXIT_FAILURE);
-            }*/
-            break;
-        case 'H':
-            Whb.hal.simu_mode = false;
-        	break;
-        case 's':
-            switch (optarg[0]) {
-              case '1': stepsize_sequence = stepsize_sequence_1;break;
-              case '2': stepsize_sequence = stepsize_sequence_2;break;
-              default:
-                printf("Unknown sequence: %s\n\n",optarg);
-                Usage(argv[0]);
-                exit(EXIT_FAILURE);
+    while ((opt = getopt(argc, argv, "HhI:xs:")) != -1)
+    {
+        switch (opt)
+        {
+            case 'I':
+                /*if (read_ini_file(optarg)) {
+                    printf("Problem reading ini file: %s\n\n",optarg);
+                    Usage(argv[0]);
+                    exit(EXIT_FAILURE);
+                }*/
                 break;
-            }
-            break;
-        case 'x':
-        	wait_for_pendant_before_HAL = true;
-        	break;
-        default:
-        	Usage(argv[0]);
-            exit(EXIT_FAILURE);
+            case 'H':
+                Whb.hal.simulationMode = false;
+                break;
+            case 's':
+                switch (optarg[0])
+                {
+                    case '1':
+                        stepsize_sequence = stepsize_sequence_1;
+                        break;
+                    case '2':
+                        stepsize_sequence = stepsize_sequence_2;
+                        break;
+                    default:
+                        printf("Unknown sequence: %s\n\n", optarg);
+                        Usage(argv[0]);
+                        exit(EXIT_FAILURE);
+                        break;
+                }
+                break;
+            case 'x':
+                wait_for_pendant_before_HAL = true;
+                break;
+            default:
+                Usage(argv[0]);
+                exit(EXIT_FAILURE);
         }
     }
 
-	hal_setup();
+    Whb.halSetup();
 
     registerSignalHandler();
 
 
-    if (!wait_for_pendant_before_HAL && !Whb.hal.simu_mode) {
-    	hal_ready(Whb.hal.entity.hal_comp_id);
-    	hal_ready_done = true;
+    if (!wait_for_pendant_before_HAL && !Whb.hal.simulationMode)
+    {
+        hal_ready(Whb.hal.entity.halCompId);
+        hal_ready_done = true;
     }
 
-	while (!do_exit) {
-    	//on reconnect wait for device to be gone
-    	if (do_reconnect == true) {
-    		sleep(5);
-    		do_reconnect = false;
-    	}
+    while (!do_exit)
+    {
+        //on reconnect wait for device to be gone
+        if (do_reconnect == true)
+        {
+            sleep(5);
+            do_reconnect = false;
+        }
 
-		r = libusb_init(&usb.context);
+        r = libusb_init(&Whb.usb.context);
 
-		if(r != 0) {
-			perror("libusb_init");
-			return 1;
-		}
-		libusb_set_debug(usb.context, 3);
+        if (r != 0)
+        {
+            perror("libusb_init");
+            return 1;
+        }
+        libusb_set_debug(Whb.usb.context, 3);
 
-		printf("%s: waiting for %s device\n", Whb.entity.name, Whb.entity.configSectionName);
-		*(Whb.hal.memory->connected) = 0;
-		wait_secs = 0;
-		*(Whb.hal.memory->require_pendant) = wait_for_pendant_before_HAL;
-		*(Whb.hal.memory->stepsize) = stepsize_sequence[0];
+        printf("%s: waiting for %s device\n", Whb.entity.name, Whb.entity.configSectionName);
+        *(Whb.hal.memory.isPendantConnected) = 0;
+        wait_secs = 0;
+        *(Whb.hal.memory.isPendantRequired) = wait_for_pendant_before_HAL;
+        *(Whb.hal.memory.stepsize)          = stepsize_sequence[0];
 
-		do {
-			cnt = libusb_get_device_list(usb.context, &devs);
-			if (cnt < 0) {
-				perror("libusb_get_device_list");
-				return 1;
-			}
+        do
+        {
+            libusb_device** devs;
+            cnt = libusb_get_device_list(Whb.usb.context, &devs);
+            if (cnt < 0)
+            {
+                perror("libusb_get_device_list");
+                return 1;
+            }
 
-			usb.deviceHandle = libusb_open_device_with_vid_pid(usb.context,
-                                                               Whb.entity.usbVendorId,
-                                                               Whb.entity.usbProductId);
-			libusb_free_device_list(devs, 1);
-			if (usb.deviceHandle == nullptr) {
-				if (wait_for_pendant_before_HAL) {
-					wait_secs++;
-					if (wait_secs >= MAX_WAIT_SECS/2) {
-						printf("%s: waiting for %s device (%d)\n",  Whb.entity.name,
-							   Whb.entity.configSectionName, wait_secs);
-					}
-					if (wait_secs > MAX_WAIT_SECS) {
-						printf("%s: MAX_WAIT_SECS exceeded, exiting\n",  Whb.entity.name);
-						exit(1);
-					}
-				}
-				sleep(1);
-			}
-		} while(usb.deviceHandle == nullptr && !do_exit);
+            Whb.usb.deviceHandle = libusb_open_device_with_vid_pid(Whb.usb.context,
+                                                                   Whb.entity.usbVendorId,
+                                                                   Whb.entity.usbProductId);
+            libusb_free_device_list(devs, 1);
+            if (Whb.usb.deviceHandle == nullptr)
+            {
+                if (wait_for_pendant_before_HAL)
+                {
+                    wait_secs++;
+                    if (wait_secs >= MAX_WAIT_SECS / 2)
+                    {
+                        printf("%s: waiting for %s device (%d)\n", Whb.entity.name,
+                               Whb.entity.configSectionName, wait_secs);
+                    }
+                    if (wait_secs > MAX_WAIT_SECS)
+                    {
+                        printf("%s: MAX_WAIT_SECS exceeded, exiting\n", Whb.entity.name);
+                        exit(1);
+                    }
+                }
+                sleep(1);
+            }
+        } while (Whb.usb.deviceHandle == nullptr && !do_exit);
 
-		printf("%s: found %s device\n", Whb.entity.name, Whb.entity.configSectionName);
+        printf("%s: found %s device\n", Whb.entity.name, Whb.entity.configSectionName);
 
-		if (usb.deviceHandle != nullptr) {
-			if 	(libusb_kernel_driver_active(usb.deviceHandle, 0) == 1) {
-				assert(0 == libusb_detach_kernel_driver(usb.deviceHandle, 0));
-			}
+        if (Whb.usb.deviceHandle != nullptr)
+        {
+            if (libusb_kernel_driver_active(Whb.usb.deviceHandle, 0) == 1)
+            {
+                int r = libusb_detach_kernel_driver(Whb.usb.deviceHandle, 0);
+                assert(0 == r);
+            }
 
-			r = libusb_claim_interface(usb.deviceHandle, 0);
-			if (r != 0) {
-				perror("libusb_claim_interface");
-				return 1;
-			}
-		}
+            r = libusb_claim_interface(Whb.usb.deviceHandle, 0);
+            if (r != 0)
+            {
+                perror("libusb_claim_interface");
+                return 1;
+            }
+        }
 
-		*(Whb.hal.memory->connected) = 1;
+        *(Whb.hal.memory.isPendantConnected) = 1;
 
-	    if (!hal_ready_done && !Whb.hal.simu_mode) {
-	    	hal_ready(Whb.hal.entity.hal_comp_id);
-	    	hal_ready_done = true;
-	    }
+        if (!hal_ready_done && !Whb.hal.simulationMode)
+        {
+            hal_ready(Whb.hal.entity.halCompId);
+            hal_ready_done = true;
+        }
 
-		if (usb.deviceHandle != nullptr) {
-			setup_async_transfer(usb.deviceHandle);
-			xhc_set_display(usb.deviceHandle, &xhc);
-		}
+        if (Whb.usb.deviceHandle != nullptr)
+        {
+            Whb.setupAsyncTransfer();
+            Whb.xhcSetDisplay();
+        }
 
-		if (usb.deviceHandle != nullptr) {
-            while (!do_exit && !do_reconnect) {
-				struct timeval tv;
-				tv.tv_sec  = 0;
-				tv.tv_usec = 30000;
-				libusb_handle_events_timeout_completed(usb.context, &tv, nullptr);
-				compute_velocity(&xhc);
-			    if (Whb.hal.simu_mode) linuxcnc_simu(&xhc);
-				handle_step(&xhc);
-				xhc_set_display(usb.deviceHandle, &xhc);
-			}
+        if (Whb.usb.deviceHandle != nullptr)
+        {
+            while (!do_exit && !do_reconnect)
+            {
+                struct timeval tv;
+                tv.tv_sec  = 0;
+                tv.tv_usec = 30000;
+                libusb_handle_events_timeout_completed(Whb.usb.context, &tv, nullptr);
+                Whb.computeVelocity();
+                if (Whb.hal.simulationMode)
+                {
+                    Whb.linuxcncSimulate();
+                }
+                Whb.handleStep();
+                Whb.xhcSetDisplay();
+            }
 
-			*(Whb.hal.memory->connected) = 0;
-            printf("%s: connection lost, cleaning up\n",Whb.entity.name);
+            *(Whb.hal.memory.isPendantConnected) = 0;
+            printf("%s: connection lost, cleaning up\n", Whb.entity.name);
             struct timeval tv;
             tv.tv_sec  = 0;
             tv.tv_usec = 750000;
-            assert(0 == libusb_handle_events_timeout_completed(usb.context, &tv, nullptr));
-			assert(0 == libusb_release_interface(usb.deviceHandle, 0));
-			libusb_close(usb.deviceHandle);
-            usb.deviceHandle = nullptr;
-		}
-		else {
-			while (!do_exit) usleep(70000);
-		}
-		libusb_exit(usb.context);
-        usb.context = nullptr;
+            int r = libusb_handle_events_timeout_completed(Whb.usb.context, &tv, nullptr);
+            assert(0 == r);
+            r = libusb_release_interface(Whb.usb.deviceHandle, 0);
+            assert(0 == r);
+            libusb_close(Whb.usb.deviceHandle);
+            Whb.usb.deviceHandle = nullptr;
+        }
+        else
+        {
+            while (!do_exit) usleep(70000);
+        }
+        libusb_exit(Whb.usb.context);
+        Whb.usb.context = nullptr;
     }
-    hal_teardown();
+    Whb.halTeardown();
     return 0;
 }
