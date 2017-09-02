@@ -1,5 +1,5 @@
 /*
-   XHC-HB04 Wireless MPG pendant LinuxCNC HAL module for LinuxCNC
+   XHC-WHB04B-6 Wireless MPG pendant LinuxCNC HAL module for LinuxCNC
 
    Copyright (C) 2017 Raoul Rubien (github.com/rubienr)
    Copyright (C) 2014 Marius Alksnys (marius.alksnys@gmail.com)
@@ -40,11 +40,12 @@
 //! callback function for libusb's incoming data transfer
 void usbInputResponseCallback(struct libusb_transfer* transfer);
 
-//! registers signal haldner
+//! registers signal handler
 void registerSignalHandler();
 
 // ----------------------------------------------------------------------
 
+//! HAL memory pointers struct
 struct WhbHalMemory
 {
     hal_float_t* xWorkpieceCoordinate;
@@ -496,25 +497,34 @@ struct WhbUsb
 class WhbContext
 {
 public:
+    //! todo: doxy
     void initWhb();
 
+    //! todo: doxy
     void halSetup();
 
+    //! todo: doxy
     void halTeardown();
 
+    //! todo: doxy
     void cbResponseIn(struct libusb_transfer* transfer);
 
+    //! todo: doxy
     void setupAsyncTransfer();
 
+    //! todo: doxy
     void computeVelocity();
 
     // todo: refactor me
     void xhcSetDisplay();
 
+    //! todo: doxy
     void handleStep();
 
+    //! todo: doxy
     void linuxcncSimulate();
 
+    //! todo: doxy
     void requestTermination();
 
     WhbContext() :
@@ -578,27 +588,37 @@ private:
     WhbStepHandler         stepHandler;
     WhbSleepDetect         sleepState;
 
+    //! todo: doxy
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode);
 
+    //! todo: doxy
     void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode);
 
+    //! todo: doxy
     void printData(const unsigned char* data, int length);
 
+    //! todo: doxy
     void printHexdump(unsigned char* data, int len);
 
+    //! todo: doxy
     int encodeFloat(float value, unsigned char* buffer);
 
+    //! todo: doxy
     int encodeInt16(int16_t value, unsigned char* buffer);
 
     // todo: refactor me
     void xhcDisplayEncode(unsigned char* data, int len);
 
+    //! todo: doxy
     int newSimulatedHalPin(char* pin_name, void** ptr, int s);
 
+    //! todo: doxy
     int newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int comp_id, const char* fmt, ...);
 
+    //! todo: doxy
     int newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int comp_id, const char* fmt, ...);
 
+    //! todo: doxy
     int newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_id, const char* fmt, ...);
 
 };
