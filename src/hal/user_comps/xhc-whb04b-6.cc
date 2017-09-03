@@ -1,10 +1,9 @@
 /*
-   XHC-WHB04B-6 Wireless MPG pendant LinuxCNC HAL module for LinuxCNC
+   XHC-WHB04B-6 Wireless MPG pendant LinuxCNC HAL module for LinuxCNC.
+   Based on XHC-HB04. The implementation supports no configuration file,
+   nor other variations as XHC-WHB04B-4.
 
    Copyright (C) 2017 Raoul Rubien (github.com/rubienr)
-   Copyright (C) 2014 Marius Alksnys (marius.alksnys@gmail.com)
-   Copyright (C) 2013 Frederic Rible (frible@teaser.fr)
-   Copyright (C) 2013 Rene Hopf (renehopf@mac.com)
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -26,19 +25,17 @@
 #include <stdio.h>
 #include <iostream>
 #include  <iomanip>
-#include <string.h>
-#include "rtapi_math.h"
 #include <assert.h>
 #include <signal.h>
-#include <string.h>
 #include <libusb.h>
 #include <unistd.h>
 #include <stdarg.h>
-#include <hal.h>
-#include <inifile.hh>
-#include "config.h"
-#include "../lib/hal.h"
 #include <google/protobuf/stubs/common.h>
+#include "rtapi_math.h"
+#include "hal.h"
+#include "inifile.hh"
+#include "config.h"
+
 
 using std::cout;
 using std::cerr;
@@ -48,6 +45,8 @@ using std::setw;
 using std::hex;
 using std::dec;
 using std::ios;
+using std::setprecision;
+using std::fixed;
 
 
 //! function for libusb's incoming data callback function
@@ -101,6 +100,23 @@ namespace XhcWhb04b6 {
     class WhbContext;
 
     class UsbInputPackageHandler;
+
+    class WhbUsbOutPackageAxisCoordinate;
+
+    class WhbUsbOutPackageData;
+
+    class WhbUsbOutPackageBlock;
+
+    class WhbUsbOutPackageBlocks;
+
+    std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate& coordinate);
+
+    std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data);
+
+    std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlock& block);
+
+    std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlocks& blocks);
+
 
 // ----------------------------------------------------------------------
 
@@ -671,22 +687,276 @@ namespace XhcWhb04b6 {
 
     // ----------------------------------------------------------------------
 
-    //! convenience structure for accessing data in package stream
+    //! convenience structure for initializing a transmission block
+    class WhbUsbOutPackageBlock
+    {
+    public:
+        //! report id, constant 0x06
+        uint8_t reportId;
+        uint8_t __padding0;
+        uint8_t __padding1;
+        uint8_t __padding2;
+        uint8_t __padding3;
+        uint8_t __padding4;
+        uint8_t __padding5;
+        uint8_t __padding6;
+
+        WhbUsbOutPackageBlock()
+        {
+            clear();
+        }
+
+        //! reset block's fields to 0 and initializes constant fields
+        void clear()
+        {
+            reportId   = 0x06;
+            __padding0 = 0;
+            __padding1 = 0;
+            __padding2 = 0;
+            __padding3 = 0;
+            __padding4 = 0;
+            __padding5 = 0;
+            __padding6 = 0;
+        }
+
+        void init(const void* data)
+        {
+            __padding0 = reinterpret_cast<const uint8_t*>(data)[0];
+            __padding1 = reinterpret_cast<const uint8_t*>(data)[1];
+            __padding2 = reinterpret_cast<const uint8_t*>(data)[2];
+            __padding3 = reinterpret_cast<const uint8_t*>(data)[3];
+            __padding4 = reinterpret_cast<const uint8_t*>(data)[4];
+            __padding5 = reinterpret_cast<const uint8_t*>(data)[5];
+            __padding6 = reinterpret_cast<const uint8_t*>(data)[6];
+        }
+
+    } __attribute__((packed));
+
+    // ----------------------------------------------------------------------
+
+    //! convenience structure for initializing a transmission package's blocks
+    class WhbUsbOutPackageBlocks
+    {
+    public:
+        WhbUsbOutPackageBlock block0;
+        WhbUsbOutPackageBlock block1;
+        WhbUsbOutPackageBlock block2;
+        WhbUsbOutPackageBlock block3;
+        WhbUsbOutPackageBlock block4;
+        WhbUsbOutPackageBlock block5;
+        WhbUsbOutPackageBlock block6;
+        WhbUsbOutPackageBlock block7;
+        WhbUsbOutPackageBlock block8;
+
+        WhbUsbOutPackageBlocks()
+        {
+            clear();
+        }
+
+        void init(const WhbUsbOutPackageData* data)
+        {
+            clear();
+            const uint8_t* d = reinterpret_cast<const uint8_t*>(data);
+            block0.init(d += 0);
+            block1.init(d += 7);
+            block2.init(d += 7);
+            block3.init(d += 7);
+            block4.init(d += 7);
+            block5.init(d += 7);
+            block6.init(d += 7);
+            block7.init(d += 7);
+            block8.init(d += 7);
+        }
+
+    private:
+
+        void clear()
+        {
+            block0.clear();
+            block1.clear();
+            block2.clear();
+            block3.clear();
+            block4.clear();
+            block5.clear();
+            block6.clear();
+            block7.clear();
+            block8.clear();
+        }
+    };
+
+// ----------------------------------------------------------------------
+    //! axis coordinate structure as sent via usb
+    class WhbUsbOutPackageAxisCoordinate
+    {
+    public:
+        //! caution: do not reorder fields
+        uint16_t integerValue;
+        uint16_t fractionValue  :15;
+        uint16_t coordinateSign :1;
+
+        void setCoordinate(const float& coordinate)
+        {
+            integerValue   = 0xff00;
+            fractionValue  = 0;
+            coordinateSign = 0;
+            /*
+            float coordinateAbs = rtapi_fabs(coordinate);
+            if (coordinate == coordinateAbs)
+            {
+                coordinateSign = 0;
+            }
+            else
+            {
+                coordinateSign = 1;
+            }
+
+            uint32_t scaledCoordinate = static_cast<uint32_t>(rtapi_rint(coordinateAbs * 10000.0));
+            integerValue  = static_cast<uint16_t>(scaledCoordinate / 10000);
+            fractionValue = static_cast<uint16_t>(scaledCoordinate % 10000);
+            */
+
+        }
+
+        void clear()
+        {
+            integerValue   = 0;
+            fractionValue  = 0;
+            coordinateSign = 0;
+        }
+
+    } __attribute__((packed));
+
+
+    //! Convenience structure for accessing data fields in output package stream.
+    //! Caution: We expect libusb providing the correct platform endianness.
+    class WhbUsbOutPackageData
+    {
+    public:
+        //! constant value: 0xfdfe
+        uint16_t header;
+        uint8_t  dayOfMonth;
+
+        WhbUsbOutPackageAxisCoordinate xWorkpieceCoordinate;
+        WhbUsbOutPackageAxisCoordinate yWorkpieceCoordinate;
+        WhbUsbOutPackageAxisCoordinate zWorkpieceCoordinate;
+        WhbUsbOutPackageAxisCoordinate aWorkpieceCoordinate;
+        WhbUsbOutPackageAxisCoordinate bWorkpieceCoordinate;
+        WhbUsbOutPackageAxisCoordinate cWorkpieceCoordinate;
+
+        WhbUsbOutPackageAxisCoordinate xMachineCoordinate;
+        WhbUsbOutPackageAxisCoordinate yMachineCoordinate;
+        WhbUsbOutPackageAxisCoordinate zMachineCoordinate;
+        WhbUsbOutPackageAxisCoordinate aMachineCoordinate;
+        WhbUsbOutPackageAxisCoordinate bMachineCoordinate;
+        WhbUsbOutPackageAxisCoordinate cMachineCoordinate;
+
+        //! just display, not affecting anything
+        uint16_t currentFeedRateOverride;
+        //! just display, not affecting
+        uint16_t currentSpindleSpeedOverride;
+        //! just display, not affecting
+        uint16_t currentFeedRate;
+        //! just display, not affecting
+        uint16_t currentSpindleSpeed;
+
+        //! just display, not affecting wheel
+        //! 0x00 - 0*1x
+        //! 0x01 - 1*1x
+        //! 0x02 - 5*1x
+        //! 0x03 - 10*1x
+        //! 0x04 - 20*1x
+        //! 0x05 - 30*1x
+        //! 0x06 - 40*1x
+        //! 0x07 - 50*1x
+        //! 0x08 - 100*1x
+        //! 0x09 - 500*1x
+        //! 0x0A - 1000*x
+        uint8_t stepMultiplier;
+
+        //! indicate machine state on display
+        //! 0x01 - Run state blink
+        //! 0x02 - Pause state blink
+        //! 0x40 - flash no
+        //! 0x80 - flash yes/no
+        uint8_t  state;
+        //! padding to block size
+        uint16_t __padding0;
+
+        void clear()
+        {
+            header     = 0xfdfe;
+            dayOfMonth = 0x0c;
+
+            xWorkpieceCoordinate.clear();
+            yWorkpieceCoordinate.clear();
+            zWorkpieceCoordinate.clear();
+            aWorkpieceCoordinate.clear();
+            bWorkpieceCoordinate.clear();
+            cWorkpieceCoordinate.clear();
+
+            xMachineCoordinate.clear();
+            yMachineCoordinate.clear();
+            zMachineCoordinate.clear();
+            aMachineCoordinate.clear();
+            bMachineCoordinate.clear();
+            cMachineCoordinate.clear();
+
+            currentFeedRateOverride     = 0;
+            currentSpindleSpeedOverride = 0;
+            currentFeedRate             = 0;
+            currentSpindleSpeed         = 0;
+
+            stepMultiplier = 0;
+            state          = 0;
+            __padding0     = 0;
+
+        }
+    } __attribute__((packed));
+
+    // ----------------------------------------------------------------------
+
+    //! convenience structure for casting data in package stream
+    union WhbUsbOutPackageBuffer
+    {
+    public:
+        WhbUsbOutPackageBlock  asBlockArray[sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlock)];
+        WhbUsbOutPackageBlocks asBlocks;
+
+        WhbUsbOutPackageBuffer() :
+            asBlocks()
+        {
+            /*cout << "sizeof usb data " << sizeof(WhbUsbOutPackageData) << endl
+                 << " blocks count " << sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlock) << endl
+                 << " sizeof block " << sizeof(WhbUsbOutPackageBlock) << endl
+                 << " sizeof blocks " << sizeof(WhbUsbOutPackageBlocks) << endl
+                 << " sizeof array " << sizeof(asBlockArray) << endl;*/
+            assert(sizeof(WhbUsbOutPackageBlocks) == sizeof(asBlockArray));
+            size_t blocksCount = sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlock);
+            assert ((sizeof(WhbUsbOutPackageData) + blocksCount) == sizeof(WhbUsbOutPackageBlocks));
+
+        }
+    };
+
+    // ----------------------------------------------------------------------
+
+    //! convenience structure for accessing data in input package stream
+    //! caution: we expect libusb providing the correct platform endianness
     class WhbUsbInPackage
     {
     public:
-        const unsigned char notAvailable1;
-        const unsigned char notAvailable2;
+        //! constant reply id 0x04
+        const unsigned char header;
+        const unsigned char unknownField; // xor day?
         const unsigned char buttonKeyCode1;
         const unsigned char buttonKeyCode2;
         const unsigned char rotaryButtonFeedKeyCode;
         const unsigned char rotaryButtonAxisKeyCode;
         const signed char   stepCount;
-        const unsigned char crc;
+        const unsigned char crc; // xor day?
 
         WhbUsbInPackage() :
-            notAvailable1(0),
-            notAvailable2(0),
+            header(0),
+            unknownField(0),
             buttonKeyCode1(0),
             buttonKeyCode2(0),
             rotaryButtonFeedKeyCode(0),
@@ -695,16 +965,16 @@ namespace XhcWhb04b6 {
             crc(0)
         {}
 
-        WhbUsbInPackage(const unsigned char notAvailable1,
-                        const unsigned char notAvailable2,
-                        const unsigned char buttonKeyCode1,
-                        const unsigned char buttonKeyCode2,
-                        const unsigned char rotaryButtonFeedKeyCode,
-                        const unsigned char rotaryButtonAxisKeyCode,
-                        const signed char stepCount,
-                        const unsigned char crc) :
-            notAvailable1(notAvailable1),
-            notAvailable2(notAvailable2),
+        WhbUsbInPackage(const uint8_t notAvailable1,
+                        const uint8_t notAvailable2,
+                        const uint8_t buttonKeyCode1,
+                        const uint8_t buttonKeyCode2,
+                        const uint8_t rotaryButtonFeedKeyCode,
+                        const uint8_t rotaryButtonAxisKeyCode,
+                        const int8_t stepCount,
+                        const uint8_t crc) :
+            header(notAvailable1),
+            unknownField(notAvailable2),
             buttonKeyCode1(buttonKeyCode1),
             buttonKeyCode2(buttonKeyCode2),
             rotaryButtonFeedKeyCode(rotaryButtonFeedKeyCode),
@@ -712,24 +982,26 @@ namespace XhcWhb04b6 {
             stepCount(stepCount),
             crc(crc)
         {}
-    };
+    }__attribute__((packed));
 
     //! convenience structure for casting data in package stream
     union WhbUsbInPackageBuffer
     {
     public:
         const WhbUsbInPackage asFields;
-        // todo: investigate why buffer size is not exactly 8 bytes as expected
-        unsigned char         asBuffer[32];
+        unsigned char         asBuffer[sizeof(WhbUsbInPackage)];
 
         WhbUsbInPackageBuffer();
-    };
+    }__attribute__((packed));
+
 
     // ----------------------------------------------------------------------
 
     WhbUsbInPackageBuffer::WhbUsbInPackageBuffer() :
         asBuffer{0}
-    {}
+    {
+        assert(sizeof(asFields) == sizeof(asBuffer));
+    }
 
     //! This package is sent as last but one package before xhc-whb04-6 is powered off,
     //! and is meant to be used with operator== for comparison.
@@ -746,7 +1018,7 @@ namespace XhcWhb04b6 {
         bool operator==(const WhbUsbInPackage& other) const
         {
             // equality constraints: 0x4 0x? 0x0 0x0 0x0 0x0 0x0 0x?
-            if ((notAvailable1 == other.notAvailable1)
+            if ((header == other.header)
                 // && (notAvailable2 == other.notAvailable2)
                 && (buttonKeyCode1 == other.buttonKeyCode1)
                 && (buttonKeyCode2 == other.buttonKeyCode2)
@@ -766,7 +1038,7 @@ namespace XhcWhb04b6 {
         {
             return !((*this) == other);
         }
-    };
+    }__attribute__((packed));
 
 
     //! This package is sent as last package before xhc-whb04-6 is powered off,
@@ -783,7 +1055,7 @@ namespace XhcWhb04b6 {
         bool operator==(const WhbUsbInPackage& other) const
         {
             // equality constraints: 0x4 0x? 0x? 0x? 0x? 0x? 0x? 0x?
-            if ((notAvailable1 == other.notAvailable1)
+            if ((header == other.header)
                 // && (notAvailable2 == other.notAvailable2)
                 // && (buttonKeyCode1 == other.buttonKeyCode1)
                 // && (buttonKeyCode2 == other.buttonKeyCode2)
@@ -803,7 +1075,7 @@ namespace XhcWhb04b6 {
         {
             return !((*this) == other);
         }
-    };
+    }__attribute__((packed));
 
     //! set of constant usb packages
     class WhbConstantUsbPackages
@@ -828,14 +1100,18 @@ namespace XhcWhb04b6 {
         const uint16_t usbProductId;
         libusb_context      * context;
         libusb_device_handle* deviceHandle;
-        bool                  do_reconnect;
-        bool                  wait_for_pendant_before_HAL;
-        bool                  mIsSimulationMode;
-        WhbSleepDetect        sleepState;
-        bool                  mIsRunning;
-        WhbUsbInPackageBuffer inputPackage;
+        bool                   do_reconnect;
+        bool                   wait_for_pendant_before_HAL;
+        bool                   mIsSimulationMode;
+        WhbSleepDetect         sleepState;
+        bool                   mIsRunning;
+        WhbUsbInPackageBuffer  inputPackageBuffer;
+        WhbUsbOutPackageBuffer outputPackageBuffer;
+        WhbUsbOutPackageData   outputPackageData;
         UsbInputPackageHandler& mDataHandler;
         WhbHalMemory          & mHalMemory;
+        //struct libusb_transfer * inTransfer;
+        //struct libusb_transfer* outTransfer;
 
     public:
 
@@ -875,7 +1151,11 @@ namespace XhcWhb04b6 {
 
         void setupAsyncTransfer();
 
+        WhbUsbOutPackageBuffer& getOutPackageBuffer();
+
         WhbUsb(UsbInputPackageHandler& onDataReceivedCallback, WhbHalMemory& halMemory);
+
+        void xhcSetDisplay();
     };
 
     // ----------------------------------------------------------------------
@@ -974,9 +1254,18 @@ namespace XhcWhb04b6 {
 
     // ----------------------------------------------------------------------
 
+    WhbUsbOutPackageBuffer& WhbUsb::getOutPackageBuffer()
+    {
+        return outputPackageBuffer;
+    }
+
+    // ----------------------------------------------------------------------
+
     WhbUsb::WhbUsb(UsbInputPackageHandler& onDataReceivedCallback, WhbHalMemory& halMemory) :
-        usbVendorId(0x10ce),
-        usbProductId(0xeb93),
+    // usbVendorId(0x10ce), // xhc-whb04-4
+    // usbProductId(0xeb70),// xhc-whb04-4
+        usbVendorId(0x10ce), // xhc-whb04-6
+        usbProductId(0xeb93), // xhc-whb04-6
         context(nullptr),
         deviceHandle(nullptr),
         do_reconnect(false),
@@ -984,7 +1273,8 @@ namespace XhcWhb04b6 {
         mIsSimulationMode(false),
         sleepState(),
         mIsRunning(false),
-        inputPackage(),
+        inputPackageBuffer(),
+        outputPackageBuffer(),
         mDataHandler(onDataReceivedCallback),
         mHalMemory(halMemory)
     {
@@ -1089,7 +1379,7 @@ namespace XhcWhb04b6 {
         void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode);
 
         //! todo: doxy
-        void printData(const WhbUsbInPackage& inPackage);
+        void printInputData(const WhbUsbInPackage& inPackage);
 
         //! todo: doxy
         void printHexdump(const WhbUsbInPackage& inPackage);
@@ -1211,7 +1501,7 @@ namespace XhcWhb04b6 {
                 cout.copyfmt(init);
             }
             cout << " => ";
-            printData(inPackage);
+            printInputData(inPackage);
         }
 
         //! update all buttons state to hal
@@ -1373,7 +1663,7 @@ namespace XhcWhb04b6 {
     {
         if (signal >= 0)
         {
-            cout << "termination requested upon signal number " << signal << "..." << endl;
+            cout << "termination requested upon signal number " << signal << " ..." << endl;
         }
         else
         {
@@ -1449,27 +1739,139 @@ namespace XhcWhb04b6 {
     {}
 
 // ----------------------------------------------------------------------
-
     void WhbContext::xhcSetDisplay()
     {
-        unsigned char data[6 * 8];
-        int           packet;
+        usb.xhcSetDisplay();
+    }
 
-        xhcDisplayEncode(data, sizeof(data));
+    void WhbUsb::xhcSetDisplay()
+    {
+        outputPackageData.clear();
+        outputPackageBuffer.asBlocks.init(&outputPackageData);
 
-        for (packet = 0; packet < 6; packet++)
+        // experimental testing code
+        uint8_t* b = reinterpret_cast<uint8_t*>(&outputPackageBuffer);
+        b[0] = 0x06; // block id
+        b[1] = 0xfe; // magic
+        b[2] = 0xfd; // magic
+        b[3] = 0x0c; // day
+        b[4] = 0b00000000; // status CON: <xx>%
+        b[4] = 0b00000001; // status STP: <step>
+        b[4] = 0b00000010; // status MPG: <xx>%
+        b[4] = 0b00000100; // status <xx>%
+        b[4] = 0b00010000; // status ?
+        b[4] = 0b00100000; // status ?
+        b[4] = 0b01000000; // status RESET, a bit unreliable rendering
+        b[4] = 0b10000000; // status X1: ... X1: (means machine coordinates)
+
+        b[4] = 0b10000001; // status
+
+        b[5]  = 0x01; // x wc integer lsB
+        b[6]  = 0x00; // x wc integer msB
+        b[7]  = 0x01; // x wc fract lsB
+        b[8]  = 0x06; // block id
+        b[9]  = 0x00; // x wc fract msB, 0x80 is sign
+        b[10] = 0x00; // y wc integer lsb
+        b[11] = 0x00; // y wc integer msb
+        b[12] = 0x00; // y wc fract lsb
+        b[13] = 0x00; // y wc fract msb, msb sign
+        b[14] = 0x00; // z wc integer lsb
+        b[15] = 0x00; // z wc integer msb
+        b[16] = 0x06; // block id
+        b[17] = 0x00; // z wc fract lsb
+        b[18] = 0x00; // z wc fract msb
+        b[19] = 0x00; // feed lsb
+        b[20] = 0x00; // feed msb
+        b[21] = 0x00; // spindle lsb
+        b[22] = 0x00; // spindle msb
+
+        // b[23] until b[71]: do not respond at all, no documentation found.
+        b[23] = 0xff; // b wc int lsb
+        b[24] = 0x06; // block id
+        b[25] = 0xff; // b wc int msb
+        b[26] = 0xff; // b wc fract lsb
+        b[27] = 0xff; // b wc fract msb
+        b[28] = 0xff; // c wc int lsb
+        b[29] = 0xff; // c wc int msb
+        b[30] = 0xff; // c wc fract lsb
+        b[31] = 0xff; // c wc fract msb
+        b[32] = 0x06; // block id
+        b[33] = 0xff; // x mc int lsb
+        b[34] = 0xff; // x mc int msb
+        b[35] = 0xff; // x mc fract lsb
+        b[36] = 0xff; // x mc fract msb
+        b[37] = 0xff; // y mc int lsb
+        b[38] = 0xff; // y mc int msb
+        b[39] = 0xff; // y mc fract lsb
+        b[40] = 0x06; // block id
+        b[41] = 0xff; // y mc fract msb
+        b[42] = 0xff; // z mc int lsb
+        b[43] = 0xff; // z mc int msb
+        b[44] = 0xff; // z mc fract lsb
+        b[45] = 0xff; // z mc fract msb
+        b[46] = 0xff; // a mc int lsb
+        b[47] = 0xff; // a mc int msb
+        b[48] = 0x06; // block id
+        b[49] = 0xff; // a mc fract lsb
+        b[50] = 0xff; // a mc fract msb
+        b[51] = 0xff; // b mc int lsb
+        b[52] = 0xff; // b mc int msb
+        b[53] = 0xff; // b mc fract lsb
+        b[54] = 0xff; // b mc fract msb
+        b[55] = 0xff; // c mc int lsb
+        b[56] = 0x06; // block id
+        b[57] = 0xff; // c mc int msb
+        b[58] = 0xff; // c mc fract lsb
+        b[59] = 0xff; // c mc fract msb
+        b[60] = 0xff; // feedrade ovr lsb ?
+        b[61] = 0xff; // feedrate ovr msb ?
+        b[62] = 0xff; // spindle speed ovr lsb ?
+        b[63] = 0xff; // spindle speed ovr msb ?
+        b[64] = 0x06; // block id
+        b[65] = 0xff; // feed lsb ?
+        b[66] = 0xff; // feed msb ?
+        b[67] = 0xff; // spindle speed lsb ?
+        b[68] = 0xff; // spindle speed msb ?
+        b[69] = 0xff; // step mul lsb
+        b[70] = 0xff; // state ??
+        b[71] = 0xff; // unused
+
+        cout << "sending: " << outputPackageBuffer.asBlocks << endl
+             << outputPackageData
+             << " size " << sizeof(WhbUsbOutPackageBlock) <<
+             endl;
+
+        for (
+            size_t idx = 0;
+            idx < sizeof(outputPackageBuffer.asBlockArray); idx++)
         {
-            int r = libusb_control_transfer(usb.deviceHandle,
-                                            LIBUSB_DT_HID, //bmRequestType 0x21
-                                            LIBUSB_REQUEST_SET_CONFIGURATION, //bRequest 0x09
-                                            0x0306,         //wValue
-                                            0x00,           //wIndex
-                                            data + 8 * packet,  //*data
-                                            8,              //wLength
-                                            0);             //timeout
+            WhbUsbOutPackageBlock& block = outputPackageBuffer.asBlockArray[idx];
+            size_t blockSize = sizeof(WhbUsbOutPackageBlock);
+            // see also
+            // http://www.beyondlogic.org/usbnutshell/usb6.shtml
+            // http://libusb.sourceforge.net/api-1.0/group__desc.html
+            // http://libusb.sourceforge.net/api-1.0/group__misc.html
+            int    r         = libusb_control_transfer(deviceHandle,
+                // send to hid descriptor: bmRequestType == LIBUSB_DT_HID == 0x21 == (iterface | endpoint)
+                                                       LIBUSB_DT_HID,
+                // bRequest == LIBUSB_REQUEST_SET_CONFIGURATION == 0x09 == set configuration
+                                                       LIBUSB_REQUEST_SET_CONFIGURATION,
+                // wValue: if bRequest == LIBUSB_REQUEST_SET_CONFIGURATION the configuration value
+                                                       0x0306,
+                // wIndex, device interface number
+                                                       0x00,
+                // data to transmit
+                                                       reinterpret_cast<unsigned char*>(&block),
+                // wLength, data length
+                                                       blockSize,
+                // transfer timeout[ms]
+                                                       0);
+
             if (r < 0)
             {
-                usb.setDoReconnect(true);
+                cout << "transmission failed, requested reconnect ..." <<
+                     endl;
+                setDoReconnect(true);
             }
         }
     }
@@ -1544,14 +1946,96 @@ namespace XhcWhb04b6 {
 
 // ----------------------------------------------------------------------
 
-    void WhbContext::printData(const WhbUsbInPackage& inPackage)
+    std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate& coordinate)
+    {
+        os << ((coordinate.coordinateSign == 1) ? "-" : "")
+           << static_cast<unsigned short>(coordinate.integerValue)
+           << "."
+           << static_cast<unsigned short>(coordinate.fractionValue);
+        return os;
+    }
+
+// ----------------------------------------------------------------------
+
+    std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlock& block)
+    {
+        ios init(NULL);
+        init.copyfmt(os);
+
+        os << hex << setfill('0')
+           << setw(2) << static_cast<unsigned short>(block.reportId)
+           << setw(2) << static_cast<unsigned short>(block.__padding0)
+           << setw(2) << static_cast<unsigned short>(block.__padding1)
+           << setw(2) << static_cast<unsigned short>(block.__padding2)
+           << setw(2) << static_cast<unsigned short>(block.__padding3)
+           << setw(2) << static_cast<unsigned short>(block.__padding4)
+           << setw(2) << static_cast<unsigned short>(block.__padding5)
+           << setw(2) << static_cast<unsigned short>(block.__padding6);
+
+        os.copyfmt(init);
+        return os;
+    }
+
+// ----------------------------------------------------------------------
+
+    std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlocks& blocks)
+    {
+        return os << blocks.block0 << " "
+                  << blocks.block1 << " "
+                  << blocks.block2 << " "
+                  << blocks.block3 << " "
+                  << blocks.block4 << " "
+                  << blocks.block5 << " "
+                  << blocks.block6 << " "
+                  << blocks.block7 << " "
+                  << blocks.block8;
+    }
+
+// ----------------------------------------------------------------------
+
+    std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data)
+    {
+        ios init(NULL);
+        init.copyfmt(os);
+
+        os << hex << setfill('0')
+           << "header " << setw(2) << data.header
+           << " dom " << setw(2) << static_cast<unsigned short>(data.dayOfMonth)
+           << endl << dec
+           << "x wc/mc " << data.xWorkpieceCoordinate
+           << " /" << data.xMachineCoordinate << endl
+           << "y wc/mc " << data.yWorkpieceCoordinate
+           << " / " << data.yMachineCoordinate << endl
+           << "z wc/mc " << data.zWorkpieceCoordinate
+           << " / " << data.zMachineCoordinate << endl
+           << "a wc/mc " << data.aWorkpieceCoordinate
+           << " / " << data.aMachineCoordinate << endl
+           << "b wc/mc " << data.bWorkpieceCoordinate
+           << " / " << data.bMachineCoordinate << endl
+           << "c wc/mc " << data.cWorkpieceCoordinate
+           << "  " << data.cMachineCoordinate << endl
+           << "feed override/rate " << data.currentFeedRateOverride
+           << "/" << data.currentFeedRate << endl
+           << "spindle override/rps " << data.currentSpindleSpeedOverride
+           << "/" << data.currentSpindleSpeed << endl
+           << hex << setfill('0')
+           << "step multiplier " << setw(2) << static_cast<unsigned short>(data.stepMultiplier)
+           << " state " << setw(2) << static_cast<unsigned short>(data.state);
+        os.copyfmt(init);
+        return os;
+    }
+
+
+// ----------------------------------------------------------------------
+
+    void WhbContext::printInputData(const WhbUsbInPackage& inPackage)
     {
         ios init(NULL);
         init.copyfmt(cout);
 
         cout << "| " << setfill('0') << hex
-             << setw(2) << static_cast<unsigned short>(inPackage.notAvailable1)
-             << " | " << setw(2) << static_cast<unsigned short>(inPackage.notAvailable2)
+             << setw(2) << static_cast<unsigned short>(inPackage.header)
+             << " | " << setw(2) << static_cast<unsigned short>(inPackage.unknownField)
              << " | ";
         cout.copyfmt(init);
         printPushButtonText(inPackage.buttonKeyCode1, inPackage.buttonKeyCode2);
@@ -1577,8 +2061,8 @@ namespace XhcWhb04b6 {
         init.copyfmt(cout);
 
         cout << setfill('0') << hex << "0x"
-             << setw(2) << static_cast<unsigned short>(inPackage.notAvailable1) << " "
-             << setw(2) << static_cast<unsigned short>(inPackage.notAvailable2) << " "
+             << setw(2) << static_cast<unsigned short>(inPackage.header) << " "
+             << setw(2) << static_cast<unsigned short>(inPackage.unknownField) << " "
              << setw(2) << static_cast<unsigned short>(inPackage.buttonKeyCode1) << " "
              << setw(2) << static_cast<unsigned short>(inPackage.buttonKeyCode2) << " "
              << setw(2) << static_cast<unsigned short>(inPackage.rotaryButtonFeedKeyCode) << " "
@@ -1779,7 +2263,7 @@ namespace XhcWhb04b6 {
         mIsRunning = false;
     }
 
-    // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 
     void WhbUsb::setupAsyncTransfer()
     {
@@ -1787,9 +2271,9 @@ namespace XhcWhb04b6 {
         assert(transfer != nullptr);
         libusb_fill_bulk_transfer(transfer,
                                   deviceHandle,
-                                  (0x1 | LIBUSB_ENDPOINT_IN),
-                                  inputPackage.asBuffer,
-                                  sizeof(inputPackage.asBuffer),
+                                  (0x1 | LIBUSB_ENDPOINT_IN), // todo: LIBUSB_ENDPOINT_IN
+                                  inputPackageBuffer.asBuffer,
+                                  sizeof(inputPackageBuffer.asBuffer),
                                   usbInputResponseCallback,
                                   nullptr,
                                   750); // timeout
@@ -1809,14 +2293,14 @@ namespace XhcWhb04b6 {
                 // sleep mode was previously detected, drop current package
                 if (sleepState.dropNextInPackage)
                 {
-                    if (WhbUsb::ConstantPackages.sleepPackage != inputPackage.asFields)
+                    if (WhbUsb::ConstantPackages.sleepPackage != inputPackageBuffer.asFields)
                     {
                         cout << "expected sleep package starting with "
                              << hex << setfill('0') << setw(2)
-                             << static_cast<unsigned short>(WhbUsb::ConstantPackages.sleepPackage.notAvailable1)
+                             << static_cast<unsigned short>(WhbUsb::ConstantPackages.sleepPackage.header)
                              << " but got "
                              << hex << setfill('0') << setw(2)
-                             << static_cast<unsigned short>(inputPackage.asFields.notAvailable1)
+                             << static_cast<unsigned short>(inputPackageBuffer.asFields.header)
                              << endl;
                         cout.copyfmt(init);
                     }
@@ -1832,7 +2316,7 @@ namespace XhcWhb04b6 {
                     //! when powering off pedant sends two packages
                     //! 1st: \ref WhbUsbEmptyPackage
                     //! 2nd: \ref WhbUsbSleepPackage
-                    if (WhbUsb::ConstantPackages.emptyPackage == inputPackage.asFields)
+                    if (WhbUsb::ConstantPackages.emptyPackage == inputPackageBuffer.asFields)
                     {
                         sleepState.dropNextInPackage = true;
                         *(mHalMemory.sleeping) = 1;
@@ -1864,7 +2348,7 @@ namespace XhcWhb04b6 {
 
                     }
                     // pass structured transfer to usb data handler
-                    mDataHandler.handleInputData(inputPackage.asFields);
+                    mDataHandler.handleInputData(inputPackageBuffer.asFields);
                 }
                 else
                 {
@@ -2388,7 +2872,7 @@ int main(int argc, char** argv)
             {
                 struct timeval tv;
                 tv.tv_sec  = 0;
-                tv.tv_usec = 30000;
+                tv.tv_usec = 5 * 10 * 100 * 1000;
                 libusb_handle_events_timeout_completed(Whb.usb.getContext(), &tv, nullptr);
                 Whb.computeVelocity();
                 if (Whb.hal.getIsSimulationMode())
