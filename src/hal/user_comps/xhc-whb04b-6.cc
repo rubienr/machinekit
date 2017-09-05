@@ -294,13 +294,13 @@ private:
 //! pendant sleep/idle state parameters
 class WhbSleepDetect
 {
-    friend XhcWhb04b6::WhbUsb;
-
-    bool           dropNextInPackage;
-    struct timeval last_wakeup;
-
 public:
     WhbSleepDetect();
+
+private:
+    friend XhcWhb04b6::WhbUsb;
+    bool           dropNextInPackage;
+    struct timeval last_wakeup;
 };
 
 // ----------------------------------------------------------------------
@@ -431,22 +431,18 @@ public:
 //! In step mode the step is distance.
 class WhbHandwheelStepModeStepSize
 {
-
 public:
-
     typedef enum
     {
         RotaryButton0001, RotaryButton0010, RotaryButton0100, RotaryButton100, RotaryButtonUndefined,
     } ButtonCodeToStepIndex;
 
-private:
-
-    const float sequence[5];
-public:
-
     float getStepSize(ButtonCodeToStepIndex buttonPosition) const;
 
     WhbHandwheelStepModeStepSize();
+
+private:
+    const float sequence[5];
 };
 
 // ----------------------------------------------------------------------
@@ -468,27 +464,27 @@ public:
         RotaryButtonUndefined
     } ButtonCodeToStepIndex;
 
-private:
-
-    const uint8_t sequence[7];
-
-public:
-
     uint8_t getStepSize(ButtonCodeToStepIndex buttonPosition) const;
 
     WhbHandwheelContiunuousModeStepSize();
+
+private:
+    const uint8_t sequence[7];
 };
+
+// ----------------------------------------------------------------------
 
 class WhbStepModeStepSize
 {
     friend XhcWhb04b6::WhbContext;
     friend XhcWhb04b6::WhbButtonsState;
 
-    WhbHandwheelStepModeStepSize        step;
-    WhbHandwheelContiunuousModeStepSize continuous;
-
 public:
     WhbStepModeStepSize();
+
+private:
+    WhbHandwheelStepModeStepSize        step;
+    WhbHandwheelContiunuousModeStepSize continuous;
 };
 
 // ----------------------------------------------------------------------
@@ -498,13 +494,13 @@ class WhbStepHandler
 {
     friend XhcWhb04b6::WhbContext;
 
-    unsigned char old_inc_step_status;
-
 public:
-
     WhbStepModeStepSize stepSize;
 
     WhbStepHandler();
+
+private:
+    unsigned char old_inc_step_status;
 };
 
 // ----------------------------------------------------------------------
@@ -515,25 +511,6 @@ public:
 //! button code "Fn" is involved.
 class WhbButtonsState
 {
-    friend XhcWhb04b6::WhbContext;
-
-    const WhbButtonsCode                     & buttonCodesLookup;
-    const WhbAxisRotaryButtonCodes           & axisRotaryButtonCodesLookup;
-    const WhbFeedRotaryButtonCodes           & feedRotaryButtonCodesLookup;
-    const WhbHandwheelStepModeStepSize       & stepModeStepSizeLookup;
-    const WhbHandwheelContiunuousModeStepSize& continuousModeStepSizeLookup;
-    WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex currentContinuousModeSize;
-    WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex        currentStepModeSize;
-    uint8_t                                                    currentButton1Code;
-    uint8_t                                                    currentButton2Code;
-    WhbSoftwareButton* softwareButton;
-    uint8_t currentAxisCode;
-    uint8_t currentFeedCode;
-
-    void setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex stepSize);
-
-    void setCurrentContinuousModeStepSize(WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex stepSize);
-
 public:
 
     uint8_t getButton1Code() const;
@@ -559,15 +536,36 @@ public:
                     const WhbFeedRotaryButtonCodes& feedRotaryButtonCodesLookup,
                     const WhbHandwheelStepModeStepSize& stepSizeLookup,
                     const WhbHandwheelContiunuousModeStepSize& continuousStepSizeLookup);
+
+private:
+    friend XhcWhb04b6::WhbContext;
+
+    const WhbButtonsCode                     & buttonCodesLookup;
+    const WhbAxisRotaryButtonCodes           & axisRotaryButtonCodesLookup;
+    const WhbFeedRotaryButtonCodes           & feedRotaryButtonCodesLookup;
+    const WhbHandwheelStepModeStepSize       & stepModeStepSizeLookup;
+    const WhbHandwheelContiunuousModeStepSize& continuousModeStepSizeLookup;
+    WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex currentContinuousModeSize;
+    WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex        currentStepModeSize;
+    uint8_t                                                    currentButton1Code;
+    uint8_t                                                    currentButton2Code;
+    WhbSoftwareButton* softwareButton;
+    uint8_t currentAxisCode;
+    uint8_t currentFeedCode;
+
+    void setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex stepSize);
+
+    void setCurrentContinuousModeStepSize(WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex stepSize);
 };
 
 // ----------------------------------------------------------------------
 
-//! convenience structure for initializing a transmission block
+//! Convenience structure for initializing a transmission block.
+//! Caution: do not reorder fields!
 class WhbUsbOutPackageBlock
 {
 public:
-    //! report id, constant 0x06
+    //! constant 0x06
     uint8_t reportId;
     uint8_t __padding0;
     uint8_t __padding1;
@@ -585,7 +583,8 @@ public:
 
 // ----------------------------------------------------------------------
 
-//! convenience structure for initializing a transmission package's blocks
+//! Convenience structure for initializing a transmission package's blocks.
+//! Caution: do not reorder fields!
 class WhbUsbOutPackageBlocks
 {
 public:
@@ -596,11 +595,13 @@ public:
     WhbUsbOutPackageBlocks();
 
     void init(const WhbUsbOutPackageData* data);
+
 }__attribute__((packed));
 
 // ----------------------------------------------------------------------
 
-//! axis coordinate structure as sent via usb
+//! Axis coordinate structure as sent via usb.
+//! Caution: do not reorder fields!
 class WhbUsbOutPackageAxisCoordinate
 {
 public:
@@ -620,14 +621,17 @@ public:
 typedef enum
 {
     //! displays "CONT <xx>%"
-        CONTINUOUS             = 0x00, //! displays "STP: <x.xxxx>"
-        STEP                   = 0x01, //! displays "MPG <xx>%"
+        CONTINUOUS             = 0x00,
+    //! displays "STP: <x.xxxx>"
+        STEP                   = 0x01,
+    //! displays "MPG <xx>%"
         MANUAL_PULSE_GENERATOR = 0x02
 
 } DisplayIndicatorStepMode;
 
 // ----------------------------------------------------------------------
 
+//! Caution: do not reorder fields!
 class DisplayIndicatorBitFields
 {
 public:
@@ -644,8 +648,10 @@ public:
 
 // ----------------------------------------------------------------------
 
+//! Caution: do not reorder fields!
 union DisplayIndicator
 {
+public:
     uint8_t                   asByte;
     DisplayIndicatorBitFields asBitFields;
 
@@ -656,11 +662,11 @@ union DisplayIndicator
 // ----------------------------------------------------------------------
 
 //! Convenience structure for accessing data fields in output package stream.
-//! We expect libusb providing the correct platform endianness.
+//! Caution: do not reorder fields!
 class WhbUsbOutPackageData
 {
 public:
-    //! constant value: 0xfdfe
+    //! constant: 0xfdfe
     uint16_t header;
     uint8_t  dayOfMonth;
 
@@ -670,9 +676,9 @@ public:
     WhbUsbOutPackageAxisCoordinate row2Coordinate;
     WhbUsbOutPackageAxisCoordinate row3Coordinate;
 
-    //! printed if feed+/- is pressed
+    //! printed on feed+/- button pressed
     uint16_t feedRate;
-    //! printed if spindle+/- is pressed
+    //! printed on spindle+/- button pressed
     uint16_t spindleSpeed;
 
     WhbUsbOutPackageData();
@@ -687,7 +693,8 @@ private:
 
 // ----------------------------------------------------------------------
 
-//! convenience structure for casting data in package stream
+//! Convenience structure for casting data in package stream.
+//! Caution: do not reorder fields!
 union WhbUsbOutPackageBuffer
 {
 public:
@@ -700,12 +707,12 @@ public:
 
 // ----------------------------------------------------------------------
 
-//! convenience structure for accessing data in input package stream
-//! caution: we expect libusb providing the correct platform endianness
+//! Convenience structure for accessing data in input package stream.
+//! Caution: do not reorder fields!
 class WhbUsbInPackage
 {
 public:
-    //! constant reply id 0x04
+    //! constant 0x04
     const unsigned char header;
     const unsigned char dayOfMonth;
     const unsigned char buttonKeyCode1;
@@ -713,7 +720,7 @@ public:
     const unsigned char rotaryButtonFeedKeyCode;
     const unsigned char rotaryButtonAxisKeyCode;
     const signed char   stepCount;
-    const unsigned char crc; // xor day?
+    const unsigned char crc;
 
     WhbUsbInPackage();
 
@@ -723,7 +730,10 @@ public:
 
 }__attribute__((packed));
 
-//! convenience structure for casting data in package stream
+// ----------------------------------------------------------------------
+
+//! Convenience structure for casting data in package stream.
+//! Caution: do not reorder fields!
 union WhbUsbInPackageBuffer
 {
 public:
@@ -784,34 +794,17 @@ public:
     WhbConstantUsbPackages();
 };
 
+// ----------------------------------------------------------------------
+
 //! USB related parameters
 class WhbUsb
 {
-    //friend XhcWhb04b6::WhbContext;
-
-    const uint16_t usbVendorId;
-    const uint16_t usbProductId;
-    libusb_context      * context;
-    libusb_device_handle* deviceHandle;
-    bool                   do_reconnect;
-    bool                   isWaitWithTimeout;
-    bool                   mIsSimulationMode;
-    WhbSleepDetect         sleepState;
-    bool                   mIsRunning;
-    WhbUsbInPackageBuffer  inputPackageBuffer;
-    WhbUsbOutPackageBuffer outputPackageBuffer;
-    WhbUsbOutPackageData   outputPackageData;
-    OnUsbInputPackageReceivedHandler& mDataHandler;
-    WhbHalMemory                    & mHalMemory;
-    struct libusb_transfer          * inTransfer;
-    struct libusb_transfer          * outTransfer;
-    std::ostream devNull;
-    std::ostream* verboseTxOut;
-    std::ostream* verboseRxOut;
-
 public:
-
     static const WhbConstantUsbPackages ConstantPackages;
+
+    WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalMemory& halMemory);
+
+    ~WhbUsb();
 
     uint16_t getUsbVendorId() const;
 
@@ -847,16 +840,32 @@ public:
 
     bool setupAsyncTransfer();
 
-    WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalMemory& halMemory);
-
-    ~WhbUsb();
-
     void xhcSetDisplay();
 
     void enableVerboseTx(bool enable);
 
     void enableVerboseRx(bool enable);
 
+private:
+    const uint16_t usbVendorId;
+    const uint16_t usbProductId;
+    libusb_context      * context;
+    libusb_device_handle* deviceHandle;
+    bool                   do_reconnect;
+    bool                   isWaitWithTimeout;
+    bool                   mIsSimulationMode;
+    WhbSleepDetect         sleepState;
+    bool                   mIsRunning;
+    WhbUsbInPackageBuffer  inputPackageBuffer;
+    WhbUsbOutPackageBuffer outputPackageBuffer;
+    WhbUsbOutPackageData   outputPackageData;
+    OnUsbInputPackageReceivedHandler& mDataHandler;
+    WhbHalMemory                    & mHalMemory;
+    struct libusb_transfer          * inTransfer;
+    struct libusb_transfer          * outTransfer;
+    std::ostream devNull;
+    std::ostream* verboseTxOut;
+    std::ostream* verboseRxOut;
 };
 
 // ----------------------------------------------------------------------
@@ -883,6 +892,10 @@ class WhbContext :
 {
 public:
     WhbHal hal;
+
+    WhbContext();
+
+    virtual ~WhbContext();
 
     void process();
 
@@ -940,10 +953,6 @@ public:
 
     void setSimulationMode(bool enableSimulationMode);
 
-    WhbContext();
-
-    virtual ~WhbContext();
-
     void enableVerboseRx(bool enable);
 
     void enableVerboseTx(bool enable);
@@ -953,6 +962,7 @@ public:
     void enableVerboseInit(bool enable);
 
     WhbUsb usb;
+
 private:
     const char* mName;
     const WhbKeyCodes      codes;
@@ -1136,8 +1146,8 @@ WhbStepModeStepSize::WhbStepModeStepSize() :
 // ----------------------------------------------------------------------
 
 WhbStepHandler::WhbStepHandler() :
-    old_inc_step_status(0),
-    stepSize()
+    stepSize(),
+    old_inc_step_status(0)
 {
 }
 
@@ -1228,7 +1238,6 @@ float WhbButtonsState::getStepSize()
 }
 
 // ----------------------------------------------------------------------
-
 
 WhbButtonsState::WhbButtonsState(const WhbButtonsCode& buttonCodesLookup,
                                  const WhbAxisRotaryButtonCodes& axisRotaryButtonCodesLookup,
@@ -1342,7 +1351,6 @@ uint16_t WhbUsb::getUsbVendorId() const
 
 // ----------------------------------------------------------------------
 
-
 uint16_t WhbUsb::getUsbProductId() const
 {
     return usbProductId;
@@ -1358,7 +1366,6 @@ const bool WhbUsb::isDeviceOpen() const
 
 // ----------------------------------------------------------------------
 
-
 libusb_context** WhbUsb::getContextReference()
 {
     return &context;
@@ -1373,7 +1380,6 @@ libusb_context* WhbUsb::getContext()
 }
 
 // ----------------------------------------------------------------------
-
 
 void WhbUsb::setContext(libusb_context* context)
 {
@@ -1451,6 +1457,7 @@ WhbUsb::WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalM
 }
 
 // ----------------------------------------------------------------------
+
 void WhbUsb::xhcSetDisplay()
 {
     static unsigned char i = 0;
@@ -1505,6 +1512,7 @@ void WhbUsb::xhcSetDisplay()
 }
 
 // ----------------------------------------------------------------------
+
 void WhbContext::halInit()
 {
     hal.halInit(softwareButtons, sizeof(softwareButtons) / sizeof(WhbSoftwareButton), codes);
@@ -1649,6 +1657,8 @@ bool WhbContext::isRunning() const
 {
     return doRun;
 }
+
+// ----------------------------------------------------------------------
 
 WhbContext::WhbContext() :
     hal(),
@@ -2508,6 +2518,7 @@ void WhbContext::printInputData(const WhbUsbInPackage& inPackage)
 }
 
 // ----------------------------------------------------------------------
+
 void WhbContext::printHexdump(const WhbUsbInPackage& inPackage)
 {
     printHexdump(inPackage, *verboseRxOut);
@@ -2551,6 +2562,7 @@ bool WhbUsb::setupAsyncTransfer()
     assert(0 == r);
     return (0 == r);
 }
+
 // ----------------------------------------------------------------------
 
 void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
