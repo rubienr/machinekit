@@ -799,8 +799,8 @@ class WhbUsb
     WhbUsbOutPackageData   outputPackageData;
     OnUsbInputPackageReceivedHandler& mDataHandler;
     WhbHalMemory                    & mHalMemory;
-    //struct libusb_transfer * inTransfer; // TODO
-    //struct libusb_transfer* outTransfer; // TODO
+    struct libusb_transfer          * inTransfer;
+    struct libusb_transfer          * outTransfer;
 
 public:
 
@@ -838,9 +838,11 @@ public:
 
     void requestTermination();
 
-    void setupAsyncTransfer();
+    bool setupAsyncTransfer();
 
     WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalMemory& halMemory);
+
+    ~WhbUsb();
 
     void xhcSetDisplay();
 };
@@ -869,6 +871,16 @@ class WhbContext :
 public:
     WhbHal hal;
 
+    void process();
+
+    void teardownUsb();
+
+    void setUsbContext(libusb_context* context);
+
+    libusb_device_handle* getUsbDeviceHandle();
+
+    libusb_context* getUsbContext();
+
     //! \return the name as specified to \ref WhbContext
     const char* getName() const;
 
@@ -885,19 +897,19 @@ public:
     void halInit();
 
     //! todo: doxy
-    void halExit();
+    void teardownHal();
 
     //! todo: doxy
     void cbResponseIn(struct libusb_transfer* transfer);
 
     //! todo: doxy
-    void setupAsyncTransfer();
+    bool enableReceiveAsyncTransfer();
 
     //! todo: doxy
     void computeVelocity();
 
     // todo: refactor me
-    void xhcSetDisplay();
+    void sendDisplayData();
 
     //! todo: doxy
     void handleStep();
@@ -928,9 +940,6 @@ private:
     WhbVelocityComputation velocityComputation;
     bool                   doRun;
     bool                   mIsSimulationMode;
-
-    //! todo: doxy
-    void halTeardown();
 
     //! todo: doxy
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode);
@@ -1391,7 +1400,9 @@ WhbUsb::WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalM
     inputPackageBuffer(),
     outputPackageBuffer(),
     mDataHandler(onDataReceivedCallback),
-    mHalMemory(halMemory)
+    mHalMemory(halMemory),
+    inTransfer(libusb_alloc_transfer(0)),
+    outTransfer(libusb_alloc_transfer(0))
 {
     gettimeofday(&sleepState.last_wakeup, nullptr);
 }
@@ -1445,6 +1456,7 @@ void WhbUsb::xhcSetDisplay()
         {
             cout << "transmission failed, try to reconnect ..." << endl;
             setDoReconnect(true);
+            return;
         }
     }
 }
@@ -1457,9 +1469,8 @@ void WhbContext::halInit()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::halExit()
+void WhbContext::teardownHal()
 {
-    halTeardown();
     hal_exit(hal.getHalComponentId());
 }
 
@@ -1650,7 +1661,7 @@ WhbContext::~WhbContext()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::xhcSetDisplay()
+void WhbContext::sendDisplayData()
 {
     usb.xhcSetDisplay();
 }
@@ -2131,9 +2142,9 @@ void WhbContext::handleStep()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::setupAsyncTransfer()
+bool WhbContext::enableReceiveAsyncTransfer()
 {
-    usb.setupAsyncTransfer();
+    return usb.setupAsyncTransfer();
 }
 
 // ----------------------------------------------------------------------
@@ -2155,10 +2166,74 @@ void WhbContext::setSimulationMode(bool enableSimulationMode)
 
 // ----------------------------------------------------------------------
 
-void WhbContext::halTeardown()
-{
 
+void WhbContext::setUsbContext(libusb_context* context)
+{
+    usb.setContext(context);
 }
+
+// ----------------------------------------------------------------------
+
+libusb_device_handle* WhbContext::getUsbDeviceHandle()
+{
+    return usb.getDeviceHandle();
+}
+
+// ----------------------------------------------------------------------
+
+libusb_context* WhbContext::getUsbContext()
+{
+    return usb.getContext();
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::process()
+{
+    if (usb.isDeviceOpen())
+    {
+        while (isRunning() && !usb.getDoReconnect())
+        {
+            struct timeval tv;
+            tv.tv_sec  = 4;
+            tv.tv_usec = 0;
+            // TODO: investigate why no synchronization is implemented here
+            int r = libusb_handle_events_timeout_completed(getUsbContext(), &tv, nullptr);
+            assert(r == 0);
+            computeVelocity();
+            if (hal.getIsSimulationMode())
+            {
+                linuxcncSimulate();
+            }
+            //handleStep();
+            sendDisplayData();
+        }
+
+        *(hal.memory.isPendantConnected) = 0;
+        cout << "connection lost, cleaning up" << endl;
+        struct timeval tv;
+        int r = libusb_cancel_transfer(usb.inTransfer);
+        assert((0 == r) || (r == LIBUSB_ERROR_NOT_FOUND));
+        //tv.tv_sec  = 1;
+        //tv.tv_usec = 0;
+        //r = libusb_handle_events_timeout_completed(getUsbContext(), &tv, nullptr);
+        //assert(0 == r);
+        r = libusb_release_interface(getUsbDeviceHandle(), 0);
+        assert((0 == r) || (r == LIBUSB_ERROR_NO_DEVICE));
+        //free(usb.inTransfer);
+        usb.inTransfer =  libusb_alloc_transfer(0);
+        libusb_close(getUsbDeviceHandle());
+        usb.setDeviceHandle(nullptr);
+    }
+}
+
+void WhbContext::teardownUsb()
+{
+    libusb_exit(getUsbContext());
+    usb.setContext(nullptr);
+}
+
+
 // ----------------------------------------------------------------------
 
 void WhbUsb::setSimulationMode(bool isSimulationMode)
@@ -2182,15 +2257,21 @@ void WhbUsb::requestTermination()
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::setupAsyncTransfer()
+bool WhbUsb::setupAsyncTransfer()
 {
-    libusb_transfer* transfer = libusb_alloc_transfer(0);
-    assert(transfer != nullptr);
-    libusb_fill_bulk_transfer(transfer, deviceHandle, (0x1 | LIBUSB_ENDPOINT_IN), // todo: LIBUSB_ENDPOINT_IN
-                              inputPackageBuffer.asBuffer, sizeof(inputPackageBuffer.asBuffer),
-                              usbInputResponseCallback, nullptr, 750); // timeout
-    int r = libusb_submit_transfer(transfer);
+    //libusb_transfer* transfer = libusb_alloc_transfer(0);
+    assert(inTransfer != nullptr);
+    libusb_fill_bulk_transfer(inTransfer, deviceHandle,
+        //! TODO: LIBUSB_ENDPOINT_IN
+                              (0x1 | LIBUSB_ENDPOINT_IN), inputPackageBuffer.asBuffer,
+                              sizeof(inputPackageBuffer.asBuffer), usbInputResponseCallback,
+        //! no callback data
+                              nullptr,
+        //! timeout[ms]
+                              750);
+    int r = libusb_submit_transfer(inTransfer);
     assert(0 == r);
+    return (0 == r);
 }
 // ----------------------------------------------------------------------
 
@@ -2273,6 +2354,7 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
         case (LIBUSB_TRANSFER_TIMED_OUT):
             if (mIsRunning)
             {
+                cout << "libusb transfer timed out" << endl;
                 setupAsyncTransfer();
             }
             break;
@@ -2293,8 +2375,19 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
             requestTermination();
             break;
     }
+    //libusb_free_transfer(transfer);
+}
 
-    libusb_free_transfer(transfer);
+WhbUsb::~WhbUsb()
+{
+    if (inTransfer != nullptr)
+    {
+        free(inTransfer);
+    }
+    if (outTransfer != nullptr)
+    {
+        free(outTransfer);
+    }
 }
 
 
@@ -2624,8 +2717,6 @@ int main(int argc, char** argv)
 {
     int     r;
     ssize_t cnt;
-#define MAX_WAIT_SECS 10
-    int wait_secs       = 0;
 
     int  opt;
     bool hal_ready_done = false;
@@ -2648,9 +2739,9 @@ int main(int argc, char** argv)
         }
     }
 
-    Whb.halInit();
-
     registerSignalHandler();
+
+    Whb.halInit();
 
     if (!Whb.usb.getWaitForPendantBeforeHAL() && !Whb.hal.getIsSimulationMode())
     {
@@ -2660,28 +2751,42 @@ int main(int argc, char** argv)
 
     while (Whb.isRunning())
     {
-        //on reconnect wait for device to be gone
+        Whb.initWhb();
         if (Whb.usb.getDoReconnect() == true)
         {
-            sleep(5);
+            int pauseSecs = 5;
+            cout << "pausing " << pauseSecs << "s, waiting for device to be gone ...";
+            while ((pauseSecs--) >= 0)
+            {
+                cout << "." << std::flush;
+                sleep(1);
+            }
             Whb.usb.setDoReconnect(false);
+            cout << " done" << endl;
         }
 
-        // todo: refactor me
+        cout << "init usb context ...";
         r = libusb_init(Whb.usb.getContextReference());
 
         if (r != 0)
         {
-            perror("libusb_init");
-            return 1;
+            cerr << endl << "failed to initialize usb context" << endl;
+            exit(EXIT_FAILURE);
         }
-        libusb_set_debug(Whb.usb.getContext(), 3);
+        cout << " ok" << endl;
 
-        cout << Whb.getName() << "waiting for device ..." << endl;
+        libusb_set_debug(Whb.usb.getContext(), LIBUSB_LOG_LEVEL_DEBUG);
+
         *(Whb.hal.memory.isPendantConnected) = 0;
-        wait_secs = 0;
+        int waitSecs = 10;
         *(Whb.hal.memory.isPendantRequired) = Whb.usb.getWaitForPendantBeforeHAL();
         //*(Whb.hal.memory.stepsize)          = stepsize_sequence[0];
+
+        if (Whb.usb.getWaitForPendantBeforeHAL())
+        {
+            cout << "waiting maximum " << waitSecs << "s for device " << Whb.getName() << Whb.usb.getUsbVendorId()
+                 << " productId=" << Whb.usb.getUsbProductId() << " ...";
+        }
 
         do
         {
@@ -2689,27 +2794,23 @@ int main(int argc, char** argv)
             cnt = libusb_get_device_list(Whb.usb.getContext(), &devs);
             if (cnt < 0)
             {
-                perror("libusb_get_device_list");
-                return 1;
+                cerr << endl << "failed to get device list" << endl;
+                exit(EXIT_FAILURE);
             }
 
-            // todo: refactor me
             Whb.usb.setDeviceHandle(libusb_open_device_with_vid_pid(Whb.usb.getContext(), Whb.usb.getUsbVendorId(),
                                                                     Whb.usb.getUsbProductId()));
             libusb_free_device_list(devs, 1);
+            cout << "." << std::flush;
             if (Whb.usb.isDeviceOpen() == false)
             {
+                cout << "." << std::flush;
                 if (Whb.usb.getWaitForPendantBeforeHAL())
                 {
-                    wait_secs++;
-                    if (wait_secs >= MAX_WAIT_SECS / 2)
+                    cout << "." << std::flush;
+                    if ((waitSecs--) <= 0)
                     {
-                        cout << Whb.getName() << ": waiting " << wait_secs << "s for device " << Whb.getName() << "..."
-                             << endl;
-                    }
-                    if (wait_secs > MAX_WAIT_SECS)
-                    {
-                        cout << Whb.getName() << ": MAX_WAIT_SECS=" << MAX_WAIT_SECS << " exceeded, exiting" << endl;
+                        cerr << endl << "timeout exceeded, exiting" << endl;
                         exit(EXIT_FAILURE);
                     }
                 }
@@ -2717,23 +2818,29 @@ int main(int argc, char** argv)
             }
         } while ((Whb.usb.isDeviceOpen() == false) && Whb.isRunning());
 
-        cout << Whb.getName() << ": found " << Whb.getName() << " device" << endl;
+        cout << " ok" << endl << Whb.getName() << " device found" << endl;
 
-        if (Whb.usb.isDeviceOpen() != false)
+        if (Whb.usb.isDeviceOpen())
         {
-            // todo: refactor me
+            cout << "detaching active kernel driver ...";
             if (libusb_kernel_driver_active(Whb.usb.getDeviceHandle(), 0) == 1)
             {
-                int r = libusb_detach_kernel_driver(Whb.usb.getDeviceHandle(), 0);
+                int r = libusb_detach_kernel_driver(Whb.getUsbDeviceHandle(), 0);
                 assert(0 == r);
+                cout << " ok" << endl;
             }
-
-            r = libusb_claim_interface(Whb.usb.getDeviceHandle(), 0);
+            else
+            {
+                cout << " already detached" << endl;
+            }
+            cout << "claiming interface ...";
+            r = libusb_claim_interface(Whb.getUsbDeviceHandle(), 0);
             if (r != 0)
             {
-                perror("libusb_claim_interface");
-                return 1;
+                cerr << endl << "failed to claim interface" << endl;
+                exit(EXIT_FAILURE);
             }
+            cout << " ok" << endl;
         }
 
         *(Whb.hal.memory.isPendantConnected) = 1;
@@ -2746,52 +2853,20 @@ int main(int argc, char** argv)
 
         if (Whb.usb.isDeviceOpen())
         {
-            Whb.setupAsyncTransfer();
-            Whb.xhcSetDisplay();
-        }
-
-        if (Whb.usb.isDeviceOpen())
-        {
-            while (Whb.isRunning() && !Whb.usb.getDoReconnect())
+            cout << "enabling reception ...";
+            if (!Whb.enableReceiveAsyncTransfer())
             {
-                struct timeval tv;
-                tv.tv_sec  = 0;
-                tv.tv_usec = 5 * 10 * 100 * 1000;
-                libusb_handle_events_timeout_completed(Whb.usb.getContext(), &tv, nullptr);
-                Whb.computeVelocity();
-                if (Whb.hal.getIsSimulationMode())
-                {
-                    Whb.linuxcncSimulate();
-                }
-                Whb.handleStep();
-                Whb.xhcSetDisplay();
+                cerr << endl << "failed to enable reception" << endl;
+                exit(EXIT_FAILURE);
             }
+            cout << " ok" << endl;
+            //Whb.sendDisplayData();
+        }
 
-            *(Whb.hal.memory.isPendantConnected) = 0;
-            cout << Whb.getName() << ": connection lost, cleaning up" << endl;
-            struct timeval tv;
-            tv.tv_sec  = 0;
-            tv.tv_usec = 750000;
-            int r = libusb_handle_events_timeout_completed(Whb.usb.getContext(), &tv, nullptr);
-            assert(0 == r);
-            // todo: refactor me
-            r = libusb_release_interface(Whb.usb.getDeviceHandle(), 0);
-            assert(0 == r);
-            libusb_close(Whb.usb.getDeviceHandle());
-            Whb.usb.setDeviceHandle(nullptr);
-        }
-        else
-        {
-            while (!Whb.isRunning())
-                usleep(70000);
-        }
-        // todo: refactor me
-        libusb_exit(Whb.usb.getContext());
-        // todo: refactor me
-        Whb.usb.setContext(nullptr);
+        Whb.process();
+        Whb.teardownUsb();
     }
-    // todo: refactor me
-    Whb.halExit();
+    Whb.teardownHal();
 
     //! hotfix for https://github.com/machinekit/machinekit/issues/1266
     if (Whb.hal.getIsSimulationMode())
