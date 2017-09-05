@@ -90,6 +90,8 @@ class WhbButtonsState;
 
 class WhbUsbOutPackageBlockFields;
 
+union WhbUsbOutPackageBlock;
+
 class WhbUsbOutPackageBlocks;
 
 class WhbUsbOutPackageAxisCoordinate;
@@ -1489,16 +1491,6 @@ WhbUsb::WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalM
 
 void WhbUsb::sendDisplayData()
 {
-    static unsigned char i = 0;
-    outputPackageData.clear();
-    outputPackageData.spindleSpeed = 42;
-    outputPackageData.feedRate     = 21;
-    outputPackageData.row1Coordinate.setCoordinate(i);
-    outputPackageData.row2Coordinate.setCoordinate(0);
-    outputPackageData.row3Coordinate.setCoordinate(0);
-
-    outputPackageData.displayModeFlags.asBitFields.stepMode            = DisplayIndicatorStepMode::CONTINUOUS;
-    outputPackageData.displayModeFlags.asBitFields.isMachineCoordinate = 0;
     outputPackageBuffer.asBlocks.init(&outputPackageData);
 
     if (mIsSimulationMode)
