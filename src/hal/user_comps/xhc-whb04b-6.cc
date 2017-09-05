@@ -88,7 +88,7 @@ class WhbStepHandler;
 
 class WhbButtonsState;
 
-class WhbUsbOutPackageBlock;
+class WhbUsbOutPackageBlockFields;
 
 class WhbUsbOutPackageBlocks;
 
@@ -124,7 +124,7 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate&
 
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data);
 
-std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlock& block);
+std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlockFields& block);
 
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlocks& blocks);
 
@@ -562,7 +562,7 @@ private:
 
 //! Convenience structure for initializing a transmission block.
 //! Caution: do not reorder fields!
-class WhbUsbOutPackageBlock
+class WhbUsbOutPackageBlockFields
 {
 public:
     //! constant 0x06
@@ -575,10 +575,31 @@ public:
     uint8_t __padding5;
     uint8_t __padding6;
 
-    WhbUsbOutPackageBlock();
+    WhbUsbOutPackageBlockFields();
 
     void init(const void* data);
 
+} __attribute__((packed));
+
+// ----------------------------------------------------------------------
+
+//! Convenience structure for accessing a block as byte buffer.
+class WhbUsbOutPackageBlockBuffer
+{
+public:
+    uint8_t asBytes[sizeof(WhbUsbOutPackageBlockFields)];
+} __attribute__((packed));
+
+
+// ----------------------------------------------------------------------
+
+union WhbUsbOutPackageBlock
+{
+public:
+    WhbUsbOutPackageBlockBuffer asBuffer;
+    WhbUsbOutPackageBlockFields asBlock;
+
+    WhbUsbOutPackageBlock();
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -588,15 +609,15 @@ public:
 class WhbUsbOutPackageBlocks
 {
 public:
-    WhbUsbOutPackageBlock block0;
-    WhbUsbOutPackageBlock block1;
-    WhbUsbOutPackageBlock block2;
+    WhbUsbOutPackageBlockFields block0;
+    WhbUsbOutPackageBlockFields block1;
+    WhbUsbOutPackageBlockFields block2;
 
     WhbUsbOutPackageBlocks();
 
     void init(const WhbUsbOutPackageData* data);
 
-}__attribute__((packed));
+} __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
@@ -840,7 +861,7 @@ public:
 
     bool setupAsyncTransfer();
 
-    void xhcSetDisplay();
+    void sendDisplayData();
 
     void enableVerboseTx(bool enable);
 
@@ -1004,6 +1025,14 @@ private:
     void printHexdump(const WhbUsbInPackage& inPackage);
 
 };
+
+// ----------------------------------------------------------------------
+
+WhbUsbOutPackageBlock::WhbUsbOutPackageBlock() :
+    asBlock()
+{
+    assert(sizeof(WhbUsbOutPackageBlockBuffer) == sizeof(WhbUsbOutPackageBlockFields));
+}
 
 // ----------------------------------------------------------------------
 
@@ -1458,7 +1487,7 @@ WhbUsb::WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalM
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::xhcSetDisplay()
+void WhbUsb::sendDisplayData()
 {
     static unsigned char i = 0;
     outputPackageData.clear();
@@ -1474,11 +1503,11 @@ void WhbUsb::xhcSetDisplay()
 
     if (mIsSimulationMode)
     {
-        *verboseTxOut << dec << "out bytes count " << sizeof(outputPackageBuffer.asBlockArray) << endl << "0x"
-                      << outputPackageBuffer.asBlocks << endl << outputPackageData << endl;
+        *verboseTxOut << dec << "out bytes count " << sizeof(outputPackageBuffer.asBlockArray)
+                      << endl << "0x" << outputPackageBuffer.asBlocks << endl << outputPackageData << endl;
     }
 
-    for (size_t idx = 0; idx < (sizeof(outputPackageBuffer.asBlockArray) / sizeof(WhbUsbOutPackageBlock)); idx++)
+    for (size_t idx = 0; idx < (sizeof(outputPackageBuffer.asBlockArray) / sizeof(WhbUsbOutPackageBlockFields)); idx++)
     {
         WhbUsbOutPackageBlock& block = outputPackageBuffer.asBlockArray[idx];
         size_t blockSize = sizeof(WhbUsbOutPackageBlock);
@@ -1496,7 +1525,7 @@ void WhbUsb::xhcSetDisplay()
             // wIndex, device interface number
                                                    0x00,
             // data to transmit
-                                                   reinterpret_cast<unsigned char*>(&block),
+                                                   block.asBuffer.asBytes,
             // wLength, data length
                                                    blockSize,
             // transfer timeout[ms]
@@ -1726,7 +1755,7 @@ WhbContext::~WhbContext()
 
 void WhbContext::sendDisplayData()
 {
-    usb.xhcSetDisplay();
+    usb.sendDisplayData();
 }
 
 
@@ -1850,7 +1879,7 @@ DisplayIndicator::DisplayIndicator() :
 
 // ----------------------------------------------------------------------
 
-WhbUsbOutPackageBlock::WhbUsbOutPackageBlock() :
+WhbUsbOutPackageBlockFields::WhbUsbOutPackageBlockFields() :
     reportId(0x06),
     __padding0(0),
     __padding1(0),
@@ -1864,7 +1893,7 @@ WhbUsbOutPackageBlock::WhbUsbOutPackageBlock() :
 
 // ----------------------------------------------------------------------
 
-void WhbUsbOutPackageBlock::init(const void* data)
+void WhbUsbOutPackageBlockFields::init(const void* data)
 {
     reportId   = 0x06;
     __padding0 = reinterpret_cast<const uint8_t*>(data)[0];
@@ -1878,7 +1907,7 @@ void WhbUsbOutPackageBlock::init(const void* data)
 
 // ----------------------------------------------------------------------
 
-std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlock& block)
+std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlockFields& block)
 {
     ios init(NULL);
     init.copyfmt(os);
@@ -1969,15 +1998,15 @@ WhbUsbOutPackageBuffer::WhbUsbOutPackageBuffer() :
     asBlocks()
 {
     /*cout << "sizeof usb data " << sizeof(WhbUsbOutPackageData) << endl
-         << " blocks count   " << sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlock) << endl
-         << " sizeof block   " << sizeof(WhbUsbOutPackageBlock) << endl
+         << " blocks count   " << sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlockFields) << endl
+         << " sizeof block   " << sizeof(WhbUsbOutPackageBlockFields) << endl
          << " sizeof blocks  " << sizeof(WhbUsbOutPackageBlocks) << endl
          << " sizeof array   " << sizeof(asBlockArray) << endl
-         << " sizeof package " << sizeof(WhbUsbOutPackageData) << endl;*/
+         << " sizeof package " << sizeof(WhbUsbOutPackageData) << endl
+         << " sizeof buffer  " << sizeof(asBytes) << endl;*/
     assert(sizeof(WhbUsbOutPackageBlocks) == sizeof(asBlockArray));
-    size_t blocksCount = sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlock);
+    size_t blocksCount = sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlockFields);
     assert ((sizeof(WhbUsbOutPackageData) + blocksCount) == sizeof(WhbUsbOutPackageBlocks));
-
 }
 
 // ----------------------------------------------------------------------
