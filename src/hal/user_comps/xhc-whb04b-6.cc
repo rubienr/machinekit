@@ -128,7 +128,6 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlock& block);
 
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlocks& blocks);
 
-
 // ----------------------------------------------------------------------
 
 //! HAL memory pointers. Each pointer represents an i/o hal pin.
@@ -264,10 +263,14 @@ public:
 
     const char* getHalComponentName() const;
 
+    void setEnableVerbose(bool enable);
+
 private:
     bool mIsSimulationMode;
     const char* mName;
-    int mHalCompId;
+    int          mHalCompId;
+    std::ostream devNull;
+    std::ostream* verboseHalOut;
 
     //! allocates new hal pin according to \ref mIsSimulationMode
     int newSimulatedHalPin(char* pin_name, void** ptr, int s);
@@ -283,6 +286,7 @@ private:
 
     //! allocates new hal pin according to \ref mIsSimulationMode
     void freeSimulatedPin(void** pin);
+
 };
 
 // ----------------------------------------------------------------------
@@ -783,14 +787,14 @@ public:
 //! USB related parameters
 class WhbUsb
 {
-    friend XhcWhb04b6::WhbContext;
+    //friend XhcWhb04b6::WhbContext;
 
     const uint16_t usbVendorId;
     const uint16_t usbProductId;
     libusb_context      * context;
     libusb_device_handle* deviceHandle;
     bool                   do_reconnect;
-    bool                   wait_for_pendant_before_HAL;
+    bool                   isWaitWithTimeout;
     bool                   mIsSimulationMode;
     WhbSleepDetect         sleepState;
     bool                   mIsRunning;
@@ -801,6 +805,9 @@ class WhbUsb
     WhbHalMemory                    & mHalMemory;
     struct libusb_transfer          * inTransfer;
     struct libusb_transfer          * outTransfer;
+    std::ostream devNull;
+    std::ostream* verboseTxOut;
+    std::ostream* verboseRxOut;
 
 public:
 
@@ -822,9 +829,9 @@ public:
 
     void setDeviceHandle(libusb_device_handle* deviceHandle);
 
-    void setWaitForPendantBeforeHAL(bool waitForPendantBeforeHAL);
+    void setWaitWithTimeout(bool enableTimeout);
 
-    bool getWaitForPendantBeforeHAL() const;
+    bool isWaitForPendantBeforeHalEnabled() const;
 
     bool getDoReconnect() const;
 
@@ -845,7 +852,13 @@ public:
     ~WhbUsb();
 
     void xhcSetDisplay();
+
+    void enableVerboseTx(bool enable);
+
+    void enableVerboseRx(bool enable);
+
 };
+
 // ----------------------------------------------------------------------
 
 const WhbConstantUsbPackages WhbUsb::ConstantPackages;
@@ -923,11 +936,21 @@ public:
     //! todo: doxy, move
     bool isRunning() const;
 
+    int run();
+
     void setSimulationMode(bool enableSimulationMode);
 
     WhbContext();
 
     virtual ~WhbContext();
+
+    void enableVerboseRx(bool enable);
+
+    void enableVerboseTx(bool enable);
+
+    void enableVerboseHalInit(bool enable);
+
+    void enableVerboseInit(bool enable);
 
     WhbUsb usb;
 private:
@@ -940,17 +963,34 @@ private:
     WhbVelocityComputation velocityComputation;
     bool                   doRun;
     bool                   mIsSimulationMode;
+    std::ostream           devNull;
+    std::ostream* verboseTxOut;
+    std::ostream* verboseRxOut;
+    std::ostream* verboseHalInitOut;
+    std::ostream* verboseInitOut;
 
-    //! todo: doxy
+    //! prints human readable output of the push buttons state
+    void printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out);
+
+    //! prints human readable output of the push buttons state to \ref verboseRxOut stream
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode);
 
-    //! todo: doxy
+    //! prints human readable output of the push buttons state to \p out
+    void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode, std::ostream& out);
+
+    //! prints human readable output of the rotary button text to \ref verboseRxOut stream
     void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode);
 
-    //! todo: doxy
+    //! prints human readable output of the rotary button text to \p out
+    void printInputData(const WhbUsbInPackage& inPackage, std::ostream& out);
+
+    //! prints human readable output of the input package to \ref verboseRxOut stream
     void printInputData(const WhbUsbInPackage& inPackage);
 
-    //! todo: doxy
+    //! prints human readable output of the input package to \p out
+    void printHexdump(const WhbUsbInPackage& inPackage, std::ostream& out);
+
+    //! prints a hexdump of the input package to \ref verboseRxOut stream
     void printHexdump(const WhbUsbInPackage& inPackage);
 
 };
@@ -1357,16 +1397,16 @@ void WhbUsb::setDeviceHandle(libusb_device_handle* deviceHandle)
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::setWaitForPendantBeforeHAL(bool waitForPendantBeforeHAL)
+void WhbUsb::setWaitWithTimeout(bool enableTimeout)
 {
-    wait_for_pendant_before_HAL = waitForPendantBeforeHAL;
+    isWaitWithTimeout = enableTimeout;
 }
 
 // ----------------------------------------------------------------------
 
-bool WhbUsb::getWaitForPendantBeforeHAL() const
+bool WhbUsb::isWaitForPendantBeforeHalEnabled() const
 {
-    return wait_for_pendant_before_HAL;
+    return isWaitWithTimeout;
 }
 
 // ----------------------------------------------------------------------
@@ -1393,7 +1433,7 @@ WhbUsb::WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalM
     context(nullptr),
     deviceHandle(nullptr),
     do_reconnect(false),
-    wait_for_pendant_before_HAL(false),
+    isWaitWithTimeout(false),
     mIsSimulationMode(false),
     sleepState(),
     mIsRunning(false),
@@ -1402,7 +1442,10 @@ WhbUsb::WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalM
     mDataHandler(onDataReceivedCallback),
     mHalMemory(halMemory),
     inTransfer(libusb_alloc_transfer(0)),
-    outTransfer(libusb_alloc_transfer(0))
+    outTransfer(libusb_alloc_transfer(0)),
+    devNull(nullptr),
+    verboseTxOut(&devNull),
+    verboseRxOut(&devNull)
 {
     gettimeofday(&sleepState.last_wakeup, nullptr);
 }
@@ -1424,8 +1467,8 @@ void WhbUsb::xhcSetDisplay()
 
     if (mIsSimulationMode)
     {
-        cout << dec << "block bytes count " << sizeof(outputPackageBuffer.asBlockArray) << endl
-             << outputPackageBuffer.asBlocks << endl << outputPackageData << endl;
+        *verboseTxOut << dec << "out bytes count " << sizeof(outputPackageBuffer.asBlockArray) << endl << "0x"
+                      << outputPackageBuffer.asBlocks << endl << outputPackageData << endl;
     }
 
     for (size_t idx = 0; idx < (sizeof(outputPackageBuffer.asBlockArray) / sizeof(WhbUsbOutPackageBlock)); idx++)
@@ -1454,7 +1497,7 @@ void WhbUsb::xhcSetDisplay()
 
         if (r < 0)
         {
-            cout << "transmission failed, try to reconnect ..." << endl;
+            cerr << "transmission failed, try to reconnect ..." << endl;
             setDoReconnect(true);
             return;
         }
@@ -1540,11 +1583,11 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
         if (inPackage.rotaryButtonFeedKeyCode != 0)
         {
             ios init(NULL);
-            init.copyfmt(cout);
-            cout << " delta " << setfill(' ') << setw(2) << (unsigned short)inPackage.rotaryButtonFeedKeyCode;
-            cout.copyfmt(init);
+            init.copyfmt(*verboseRxOut);
+            *verboseRxOut << " delta " << setfill(' ') << setw(2) << (unsigned short)inPackage.rotaryButtonFeedKeyCode;
+            verboseRxOut->copyfmt(init);
         }
-        cout << " => ";
+        *verboseRxOut << " => ";
         printInputData(inPackage);
     }
 
@@ -1557,7 +1600,7 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
             *(hal.memory.button_pin[idx]) = true;
             if (hal.getIsSimulationMode())
             {
-                cout << " pressed ";
+                *verboseRxOut << " pressed ";
                 printPushButtonText(keyCode, modifierCode);
             }
         }
@@ -1569,7 +1612,7 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
 
     if (hal.getIsSimulationMode())
     {
-        cout << endl;
+        *verboseRxOut << endl;
     }
 }
 
@@ -1577,7 +1620,7 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
 
 void WhbContext::initWhb()
 {
-    stepHandler.old_inc_step_status = -1;
+    //stepHandler.old_inc_step_status = -1;
     //gettimeofday(&sleepState.last_wakeup, nullptr);
     doRun = true;
     usb.setIsRunning(true);
@@ -1589,11 +1632,11 @@ void WhbContext::requestTermination(int signal)
 {
     if (signal >= 0)
     {
-        cout << "termination requested upon signal number " << signal << " ..." << endl;
+        *verboseInitOut << "termination requested upon signal number " << signal << " ..." << endl;
     }
     else
     {
-        cout << "termination requested ... " << endl;
+        *verboseInitOut << "termination requested ... " << endl;
     }
     usb.requestTermination();
     doRun = false;
@@ -1651,8 +1694,18 @@ WhbContext::WhbContext() :
                        stepHandler.stepSize.continuous),
     velocityComputation(),
     doRun(false),
-    mIsSimulationMode(false)
+    mIsSimulationMode(false),
+    devNull(nullptr),
+    verboseTxOut(&devNull),
+    verboseRxOut(&devNull),
+    verboseHalInitOut(&devNull),
+    verboseInitOut(&devNull)
 {
+    setSimulationMode(true);
+    enableVerboseRx(false);
+    enableVerboseTx(false);
+    enableVerboseInit(false);
+    enableVerboseHalInit(false);
 }
 
 WhbContext::~WhbContext()
@@ -1670,12 +1723,12 @@ void WhbContext::sendDisplayData()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
+void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out)
 {
     ios init(NULL);
-    init.copyfmt(cout);
+    init.copyfmt(out);
     int indent = 10;
-    cout << setfill(' ');
+    out << setfill(' ');
 
     // no key code
     if (keyCode == codes.buttons.undefined.code)
@@ -1683,12 +1736,12 @@ void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
         // modifier specified
         if (modifierCode == codes.buttons.function.code)
         {
-            cout << setw(indent) << codes.buttons.function.text;
+            out << setw(indent) << codes.buttons.function.text;
         }
             // no modifier specified
         else
         {
-            cout << setw(indent) << codes.buttons.undefined.text;
+            out << setw(indent) << codes.buttons.undefined.text;
         }
         return;
     }
@@ -1706,21 +1759,21 @@ void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
     // print key text
     if (modifierCode == codes.buttons.function.code)
     {
-        cout << setw(indent) << whbKeyCode->altText;
+        out << setw(indent) << whbKeyCode->altText;
     }
     else
     {
-        cout << setw(indent) << whbKeyCode->text;
+        out << setw(indent) << whbKeyCode->text;
     }
-    cout.copyfmt(init);
+    out.copyfmt(init);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode)
+void WhbContext::printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode, std::ostream& out)
 {
     ios init(NULL);
-    init.copyfmt(cout);
+    init.copyfmt(out);
 
     // find key code
     const WhbKeyCode* whbKeyCode = keyCodeBase;
@@ -1732,8 +1785,8 @@ void WhbContext::printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t ke
         }
         whbKeyCode++;
     }
-    cout << setw(5) << whbKeyCode->text << "(" << setw(4) << whbKeyCode->altText << ")";
-    cout.copyfmt(init);
+    out << setw(5) << whbKeyCode->text << "(" << setw(4) << whbKeyCode->altText << ")";
+    out.copyfmt(init);
 }
 
 // ----------------------------------------------------------------------
@@ -1889,12 +1942,12 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data)
     ios init(NULL);
     init.copyfmt(os);
 
-    os << hex << setfill('0') << "header " << setw(2) << data.header << endl << "dom    0x" << setw(2)
+    os << hex << setfill('0') << "header       0x" << setw(2) << data.header << endl << "day of month   0x" << setw(2)
        << static_cast<unsigned short>(data.dayOfMonth) << endl << "status 0x" << setw(2)
-       << static_cast<unsigned short>(data.displayModeFlags.asByte) << endl << dec << "coordinate 1 "
-       << data.row1Coordinate << endl << "coordinate 2 " << data.row2Coordinate << endl << "coordinate 3 "
-       << data.row3Coordinate << endl << "feed rate    " << data.feedRate << endl << "spindle rps  "
-       << data.spindleSpeed << endl;
+       << static_cast<unsigned short>(data.displayModeFlags.asByte) << endl << dec << "coordinate1  "
+       << data.row1Coordinate << endl << "coordinate2  " << data.row2Coordinate << endl << "coordinate3  "
+       << data.row3Coordinate << endl << "feed rate        " << data.feedRate << endl << "spindle rps      "
+       << data.spindleSpeed;
 
     os.copyfmt(init);
     return os;
@@ -1949,44 +2002,185 @@ WhbUsbInPackage::WhbUsbInPackage(const uint8_t notAvailable1, const uint8_t notA
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printInputData(const WhbUsbInPackage& inPackage)
+void WhbContext::printInputData(const WhbUsbInPackage& inPackage, std::ostream& out)
 {
     ios init(NULL);
-    init.copyfmt(cout);
+    init.copyfmt(out);
 
-    cout << "| " << setfill('0') << hex << setw(2) << static_cast<unsigned short>(inPackage.header) << " | " << setw(2)
-         << static_cast<unsigned short>(inPackage.dayOfMonth) << " | ";
-    cout.copyfmt(init);
-    printPushButtonText(inPackage.buttonKeyCode1, inPackage.buttonKeyCode2);
-    cout << " | ";
-    printPushButtonText(inPackage.buttonKeyCode2, inPackage.buttonKeyCode1);
-    cout << " | ";
-    printRotaryButtonText((WhbKeyCode*)&codes.feed, inPackage.rotaryButtonFeedKeyCode);
-    cout << " | ";
-    printRotaryButtonText((WhbKeyCode*)&codes.axis, inPackage.rotaryButtonAxisKeyCode);
-    cout << " | " << setfill(' ') << setw(3) << static_cast<short>(inPackage.stepCount) << " | " << hex << setfill('0')
-         << setw(2) << static_cast<unsigned short>(inPackage.crc);
+    out << "| " << setfill('0') << hex << setw(2) << static_cast<unsigned short>(inPackage.header) << " | " << setw(2)
+        << static_cast<unsigned short>(inPackage.dayOfMonth) << " | ";
+    out.copyfmt(init);
+    printPushButtonText(inPackage.buttonKeyCode1, inPackage.buttonKeyCode2, out);
+    out << " | ";
+    printPushButtonText(inPackage.buttonKeyCode2, inPackage.buttonKeyCode1, out);
+    out << " | ";
+    printRotaryButtonText((WhbKeyCode*)&codes.feed, inPackage.rotaryButtonFeedKeyCode, out);
+    out << " | ";
+    printRotaryButtonText((WhbKeyCode*)&codes.axis, inPackage.rotaryButtonAxisKeyCode, out);
+    out << " | " << setfill(' ') << setw(3) << static_cast<short>(inPackage.stepCount) << " | " << hex << setfill('0')
+        << setw(2) << static_cast<unsigned short>(inPackage.crc);
 
-    cout.copyfmt(init);
+    out.copyfmt(init);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printHexdump(const WhbUsbInPackage& inPackage)
+void WhbContext::printHexdump(const WhbUsbInPackage& inPackage, std::ostream& out)
 {
     ios init(NULL);
-    init.copyfmt(cout);
+    init.copyfmt(out);
 
-    cout << setfill('0') << hex << "0x" << setw(2) << static_cast<unsigned short>(inPackage.header) << " " << setw(2)
-         << static_cast<unsigned short>(inPackage.dayOfMonth) << " " << setw(2)
-         << static_cast<unsigned short>(inPackage.buttonKeyCode1) << " " << setw(2)
-         << static_cast<unsigned short>(inPackage.buttonKeyCode2) << " " << setw(2)
-         << static_cast<unsigned short>(inPackage.rotaryButtonFeedKeyCode) << " " << setw(2)
-         << static_cast<unsigned short>(inPackage.rotaryButtonAxisKeyCode) << " " << setw(2)
-         << static_cast<unsigned short>(inPackage.stepCount & 0xff) << " " << setw(2)
-         << static_cast<unsigned short>(inPackage.crc);
+    out << setfill('0') << hex << "0x" << setw(2) << static_cast<unsigned short>(inPackage.header) << " " << setw(2)
+        << static_cast<unsigned short>(inPackage.dayOfMonth) << " " << setw(2)
+        << static_cast<unsigned short>(inPackage.buttonKeyCode1) << " " << setw(2)
+        << static_cast<unsigned short>(inPackage.buttonKeyCode2) << " " << setw(2)
+        << static_cast<unsigned short>(inPackage.rotaryButtonFeedKeyCode) << " " << setw(2)
+        << static_cast<unsigned short>(inPackage.rotaryButtonAxisKeyCode) << " " << setw(2)
+        << static_cast<unsigned short>(inPackage.stepCount & 0xff) << " " << setw(2)
+        << static_cast<unsigned short>(inPackage.crc);
 
-    cout.copyfmt(init);
+    out.copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
+
+int WhbContext::run()
+{
+    bool hal_ready_done = false;
+    initWhb();
+    halInit();
+
+    if (!usb.isWaitForPendantBeforeHalEnabled() && !hal.getIsSimulationMode())
+    {
+        hal_ready(hal.getHalComponentId());
+        hal_ready_done = true;
+    }
+
+    while (isRunning())
+    {
+        initWhb();
+        if (usb.getDoReconnect() == true)
+        {
+            int pauseSecs = 3;
+            *verboseInitOut << "pausing " << pauseSecs << "s, waiting for device to be gone ...";
+            while ((pauseSecs--) >= 0)
+            {
+                *verboseInitOut << "." << std::flush;
+                sleep(1);
+            }
+            usb.setDoReconnect(false);
+            *verboseInitOut << " done" << endl;
+        }
+
+        *verboseInitOut << "init usb context ...";
+        int r = libusb_init(usb.getContextReference());
+        if (r != 0)
+        {
+            cerr << endl << "failed to initialize usb context" << endl;
+            return EXIT_FAILURE;
+        }
+        *verboseInitOut << " ok" << endl;
+
+        //libusb_set_debug(Whb.usb.getContext(), LIBUSB_LOG_LEVEL_DEBUG);
+        libusb_set_debug(usb.getContext(), LIBUSB_LOG_LEVEL_INFO);
+
+        *(hal.memory.isPendantConnected) = 0;
+        *(hal.memory.isPendantRequired)  = usb.isWaitForPendantBeforeHalEnabled();
+
+        int waitSecs = 10;
+
+        if (usb.isWaitForPendantBeforeHalEnabled())
+        {
+            *verboseInitOut << "waiting maximum " << waitSecs << "s for device " << getName() << usb.getUsbVendorId()
+                            << " productId=" << usb.getUsbProductId() << " ...";
+        }
+        else
+        {
+            *verboseInitOut << "not waiting for device, will continue" << waitSecs << "s for device " << getName()
+                            << usb.getUsbVendorId() << " productId=" << usb.getUsbProductId() << " ...";
+        }
+
+        do
+        {
+            libusb_device** devs;
+            ssize_t cnt = libusb_get_device_list(usb.getContext(), &devs);
+            if (cnt < 0)
+            {
+                cerr << endl << "failed to get device list" << endl;
+                return EXIT_FAILURE;
+            }
+
+            usb.setDeviceHandle(
+                libusb_open_device_with_vid_pid(usb.getContext(), usb.getUsbVendorId(), usb.getUsbProductId()));
+            libusb_free_device_list(devs, 1);
+            *verboseInitOut << "." << std::flush;
+            if (usb.isDeviceOpen() == false)
+            {
+                *verboseInitOut << "." << std::flush;
+                if (usb.isWaitForPendantBeforeHalEnabled())
+                {
+                    *verboseInitOut << "." << std::flush;
+                    if ((waitSecs--) <= 0)
+                    {
+                        cerr << endl << "timeout exceeded, exiting" << endl;
+                        exit(EXIT_FAILURE);
+                    }
+                }
+                sleep(1);
+            }
+        } while ((usb.isDeviceOpen() == false) && isRunning());
+
+        *verboseInitOut << " ok" << endl << getName() << " device found" << endl;
+
+        if (usb.isDeviceOpen())
+        {
+            *verboseInitOut << "detaching active kernel driver ...";
+            if (libusb_kernel_driver_active(usb.getDeviceHandle(), 0) == 1)
+            {
+                int r = libusb_detach_kernel_driver(getUsbDeviceHandle(), 0);
+                assert(0 == r);
+                *verboseInitOut << " ok" << endl;
+            }
+            else
+            {
+                *verboseInitOut << " already detached" << endl;
+            }
+            *verboseInitOut << "claiming interface ...";
+            int r = libusb_claim_interface(getUsbDeviceHandle(), 0);
+            if (r != 0)
+            {
+                cerr << endl << "failed to claim interface" << endl;
+                return EXIT_FAILURE;
+            }
+            *verboseInitOut << " ok" << endl;
+        }
+
+        *(hal.memory.isPendantConnected) = 1;
+
+        if (!hal_ready_done && !hal.getIsSimulationMode())
+        {
+            hal_ready(hal.getHalComponentId());
+            hal_ready_done = true;
+        }
+
+        if (usb.isDeviceOpen())
+        {
+            *verboseInitOut << "enabling reception ...";
+            if (!enableReceiveAsyncTransfer())
+            {
+                cerr << endl << "failed to enable reception" << endl;
+                return EXIT_FAILURE;
+            }
+            *verboseInitOut << " ok" << endl;
+            //Whb.sendDisplayData();
+        }
+
+        process();
+        teardownUsb();
+    }
+    teardownHal();
+
+    return 0;
 }
 
 // ----------------------------------------------------------------------
@@ -2199,7 +2393,8 @@ void WhbContext::process()
             tv.tv_usec = 0;
             // TODO: investigate why no synchronization is implemented here
             int r = libusb_handle_events_timeout_completed(getUsbContext(), &tv, nullptr);
-            assert(r == 0);
+            assert((r == LIBUSB_SUCCESS) || (r == LIBUSB_ERROR_NO_DEVICE) || (r == LIBUSB_ERROR_BUSY) ||
+                   (r == LIBUSB_ERROR_TIMEOUT) || (r == LIBUSB_ERROR_INTERRUPTED));
             computeVelocity();
             if (hal.getIsSimulationMode())
             {
@@ -2210,22 +2405,20 @@ void WhbContext::process()
         }
 
         *(hal.memory.isPendantConnected) = 0;
-        cout << "connection lost, cleaning up" << endl;
+        *verboseInitOut << "connection lost, cleaning up" << endl;
         struct timeval tv;
-        int r = libusb_cancel_transfer(usb.inTransfer);
-        assert((0 == r) || (r == LIBUSB_ERROR_NOT_FOUND));
-        //tv.tv_sec  = 1;
-        //tv.tv_usec = 0;
-        //r = libusb_handle_events_timeout_completed(getUsbContext(), &tv, nullptr);
-        //assert(0 == r);
+        tv.tv_sec  = 1;
+        tv.tv_usec = 0;
+        int r = libusb_handle_events_timeout_completed(getUsbContext(), &tv, nullptr);
+        assert(0 == r);
         r = libusb_release_interface(getUsbDeviceHandle(), 0);
         assert((0 == r) || (r == LIBUSB_ERROR_NO_DEVICE));
-        //free(usb.inTransfer);
-        usb.inTransfer =  libusb_alloc_transfer(0);
         libusb_close(getUsbDeviceHandle());
         usb.setDeviceHandle(nullptr);
     }
 }
+
+// ----------------------------------------------------------------------
 
 void WhbContext::teardownUsb()
 {
@@ -2233,6 +2426,92 @@ void WhbContext::teardownUsb()
     usb.setContext(nullptr);
 }
 
+// ----------------------------------------------------------------------
+
+void WhbContext::enableVerboseRx(bool enable)
+{
+    usb.enableVerboseRx(enable);
+    if (enable)
+    {
+        verboseRxOut = &std::cout;
+    }
+    else
+    {
+        verboseRxOut = &devNull;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::enableVerboseTx(bool enable)
+{
+    usb.enableVerboseTx(enable);
+    if (enable)
+    {
+        verboseTxOut = &std::cout;
+    }
+    else
+    {
+        verboseTxOut = &devNull;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::enableVerboseHalInit(bool enable)
+{
+    hal.setEnableVerbose(enable);
+
+    if (enable)
+    {
+        verboseHalInitOut = &std::cout;
+    }
+    else
+    {
+        verboseHalInitOut = &devNull;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::enableVerboseInit(bool enable)
+{
+    if (enable)
+    {
+        verboseInitOut = &std::cout;
+    }
+    else
+    {
+        verboseInitOut = &devNull;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
+{
+    printPushButtonText(keyCode, modifierCode, *verboseRxOut);
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode)
+{
+    printRotaryButtonText(keyCodeBase, keyCode, *verboseRxOut);
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::printInputData(const WhbUsbInPackage& inPackage)
+{
+    printInputData(inPackage, *verboseRxOut);
+}
+
+// ----------------------------------------------------------------------
+void WhbContext::printHexdump(const WhbUsbInPackage& inPackage)
+{
+    printHexdump(inPackage, *verboseRxOut);
+}
 
 // ----------------------------------------------------------------------
 
@@ -2259,7 +2538,6 @@ void WhbUsb::requestTermination()
 
 bool WhbUsb::setupAsyncTransfer()
 {
-    //libusb_transfer* transfer = libusb_alloc_transfer(0);
     assert(inTransfer != nullptr);
     libusb_fill_bulk_transfer(inTransfer, deviceHandle,
         //! TODO: LIBUSB_ENDPOINT_IN
@@ -2279,7 +2557,7 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
 {
     int expectedPckageSize = static_cast<int>(sizeof(WhbUsbInPackage));
     ios init(NULL);
-    init.copyfmt(cout);
+    init.copyfmt(*verboseTxOut);
     switch (transfer->status)
     {
         case (LIBUSB_TRANSFER_COMPLETED):
@@ -2288,11 +2566,11 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
             {
                 if (WhbUsb::ConstantPackages.sleepPackage != inputPackageBuffer.asFields)
                 {
-                    cout << "expected sleep package starting with " << hex << setfill('0') << setw(2)
-                         << static_cast<unsigned short>(WhbUsb::ConstantPackages.sleepPackage.header) << " but got "
-                         << hex << setfill('0') << setw(2)
-                         << static_cast<unsigned short>(inputPackageBuffer.asFields.header) << endl;
-                    cout.copyfmt(init);
+                    *verboseTxOut << "expected sleep package starting with " << hex << setfill('0') << setw(2)
+                                  << static_cast<unsigned short>(WhbUsb::ConstantPackages.sleepPackage.header)
+                                  << " but got " << hex << setfill('0') << setw(2)
+                                  << static_cast<unsigned short>(inputPackageBuffer.asFields.header) << endl;
+                    verboseTxOut->copyfmt(init);
                 }
 
                 sleepState.dropNextInPackage = false;
@@ -2313,8 +2591,8 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
                     {
                         struct timeval now;
                         gettimeofday(&now, nullptr);
-                        cout << "going to sleep: device was idle for " << (now.tv_sec - sleepState.last_wakeup.tv_sec)
-                             << " seconds" << endl;
+                        *verboseTxOut << "going to sleep: device was idle for "
+                                      << (now.tv_sec - sleepState.last_wakeup.tv_sec) << " seconds" << endl;
                     }
                 }
                     // on regular package
@@ -2327,8 +2605,8 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
                         {
                             struct timeval now;
                             gettimeofday(&now, nullptr);
-                            cout << "woke up: device was sleeping for " << (now.tv_sec - sleepState.last_wakeup.tv_sec)
-                                 << " seconds" << endl;
+                            *verboseTxOut << "woke up: device was sleeping for "
+                                          << (now.tv_sec - sleepState.last_wakeup.tv_sec) << " seconds" << endl;
                         }
                         gettimeofday(&sleepState.last_wakeup, nullptr);
                     }
@@ -2339,7 +2617,7 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
             }
             else
             {
-                cout << "received unexpected package size: expected=" << (transfer->actual_length) << ", current="
+                cerr << "received unexpected package size: expected=" << (transfer->actual_length) << ", current="
                      << expectedPckageSize << endl;
             }
 
@@ -2354,7 +2632,6 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
         case (LIBUSB_TRANSFER_TIMED_OUT):
             if (mIsRunning)
             {
-                cout << "libusb transfer timed out" << endl;
                 setupAsyncTransfer();
             }
             break;
@@ -2366,32 +2643,51 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
         case (LIBUSB_TRANSFER_NO_DEVICE):
         case (LIBUSB_TRANSFER_OVERFLOW):
         case (LIBUSB_TRANSFER_ERROR):
-            cout << "transfer error: " << transfer->status << endl;
+            cerr << "transfer error: " << transfer->status << endl;
             requestTermination();
             break;
 
         default:
-            cout << "unknown transfer status: " << transfer->status << endl;
+            cerr << "unknown transfer status: " << transfer->status << endl;
             requestTermination();
             break;
     }
     //libusb_free_transfer(transfer);
 }
 
+// ----------------------------------------------------------------------
+
 WhbUsb::~WhbUsb()
 {
-    if (inTransfer != nullptr)
+}
+
+// ----------------------------------------------------------------------
+
+void WhbUsb::enableVerboseTx(bool enable)
+{
+    if (enable)
     {
-        free(inTransfer);
+        verboseTxOut = &std::cout;
     }
-    if (outTransfer != nullptr)
+    else
     {
-        free(outTransfer);
+        verboseTxOut = &devNull;
     }
 }
 
+// ----------------------------------------------------------------------
 
-
+void WhbUsb::enableVerboseRx(bool enable)
+{
+    if (enable)
+    {
+        verboseRxOut = &std::cout;
+    }
+    else
+    {
+        verboseRxOut = &devNull;
+    }
+}
 
 // ----------------------------------------------------------------------
 
@@ -2410,7 +2706,9 @@ WhbHal::WhbHal() :
     memory(),
     mIsSimulationMode(true),
     mName("xhc-whb04b-6"),
-    mHalCompId(-1)
+    mHalCompId(-1),
+    devNull(nullptr),
+    verboseHalOut(&devNull)
 {
 }
 
@@ -2484,7 +2782,7 @@ int WhbHal::newSimulatedHalPin(char* pin_name, void** ptr, int s)
     *ptr = calloc(s, 1);
     assert(*ptr != nullptr);
     memset(*ptr, 0, s);
-    cout << "registered " << pin_name << endl;
+    *verboseHalOut << "allocated hal pin " << pin_name << endl;
     return 0;
 }
 
@@ -2504,7 +2802,7 @@ int WhbHal::newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int c
     }
     else
     {
-        //cout << "registered " << pin_name << endl;
+        *verboseHalOut << "registered " << pin_name << endl;
         return hal_pin_float_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
@@ -2525,7 +2823,7 @@ int WhbHal::newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int 
     }
     else
     {
-        //cout << "registered " << pin_name << endl;
+        *verboseHalOut << "registered " << pin_name << endl;
         return hal_pin_s32_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
@@ -2546,7 +2844,7 @@ int WhbHal::newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_
     }
     else
     {
-        //cout << "registered " << pin_name << endl;
+        *verboseHalOut << "registered " << pin_name << endl;
         return hal_pin_bit_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
@@ -2671,7 +2969,21 @@ void WhbHal::halInit(WhbSoftwareButton* softwareButtons, size_t buttonsCount, co
     assert (r == 0);
 }
 
+// ----------------------------------------------------------------------
+
+void WhbHal::setEnableVerbose(bool enable)
+{
+    if (enable)
+    {
+        verboseHalOut = &cout;
+    }
+    else
+    {
+        verboseHalOut = &devNull;
+    }
 }
+
+} // namespace
 
 // ----------------------------------------------------------------------
 
@@ -2679,13 +2991,25 @@ XhcWhb04b6::WhbContext Whb;
 
 // ----------------------------------------------------------------------
 
-static void Usage(char* name)
+static int printUsage(char* programName, bool isError = false)
 {
-    cerr << name << " version " << PACKAGE_VERSION << " 2017 by Raoul Rubien (github.com/rubienr)" << endl;
-    cerr << "Usage: " << name << " [-h] [-H] " << endl;
-    cerr << " -h: usage (this)" << endl;
-    cerr << " -H: run in real-time HAL mode (run in simulation mode by default)" << endl;
-    cerr << " -x: wait for pendant detection before creating HAL pins" << endl;
+    std::ostream* os = &cout;
+    if (isError)
+    {
+        os = &cerr;
+    }
+    *os << programName << " version " << PACKAGE_VERSION << " 2017 by Raoul Rubien (github.com/rubienr)" << endl
+        << "Usage: " << programName << " [-h] | [-H] [-x] [[-u|-U] [-p] | [-a] | [-s]] " << endl
+        << " -h usage help text" << endl << " -H run " << Whb.getName() << "in HAL-mode instead of interactive mode"
+        << endl << " -t wait for USB device before processing with HAL initialization" << endl
+        << " -u print received data" << endl << " -U print received and transmitted data" << endl
+        << " -p print initialized HAL pins " << endl << " -a enable all verbose facilities" << "-s be silent" << endl;
+
+    if (isError)
+    {
+        return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
 }
 
 // ----------------------------------------------------------------------
@@ -2715,163 +3039,55 @@ void usbInputResponseCallback(struct libusb_transfer* transfer)
 
 int main(int argc, char** argv)
 {
-    int     r;
-    ssize_t cnt;
-
-    int  opt;
-    bool hal_ready_done = false;
-
-    Whb.initWhb();
-    Whb.setSimulationMode(true);
-    while ((opt = getopt(argc, argv, "HhI:xs:")) != -1)
+    const char* optargs = "HtuUpahs";
+    for (int opt = getopt(argc, argv, optargs); opt != -1; opt = getopt(argc, argv, optargs))
     {
         switch (opt)
         {
             case 'H':
                 Whb.setSimulationMode(false);
                 break;
-            case 'x':
-                Whb.usb.setWaitForPendantBeforeHAL(true);
+            case 't':
+                Whb.usb.setWaitWithTimeout(true);
+                break;
+            case 'u':
+                Whb.enableVerboseInit(true);
+                Whb.enableVerboseRx(true);
+                break;
+            case 'U':
+                Whb.enableVerboseInit(true);
+                Whb.enableVerboseRx(true);
+                Whb.enableVerboseTx(true);
+                break;
+            case 'p':
+                Whb.enableVerboseInit(true);
+                Whb.enableVerboseHalInit(true);
+                break;
+            case 'a':
+                Whb.enableVerboseInit(true);
+                Whb.enableVerboseRx(true);
+                Whb.enableVerboseTx(true);
+                Whb.enableVerboseHalInit(true);
+                break;
+            case 's':
+                break;
+            case 'h':
+                return printUsage(argv[0]);
                 break;
             default:
-                Usage(argv[0]);
-                exit(EXIT_FAILURE);
+                return printUsage(argv[0], true);
+                break;
         }
     }
-
     registerSignalHandler();
 
-    Whb.halInit();
-
-    if (!Whb.usb.getWaitForPendantBeforeHAL() && !Whb.hal.getIsSimulationMode())
-    {
-        hal_ready(Whb.hal.getHalComponentId());
-        hal_ready_done = true;
-    }
-
-    while (Whb.isRunning())
-    {
-        Whb.initWhb();
-        if (Whb.usb.getDoReconnect() == true)
-        {
-            int pauseSecs = 5;
-            cout << "pausing " << pauseSecs << "s, waiting for device to be gone ...";
-            while ((pauseSecs--) >= 0)
-            {
-                cout << "." << std::flush;
-                sleep(1);
-            }
-            Whb.usb.setDoReconnect(false);
-            cout << " done" << endl;
-        }
-
-        cout << "init usb context ...";
-        r = libusb_init(Whb.usb.getContextReference());
-
-        if (r != 0)
-        {
-            cerr << endl << "failed to initialize usb context" << endl;
-            exit(EXIT_FAILURE);
-        }
-        cout << " ok" << endl;
-
-        libusb_set_debug(Whb.usb.getContext(), LIBUSB_LOG_LEVEL_DEBUG);
-
-        *(Whb.hal.memory.isPendantConnected) = 0;
-        int waitSecs = 10;
-        *(Whb.hal.memory.isPendantRequired) = Whb.usb.getWaitForPendantBeforeHAL();
-        //*(Whb.hal.memory.stepsize)          = stepsize_sequence[0];
-
-        if (Whb.usb.getWaitForPendantBeforeHAL())
-        {
-            cout << "waiting maximum " << waitSecs << "s for device " << Whb.getName() << Whb.usb.getUsbVendorId()
-                 << " productId=" << Whb.usb.getUsbProductId() << " ...";
-        }
-
-        do
-        {
-            libusb_device** devs;
-            cnt = libusb_get_device_list(Whb.usb.getContext(), &devs);
-            if (cnt < 0)
-            {
-                cerr << endl << "failed to get device list" << endl;
-                exit(EXIT_FAILURE);
-            }
-
-            Whb.usb.setDeviceHandle(libusb_open_device_with_vid_pid(Whb.usb.getContext(), Whb.usb.getUsbVendorId(),
-                                                                    Whb.usb.getUsbProductId()));
-            libusb_free_device_list(devs, 1);
-            cout << "." << std::flush;
-            if (Whb.usb.isDeviceOpen() == false)
-            {
-                cout << "." << std::flush;
-                if (Whb.usb.getWaitForPendantBeforeHAL())
-                {
-                    cout << "." << std::flush;
-                    if ((waitSecs--) <= 0)
-                    {
-                        cerr << endl << "timeout exceeded, exiting" << endl;
-                        exit(EXIT_FAILURE);
-                    }
-                }
-                sleep(1);
-            }
-        } while ((Whb.usb.isDeviceOpen() == false) && Whb.isRunning());
-
-        cout << " ok" << endl << Whb.getName() << " device found" << endl;
-
-        if (Whb.usb.isDeviceOpen())
-        {
-            cout << "detaching active kernel driver ...";
-            if (libusb_kernel_driver_active(Whb.usb.getDeviceHandle(), 0) == 1)
-            {
-                int r = libusb_detach_kernel_driver(Whb.getUsbDeviceHandle(), 0);
-                assert(0 == r);
-                cout << " ok" << endl;
-            }
-            else
-            {
-                cout << " already detached" << endl;
-            }
-            cout << "claiming interface ...";
-            r = libusb_claim_interface(Whb.getUsbDeviceHandle(), 0);
-            if (r != 0)
-            {
-                cerr << endl << "failed to claim interface" << endl;
-                exit(EXIT_FAILURE);
-            }
-            cout << " ok" << endl;
-        }
-
-        *(Whb.hal.memory.isPendantConnected) = 1;
-
-        if (!hal_ready_done && !Whb.hal.getIsSimulationMode())
-        {
-            hal_ready(Whb.hal.getHalComponentId());
-            hal_ready_done = true;
-        }
-
-        if (Whb.usb.isDeviceOpen())
-        {
-            cout << "enabling reception ...";
-            if (!Whb.enableReceiveAsyncTransfer())
-            {
-                cerr << endl << "failed to enable reception" << endl;
-                exit(EXIT_FAILURE);
-            }
-            cout << " ok" << endl;
-            //Whb.sendDisplayData();
-        }
-
-        Whb.process();
-        Whb.teardownUsb();
-    }
-    Whb.teardownHal();
+    Whb.run();
 
     //! hotfix for https://github.com/machinekit/machinekit/issues/1266
     if (Whb.hal.getIsSimulationMode())
     {
         google::protobuf::ShutdownProtobufLibrary();
     }
+
     return 0;
 }
