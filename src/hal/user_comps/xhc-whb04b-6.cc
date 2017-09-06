@@ -36,7 +36,6 @@
 #include "inifile.hh"
 #include "config.h"
 
-using std::cout;
 using std::cerr;
 using std::endl;
 using std::setfill;
@@ -256,7 +255,7 @@ public:
     //! \ref setIsSimulationMode() must be set before accordingly
     void halInit(WhbSoftwareButton* softwareButtons, size_t buttonsCount, const WhbKeyCodes& codes);
 
-    bool getIsSimulationMode() const;
+    bool isSimulationModeEnabled() const;
 
     //! indicates the program has been invoked in hal mode or normal
     void setSimulationMode(bool isSimulationMode);
@@ -271,8 +270,8 @@ private:
     bool mIsSimulationMode;
     const char* mName;
     int          mHalCompId;
-    std::ostream devNull;
-    std::ostream* verboseHalOut;
+    std::ostream mDevNull;
+    std::ostream* mHalCout;
 
     //! allocates new hal pin according to \ref mIsSimulationMode
     int newSimulatedHalPin(char* pin_name, void** ptr, int s);
@@ -296,13 +295,15 @@ private:
 //! pendant sleep/idle state parameters
 class WhbSleepDetect
 {
+    friend XhcWhb04b6::WhbUsb;
+
 public:
+
     WhbSleepDetect();
 
 private:
-    friend XhcWhb04b6::WhbUsb;
-    bool           dropNextInPackage;
-    struct timeval last_wakeup;
+    bool           mDropNextInPackage;
+    struct timeval mLastWakeupTimestamp;
 };
 
 // ----------------------------------------------------------------------
@@ -409,9 +410,9 @@ public:
 class WhbKeyCodes
 {
 public:
-    WhbButtonsCode           buttons;
-    WhbAxisRotaryButtonCodes axis;
-    WhbFeedRotaryButtonCodes feed;
+    const WhbButtonsCode           buttons;
+    const WhbAxisRotaryButtonCodes axis;
+    const WhbFeedRotaryButtonCodes feed;
 
     WhbKeyCodes();
 };
@@ -436,7 +437,7 @@ class WhbHandwheelStepModeStepSize
 public:
     typedef enum
     {
-        RotaryButton0001, RotaryButton0010, RotaryButton0100, RotaryButton100, RotaryButtonUndefined,
+        RotaryButton0001 = 0, RotaryButton0010 = 1, RotaryButton0100 = 2, RotaryButton100 = 3, RotaryButtonUndefined = 4
     } ButtonCodeToStepIndex;
 
     float getStepSize(ButtonCodeToStepIndex buttonPosition) const;
@@ -444,7 +445,7 @@ public:
     WhbHandwheelStepModeStepSize();
 
 private:
-    const float sequence[5];
+    const float mSequence[5];
 };
 
 // ----------------------------------------------------------------------
@@ -825,7 +826,7 @@ class WhbUsb
 public:
     static const WhbConstantUsbPackages ConstantPackages;
 
-    WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalMemory& halMemory);
+    WhbUsb(const char* name, OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalMemory& halMemory);
 
     ~WhbUsb();
 
@@ -844,8 +845,6 @@ public:
     libusb_device_handle* getDeviceHandle();
 
     void setDeviceHandle(libusb_device_handle* deviceHandle);
-
-    void setWaitWithTimeout(bool enableTimeout);
 
     bool isWaitForPendantBeforeHalEnabled() const;
 
@@ -869,6 +868,12 @@ public:
 
     void enableVerboseRx(bool enable);
 
+    void enableVerboseInit(bool enable);
+
+    bool init();
+
+    void setWaitWithTimeout(uint8_t waitSecs);
+
 private:
     const uint16_t usbVendorId;
     const uint16_t usbProductId;
@@ -889,6 +894,10 @@ private:
     std::ostream devNull;
     std::ostream* verboseTxOut;
     std::ostream* verboseRxOut;
+    std::ostream* verboseInitOut;
+    const char  * mName;
+    uint8_t mWaitSecs;
+
 };
 
 // ----------------------------------------------------------------------
@@ -914,8 +923,6 @@ class WhbContext :
     public OnUsbInputPackageReceivedHandler
 {
 public:
-    WhbHal hal;
-
     WhbContext();
 
     virtual ~WhbContext();
@@ -974,6 +981,8 @@ public:
 
     int run();
 
+    bool isSimulationModeEnabled() const;
+
     void setSimulationMode(bool enableSimulationMode);
 
     void enableVerboseRx(bool enable);
@@ -984,17 +993,19 @@ public:
 
     void enableVerboseInit(bool enable);
 
-    WhbUsb usb;
+    void setWaitWithTimeout(uint8_t waitSecs = 3);
 
 private:
+    WhbHal hal;
     const char* mName;
-    const WhbKeyCodes      codes;
-    WhbStepHandler         stepHandler;
-    WhbSoftwareButton      softwareButtons[31];
-    WhbButtonsState        previousButtonCodes;
-    WhbButtonsState        currentButtonCodes;
+    WhbUsb                 usb;
+    const WhbKeyCodes      mKeyCodes;
+    WhbStepHandler         mStepHandler;
+    WhbSoftwareButton      mSoftwareButtons[31];
+    WhbButtonsState        mPreviousButtonCodes;
+    WhbButtonsState        mCurrentButtonCodes;
     WhbVelocityComputation velocityComputation;
-    bool                   doRun;
+    bool                   mIsRunning;
     bool                   mIsSimulationMode;
     std::ostream           devNull;
     std::ostream* verboseTxOut;
@@ -1039,8 +1050,8 @@ WhbUsbOutPackageBlock::WhbUsbOutPackageBlock() :
 // ----------------------------------------------------------------------
 
 WhbSleepDetect::WhbSleepDetect() :
-    dropNextInPackage(false),
-    last_wakeup()
+    mDropNextInPackage(false),
+    mLastWakeupTimestamp()
 {
 }
 
@@ -1142,13 +1153,13 @@ WhbVelocityComputation::WhbVelocityComputation() :
 
 float WhbHandwheelStepModeStepSize::getStepSize(ButtonCodeToStepIndex buttonPosition) const
 {
-    return sequence[buttonPosition];
+    return mSequence[buttonPosition];
 }
 
 // ----------------------------------------------------------------------
 
 WhbHandwheelStepModeStepSize::WhbHandwheelStepModeStepSize() :
-    sequence{0.001, 0.01, 0.1, 1.0, 0.0}
+    mSequence{0.001, 0.01, 0.1, 1.0, 0.0}
 {
 }
 
@@ -1432,12 +1443,6 @@ void WhbUsb::setDeviceHandle(libusb_device_handle* deviceHandle)
     this->deviceHandle = deviceHandle;
 }
 
-// ----------------------------------------------------------------------
-
-void WhbUsb::setWaitWithTimeout(bool enableTimeout)
-{
-    isWaitWithTimeout = enableTimeout;
-}
 
 // ----------------------------------------------------------------------
 
@@ -1462,7 +1467,7 @@ void WhbUsb::setDoReconnect(bool doReconnect)
 
 // ----------------------------------------------------------------------
 
-WhbUsb::WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalMemory& halMemory) :
+WhbUsb::WhbUsb(const char* name, OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalMemory& halMemory) :
 // usbVendorId(0x10ce), // xhc-whb04-4
 // usbProductId(0xeb70),// xhc-whb04-4
     usbVendorId(0x10ce), // xhc-whb04-6
@@ -1482,9 +1487,12 @@ WhbUsb::WhbUsb(OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalM
     outTransfer(libusb_alloc_transfer(0)),
     devNull(nullptr),
     verboseTxOut(&devNull),
-    verboseRxOut(&devNull)
+    verboseRxOut(&devNull),
+    verboseInitOut(&devNull),
+    mName(name),
+    mWaitSecs(0)
 {
-    gettimeofday(&sleepState.last_wakeup, nullptr);
+    gettimeofday(&sleepState.mLastWakeupTimestamp, nullptr);
 }
 
 // ----------------------------------------------------------------------
@@ -1536,7 +1544,7 @@ void WhbUsb::sendDisplayData()
 
 void WhbContext::halInit()
 {
-    hal.halInit(softwareButtons, sizeof(softwareButtons) / sizeof(WhbSoftwareButton), codes);
+    hal.halInit(mSoftwareButtons, sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton), mKeyCodes);
 }
 
 // ----------------------------------------------------------------------
@@ -1569,23 +1577,23 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
         printHexdump(inPackage);
     }
 
-    uint8_t modifierCode       = codes.buttons.undefined.code;
-    uint8_t keyCode            = codes.buttons.undefined.code;
+    uint8_t modifierCode       = mKeyCodes.buttons.undefined.code;
+    uint8_t keyCode            = mKeyCodes.buttons.undefined.code;
 
     //! found modifier at key one, key two is the key
-    if (inPackage.buttonKeyCode1 == codes.buttons.function.code)
+    if (inPackage.buttonKeyCode1 == mKeyCodes.buttons.function.code)
     {
-        modifierCode = codes.buttons.function.code;
+        modifierCode = mKeyCodes.buttons.function.code;
         keyCode      = inPackage.buttonKeyCode2;
     }
         //! found modifier at key two, key one is the key
-    else if (inPackage.buttonKeyCode2 == codes.buttons.function.code)
+    else if (inPackage.buttonKeyCode2 == mKeyCodes.buttons.function.code)
     {
-        modifierCode = codes.buttons.function.code;
+        modifierCode = mKeyCodes.buttons.function.code;
         keyCode      = inPackage.buttonKeyCode1;
     }
         //! no modifier, key one and key two are defined, fallback to key two which is the lastly one pressed
-    else if (inPackage.buttonKeyCode2 != codes.buttons.undefined.code)
+    else if (inPackage.buttonKeyCode2 != mKeyCodes.buttons.undefined.code)
     {
         keyCode = inPackage.buttonKeyCode2;
     }
@@ -1598,16 +1606,16 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
     // update current axis and step to hal
     *(hal.memory.jogCount) += inPackage.stepCount;
     *(hal.memory.jogCountNeg)  = -*(hal.memory.jogCount);
-    *(hal.memory.jogEnableOff) = (inPackage.rotaryButtonAxisKeyCode == codes.axis.off.code);
-    *(hal.memory.jogEnableX)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.x.code);
-    *(hal.memory.jogEnableY)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.y.code);
-    *(hal.memory.jogEnableZ)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.z.code);
-    *(hal.memory.jogEnableA)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.a.code);
-    *(hal.memory.jogEnableB)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.b.code);
-    *(hal.memory.jogEnableC)   = (inPackage.rotaryButtonAxisKeyCode == codes.axis.c.code);
+    *(hal.memory.jogEnableOff) = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.off.code);
+    *(hal.memory.jogEnableX)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.x.code);
+    *(hal.memory.jogEnableY)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.y.code);
+    *(hal.memory.jogEnableZ)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.z.code);
+    *(hal.memory.jogEnableA)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.a.code);
+    *(hal.memory.jogEnableB)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.b.code);
+    *(hal.memory.jogEnableC)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.c.code);
 
     //! print human readable data
-    if (hal.getIsSimulationMode())
+    if (hal.isSimulationModeEnabled())
     {
         if (inPackage.rotaryButtonFeedKeyCode != 0)
         {
@@ -1621,13 +1629,13 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
     }
 
     //! update all buttons state to hal
-    int      buttonsCount = sizeof(softwareButtons) / sizeof(WhbSoftwareButton);
+    int      buttonsCount = sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton);
     for (int idx          = 0; idx < buttonsCount; idx++)
     {
-        if ((softwareButtons[idx].key.code == keyCode) && (softwareButtons[idx].modifier.code == modifierCode))
+        if ((mSoftwareButtons[idx].key.code == keyCode) && (mSoftwareButtons[idx].modifier.code == modifierCode))
         {
             *(hal.memory.button_pin[idx]) = true;
-            if (hal.getIsSimulationMode())
+            if (hal.isSimulationModeEnabled())
             {
                 *verboseRxOut << " pressed ";
                 printPushButtonText(keyCode, modifierCode);
@@ -1639,7 +1647,7 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
         }
     }
 
-    if (hal.getIsSimulationMode())
+    if (hal.isSimulationModeEnabled())
     {
         *verboseRxOut << endl;
     }
@@ -1650,8 +1658,8 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
 void WhbContext::initWhb()
 {
     //stepHandler.old_inc_step_status = -1;
-    //gettimeofday(&sleepState.last_wakeup, nullptr);
-    doRun = true;
+    //gettimeofday(&sleepState.mLastWakeupTimestamp, nullptr);
+    mIsRunning = true;
     usb.setIsRunning(true);
 }
 
@@ -1668,7 +1676,7 @@ void WhbContext::requestTermination(int signal)
         *verboseInitOut << "termination requested ... " << endl;
     }
     usb.requestTermination();
-    doRun = false;
+    mIsRunning = false;
 
 }
 
@@ -1676,55 +1684,55 @@ void WhbContext::requestTermination(int signal)
 
 bool WhbContext::isRunning() const
 {
-    return doRun;
+    return mIsRunning;
 }
 
 // ----------------------------------------------------------------------
 
 WhbContext::WhbContext() :
     hal(),
-    usb(*this, hal.memory),
     mName("XHC-WHB04B-6"),
-    codes(),
-    stepHandler(),
-    softwareButtons{WhbSoftwareButton(codes.buttons.reset, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.reset, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.stop, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.stop, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.start, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.start, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.feed_plus, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.feed_plus, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.feed_minus, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.feed_minus, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.spindle_plus, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.spindle_plus, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.spindle_minus, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.spindle_minus, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.machine_home, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.machine_home, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.safe_z, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.safe_z, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.workpiece_home, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.workpiece_home, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.spindle_on_off, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.spindle_on_off, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.undefined, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.probe_z, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.probe_z, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.macro10, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.macro10, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.manual_pulse_generator, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.manual_pulse_generator, codes.buttons.function),
-                    WhbSoftwareButton(codes.buttons.step_continuous, codes.buttons.undefined),
-                    WhbSoftwareButton(codes.buttons.step_continuous, codes.buttons.function)
+    usb(mName, *this, hal.memory),
+    mKeyCodes(),
+    mStepHandler(),
+    mSoftwareButtons{WhbSoftwareButton(mKeyCodes.buttons.reset, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.reset, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.stop, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.stop, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.start, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.start, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.feed_plus, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.feed_plus, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.feed_minus, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.feed_minus, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.spindle_plus, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.spindle_plus, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.spindle_minus, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.spindle_minus, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.machine_home, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.machine_home, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.safe_z, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.safe_z, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.workpiece_home, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.workpiece_home, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.spindle_on_off, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.spindle_on_off, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.undefined, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.probe_z, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.probe_z, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.macro10, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.macro10, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.manual_pulse_generator, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.manual_pulse_generator, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.step_continuous, mKeyCodes.buttons.undefined),
+                     WhbSoftwareButton(mKeyCodes.buttons.step_continuous, mKeyCodes.buttons.function)
     },
-    previousButtonCodes(codes.buttons, codes.axis, codes.feed, stepHandler.stepSize.step,
-                        stepHandler.stepSize.continuous),
-    currentButtonCodes(codes.buttons, codes.axis, codes.feed, stepHandler.stepSize.step,
-                       stepHandler.stepSize.continuous),
+    mPreviousButtonCodes(mKeyCodes.buttons, mKeyCodes.axis, mKeyCodes.feed, mStepHandler.stepSize.step,
+                         mStepHandler.stepSize.continuous),
+    mCurrentButtonCodes(mKeyCodes.buttons, mKeyCodes.axis, mKeyCodes.feed, mStepHandler.stepSize.step,
+                        mStepHandler.stepSize.continuous),
     velocityComputation(),
-    doRun(false),
+    mIsRunning(false),
     mIsSimulationMode(false),
     devNull(nullptr),
     verboseTxOut(&devNull),
@@ -1762,23 +1770,23 @@ void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std:
     out << setfill(' ');
 
     // no key code
-    if (keyCode == codes.buttons.undefined.code)
+    if (keyCode == mKeyCodes.buttons.undefined.code)
     {
         // modifier specified
-        if (modifierCode == codes.buttons.function.code)
+        if (modifierCode == mKeyCodes.buttons.function.code)
         {
-            out << setw(indent) << codes.buttons.function.text;
+            out << setw(indent) << mKeyCodes.buttons.function.text;
         }
             // no modifier specified
         else
         {
-            out << setw(indent) << codes.buttons.undefined.text;
+            out << setw(indent) << mKeyCodes.buttons.undefined.text;
         }
         return;
     }
 
     // find key code
-    const WhbKeyCode* whbKeyCode = (WhbKeyCode*)&codes.buttons;
+    const WhbKeyCode* whbKeyCode = (WhbKeyCode*)&mKeyCodes.buttons;
     while (whbKeyCode->code != 0)
     {
         if (whbKeyCode->code == keyCode)
@@ -1788,7 +1796,7 @@ void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std:
         whbKeyCode++;
     }
     // print key text
-    if (modifierCode == codes.buttons.function.code)
+    if (modifierCode == mKeyCodes.buttons.function.code)
     {
         out << setw(indent) << whbKeyCode->altText;
     }
@@ -2045,9 +2053,9 @@ void WhbContext::printInputData(const WhbUsbInPackage& inPackage, std::ostream& 
     out << " | ";
     printPushButtonText(inPackage.buttonKeyCode2, inPackage.buttonKeyCode1, out);
     out << " | ";
-    printRotaryButtonText((WhbKeyCode*)&codes.feed, inPackage.rotaryButtonFeedKeyCode, out);
+    printRotaryButtonText((WhbKeyCode*)&mKeyCodes.feed, inPackage.rotaryButtonFeedKeyCode, out);
     out << " | ";
-    printRotaryButtonText((WhbKeyCode*)&codes.axis, inPackage.rotaryButtonAxisKeyCode, out);
+    printRotaryButtonText((WhbKeyCode*)&mKeyCodes.axis, inPackage.rotaryButtonAxisKeyCode, out);
     out << " | " << setfill(' ') << setw(3) << static_cast<short>(inPackage.stepCount) << " | " << hex << setfill('0')
         << setw(2) << static_cast<unsigned short>(inPackage.crc);
 
@@ -2077,121 +2085,33 @@ void WhbContext::printHexdump(const WhbUsbInPackage& inPackage, std::ostream& ou
 
 int WhbContext::run()
 {
-    bool hal_ready_done = false;
+    bool isHalReady = false;
     initWhb();
     halInit();
 
-    if (!usb.isWaitForPendantBeforeHalEnabled() && !hal.getIsSimulationMode())
+    if (!usb.isWaitForPendantBeforeHalEnabled() && !hal.isSimulationModeEnabled())
     {
         hal_ready(hal.getHalComponentId());
-        hal_ready_done = true;
+        isHalReady = true;
     }
 
     while (isRunning())
     {
-        initWhb();
-        if (usb.getDoReconnect() == true)
-        {
-            int pauseSecs = 3;
-            *verboseInitOut << "pausing " << pauseSecs << "s, waiting for device to be gone ...";
-            while ((pauseSecs--) >= 0)
-            {
-                *verboseInitOut << "." << std::flush;
-                sleep(1);
-            }
-            usb.setDoReconnect(false);
-            *verboseInitOut << " done" << endl;
-        }
-
-        *verboseInitOut << "init usb context ...";
-        int r = libusb_init(usb.getContextReference());
-        if (r != 0)
-        {
-            cerr << endl << "failed to initialize usb context" << endl;
-            return EXIT_FAILURE;
-        }
-        *verboseInitOut << " ok" << endl;
-
-        //libusb_set_debug(Whb.usb.getContext(), LIBUSB_LOG_LEVEL_DEBUG);
-        libusb_set_debug(usb.getContext(), LIBUSB_LOG_LEVEL_INFO);
-
         *(hal.memory.isPendantConnected) = 0;
         *(hal.memory.isPendantRequired)  = usb.isWaitForPendantBeforeHalEnabled();
 
-        int waitSecs = 10;
-
-        if (usb.isWaitForPendantBeforeHalEnabled())
+        initWhb();
+        if (false == usb.init())
         {
-            *verboseInitOut << "waiting maximum " << waitSecs << "s for device " << getName() << usb.getUsbVendorId()
-                            << " productId=" << usb.getUsbProductId() << " ...";
-        }
-        else
-        {
-            *verboseInitOut << "not waiting for device, will continue" << waitSecs << "s for device " << getName()
-                            << usb.getUsbVendorId() << " productId=" << usb.getUsbProductId() << " ...";
-        }
-
-        do
-        {
-            libusb_device** devs;
-            ssize_t cnt = libusb_get_device_list(usb.getContext(), &devs);
-            if (cnt < 0)
-            {
-                cerr << endl << "failed to get device list" << endl;
-                return EXIT_FAILURE;
-            }
-
-            usb.setDeviceHandle(
-                libusb_open_device_with_vid_pid(usb.getContext(), usb.getUsbVendorId(), usb.getUsbProductId()));
-            libusb_free_device_list(devs, 1);
-            *verboseInitOut << "." << std::flush;
-            if (usb.isDeviceOpen() == false)
-            {
-                *verboseInitOut << "." << std::flush;
-                if (usb.isWaitForPendantBeforeHalEnabled())
-                {
-                    *verboseInitOut << "." << std::flush;
-                    if ((waitSecs--) <= 0)
-                    {
-                        cerr << endl << "timeout exceeded, exiting" << endl;
-                        exit(EXIT_FAILURE);
-                    }
-                }
-                sleep(1);
-            }
-        } while ((usb.isDeviceOpen() == false) && isRunning());
-
-        *verboseInitOut << " ok" << endl << getName() << " device found" << endl;
-
-        if (usb.isDeviceOpen())
-        {
-            *verboseInitOut << "detaching active kernel driver ...";
-            if (libusb_kernel_driver_active(usb.getDeviceHandle(), 0) == 1)
-            {
-                int r = libusb_detach_kernel_driver(getUsbDeviceHandle(), 0);
-                assert(0 == r);
-                *verboseInitOut << " ok" << endl;
-            }
-            else
-            {
-                *verboseInitOut << " already detached" << endl;
-            }
-            *verboseInitOut << "claiming interface ...";
-            int r = libusb_claim_interface(getUsbDeviceHandle(), 0);
-            if (r != 0)
-            {
-                cerr << endl << "failed to claim interface" << endl;
-                return EXIT_FAILURE;
-            }
-            *verboseInitOut << " ok" << endl;
+            return EXIT_FAILURE;
         }
 
         *(hal.memory.isPendantConnected) = 1;
 
-        if (!hal_ready_done && !hal.getIsSimulationMode())
+        if (!isHalReady && !hal.isSimulationModeEnabled())
         {
             hal_ready(hal.getHalComponentId());
-            hal_ready_done = true;
+            isHalReady = true;
         }
 
         if (usb.isDeviceOpen())
@@ -2211,7 +2131,7 @@ int WhbContext::run()
     }
     teardownHal();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 // ----------------------------------------------------------------------
@@ -2360,7 +2280,7 @@ void WhbContext::handleStep()
             stepHandler.old_inc_step_status = inc_step_status;
     */
     // todo: refactor me
-    *(hal.memory.stepsize) = currentButtonCodes.getStepSize() * 100;
+    *(hal.memory.stepsize) = mCurrentButtonCodes.getStepSize() * 100;
     // todo: refactor me
     *(hal.memory.jogScale) = *(hal.memory.stepsize);// * 0.001f;
 }
@@ -2427,7 +2347,7 @@ void WhbContext::process()
             assert((r == LIBUSB_SUCCESS) || (r == LIBUSB_ERROR_NO_DEVICE) || (r == LIBUSB_ERROR_BUSY) ||
                    (r == LIBUSB_ERROR_TIMEOUT) || (r == LIBUSB_ERROR_INTERRUPTED));
             computeVelocity();
-            if (hal.getIsSimulationMode())
+            if (hal.isSimulationModeEnabled())
             {
                 linuxcncSimulate();
             }
@@ -2507,6 +2427,7 @@ void WhbContext::enableVerboseHalInit(bool enable)
 
 void WhbContext::enableVerboseInit(bool enable)
 {
+    usb.enableVerboseInit(enable);
     if (enable)
     {
         verboseInitOut = &std::cout;
@@ -2543,6 +2464,16 @@ void WhbContext::printInputData(const WhbUsbInPackage& inPackage)
 void WhbContext::printHexdump(const WhbUsbInPackage& inPackage)
 {
     printHexdump(inPackage, *verboseRxOut);
+}
+
+void WhbContext::setWaitWithTimeout(uint8_t waitSecs)
+{
+    usb.setWaitWithTimeout(waitSecs);
+}
+
+bool WhbContext::isSimulationModeEnabled() const
+{
+    return mIsSimulationMode;
 }
 
 // ----------------------------------------------------------------------
@@ -2595,7 +2526,7 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
     {
         case (LIBUSB_TRANSFER_COMPLETED):
             // sleep mode was previously detected, drop current package
-            if (sleepState.dropNextInPackage)
+            if (sleepState.mDropNextInPackage)
             {
                 if (WhbUsb::ConstantPackages.sleepPackage != inputPackageBuffer.asFields)
                 {
@@ -2606,7 +2537,7 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
                     verboseTxOut->copyfmt(init);
                 }
 
-                sleepState.dropNextInPackage = false;
+                sleepState.mDropNextInPackage = false;
                 goto ___TRUNCATE_PACKAGE;
             }
 
@@ -2618,14 +2549,14 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
                 //! 2nd: \ref WhbUsbSleepPackage
                 if (WhbUsb::ConstantPackages.emptyPackage == inputPackageBuffer.asFields)
                 {
-                    sleepState.dropNextInPackage = true;
+                    sleepState.mDropNextInPackage = true;
                     *(mHalMemory.sleeping) = 1;
                     if (mIsSimulationMode)
                     {
                         struct timeval now;
                         gettimeofday(&now, nullptr);
                         *verboseTxOut << "going to sleep: device was idle for "
-                                      << (now.tv_sec - sleepState.last_wakeup.tv_sec) << " seconds" << endl;
+                                      << (now.tv_sec - sleepState.mLastWakeupTimestamp.tv_sec) << " seconds" << endl;
                     }
                 }
                     // on regular package
@@ -2639,9 +2570,10 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
                             struct timeval now;
                             gettimeofday(&now, nullptr);
                             *verboseTxOut << "woke up: device was sleeping for "
-                                          << (now.tv_sec - sleepState.last_wakeup.tv_sec) << " seconds" << endl;
+                                          << (now.tv_sec - sleepState.mLastWakeupTimestamp.tv_sec) << " seconds"
+                                          << endl;
                         }
-                        gettimeofday(&sleepState.last_wakeup, nullptr);
+                        gettimeofday(&sleepState.mLastWakeupTimestamp, nullptr);
                     }
 
                 }
@@ -2724,6 +2656,129 @@ void WhbUsb::enableVerboseRx(bool enable)
 
 // ----------------------------------------------------------------------
 
+void WhbUsb::enableVerboseInit(bool enable)
+{
+    if (enable)
+    {
+        verboseInitOut = &std::cout;
+    }
+    else
+    {
+        verboseInitOut = &devNull;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+bool WhbUsb::init()
+{
+    if (getDoReconnect() == true)
+    {
+        int pauseSecs = 3;
+        *verboseInitOut << "pausing " << pauseSecs << "s, waiting for device to be gone ...";
+        while ((pauseSecs--) >= 0)
+        {
+            *verboseInitOut << "." << std::flush;
+            sleep(1);
+        }
+        setDoReconnect(false);
+        *verboseInitOut << " done" << endl;
+    }
+
+    *verboseInitOut << "init usb context ...";
+    int r = libusb_init(&context);
+    if (r != 0)
+    {
+        cerr << endl << "failed to initialize usb context" << endl;
+        return false;
+    }
+    *verboseInitOut << " ok" << endl;
+
+    libusb_log_level logLevel = LIBUSB_LOG_LEVEL_INFO;
+    //logLevel = LIBUSB_LOG_LEVEL_DEBUG;
+    libusb_set_debug(context, logLevel);
+
+    if (isWaitWithTimeout)
+    {
+        *verboseInitOut << "waiting maximum " << static_cast<unsigned short>(mWaitSecs) << "s for device "
+                        << mName << getUsbVendorId() << " productId=" << usbProductId << " ...";
+    }
+    else
+    {
+        *verboseInitOut << "not waiting for device, will continue" << static_cast<unsigned short>(mWaitSecs)
+                        << "s for device " << mName << usbVendorId << " productId=" << usbProductId << " ...";
+    }
+
+    do
+    {
+        libusb_device** devicesReference;
+        ssize_t devicesCount = libusb_get_device_list(context, &devicesReference);
+        if (devicesCount < 0)
+        {
+            cerr << endl << "failed to get device list" << endl;
+            return false;
+        }
+
+        deviceHandle = libusb_open_device_with_vid_pid(context, usbVendorId, usbProductId);
+        libusb_free_device_list(devicesReference, 1);
+        *verboseInitOut << "." << std::flush;
+        if (isDeviceOpen() == false)
+        {
+            *verboseInitOut << "." << std::flush;
+            if (isWaitWithTimeout)
+            {
+                *verboseInitOut << "." << std::flush;
+                if ((mWaitSecs--) <= 0)
+                {
+                    cerr << endl << "timeout exceeded, exiting" << endl;
+                    return false;
+                }
+            }
+            sleep(1);
+        }
+    } while ((isDeviceOpen() == false) && mIsRunning);
+    *verboseInitOut << " ok" << endl << mName << " device found" << endl;
+
+    if (isDeviceOpen())
+    {
+        *verboseInitOut << "detaching active kernel driver ...";
+        if (libusb_kernel_driver_active(deviceHandle, 0) == 1)
+        {
+            int r = libusb_detach_kernel_driver(deviceHandle, 0);
+            assert(0 == r);
+            *verboseInitOut << " ok" << endl;
+        }
+        else
+        {
+            *verboseInitOut << " already detached" << endl;
+        }
+        *verboseInitOut << "claiming interface ...";
+        int r = libusb_claim_interface(deviceHandle, 0);
+        if (r != 0)
+        {
+            cerr << endl << "failed to claim interface" << endl;
+            return false;
+        }
+        *verboseInitOut << " ok" << endl;
+    }
+    return true;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbUsb::setWaitWithTimeout(uint8_t waitSecs)
+{
+    mWaitSecs         = waitSecs;
+    if (mWaitSecs > 0)
+    {
+        isWaitWithTimeout = true;
+        return;
+    }
+    isWaitWithTimeout = false;
+}
+
+// ----------------------------------------------------------------------
+
 void WhbHal::freeSimulatedPin(void** pin)
 {
     if (*pin != nullptr)
@@ -2740,8 +2795,8 @@ WhbHal::WhbHal() :
     mIsSimulationMode(true),
     mName("xhc-whb04b-6"),
     mHalCompId(-1),
-    devNull(nullptr),
-    verboseHalOut(&devNull)
+    mDevNull(nullptr),
+    mHalCout(&mDevNull)
 {
 }
 
@@ -2815,7 +2870,7 @@ int WhbHal::newSimulatedHalPin(char* pin_name, void** ptr, int s)
     *ptr = calloc(s, 1);
     assert(*ptr != nullptr);
     memset(*ptr, 0, s);
-    *verboseHalOut << "allocated hal pin " << pin_name << endl;
+    *mHalCout << "allocated hal pin " << pin_name << endl;
     return 0;
 }
 
@@ -2835,7 +2890,7 @@ int WhbHal::newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int c
     }
     else
     {
-        *verboseHalOut << "registered " << pin_name << endl;
+        *mHalCout << "registered " << pin_name << endl;
         return hal_pin_float_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
@@ -2856,7 +2911,7 @@ int WhbHal::newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int 
     }
     else
     {
-        *verboseHalOut << "registered " << pin_name << endl;
+        *mHalCout << "registered " << pin_name << endl;
         return hal_pin_s32_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
@@ -2877,14 +2932,14 @@ int WhbHal::newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_
     }
     else
     {
-        *verboseHalOut << "registered " << pin_name << endl;
+        *mHalCout << "registered " << pin_name << endl;
         return hal_pin_bit_new(pin_name, dir, data_ptr_addr, comp_id);
     }
 }
 
 // ----------------------------------------------------------------------
 
-bool WhbHal::getIsSimulationMode() const
+bool WhbHal::isSimulationModeEnabled() const
 {
     return mIsSimulationMode;
 }
@@ -2912,7 +2967,7 @@ const char* WhbHal::getHalComponentName() const
 
 // ----------------------------------------------------------------------
 
-void WhbHal::halInit(WhbSoftwareButton* softwareButtons, size_t buttonsCount, const WhbKeyCodes& codes)
+void WhbHal::halInit(WhbSoftwareButton* softwareButtons, size_t buttonsCount, const WhbKeyCodes& mKeyCodes)
 {
     if (!mIsSimulationMode)
     {
@@ -2928,7 +2983,7 @@ void WhbHal::halInit(WhbSoftwareButton* softwareButtons, size_t buttonsCount, co
     for (size_t idx = 0; idx < buttonsCount; idx++)
     {
         const char* buttonName = nullptr;
-        if (&softwareButtons[idx].modifier == &codes.buttons.undefined)
+        if (&softwareButtons[idx].modifier == &mKeyCodes.buttons.undefined)
         {
             buttonName = softwareButtons[idx].key.text;
         }
@@ -3008,11 +3063,11 @@ void WhbHal::setEnableVerbose(bool enable)
 {
     if (enable)
     {
-        verboseHalOut = &cout;
+        mHalCout = &std::cout;
     }
     else
     {
-        verboseHalOut = &devNull;
+        mHalCout = &mDevNull;
     }
 }
 
@@ -3026,7 +3081,7 @@ XhcWhb04b6::WhbContext Whb;
 
 static int printUsage(char* programName, bool isError = false)
 {
-    std::ostream* os = &cout;
+    std::ostream* os = &std::cout;
     if (isError)
     {
         os = &cerr;
@@ -3081,7 +3136,7 @@ int main(int argc, char** argv)
                 Whb.setSimulationMode(false);
                 break;
             case 't':
-                Whb.usb.setWaitWithTimeout(true);
+                Whb.setWaitWithTimeout(3);
                 break;
             case 'u':
                 Whb.enableVerboseInit(true);
@@ -3117,7 +3172,7 @@ int main(int argc, char** argv)
     Whb.run();
 
     //! hotfix for https://github.com/machinekit/machinekit/issues/1266
-    if (Whb.hal.getIsSimulationMode())
+    if (Whb.isSimulationModeEnabled())
     {
         google::protobuf::ShutdownProtobufLibrary();
     }
