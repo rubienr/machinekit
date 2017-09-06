@@ -321,7 +321,7 @@ public:
     WhbKeyCode(uint8_t code, const char* text, const char* altText);
 
     WhbKeyCode(const WhbKeyCode& other);
-};
+} __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
@@ -341,10 +341,10 @@ public:
 class WhbAxisRotaryButtonCodes
 {
 public:
-    typedef enum
+    /*typedef enum
     {
         Off = 0, X = 1, Y = 2, Z = 3, A = 4, B = 5, C = 6
-    } AxisIndexName;
+    } AxisIndexName;*/
 
     const WhbKeyCode off;
     const WhbKeyCode x;
@@ -356,7 +356,7 @@ public:
     const WhbKeyCode undefined;
 
     WhbAxisRotaryButtonCodes();
-};
+} __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
@@ -374,7 +374,7 @@ public:
     const WhbKeyCode undefined;
 
     WhbFeedRotaryButtonCodes();
-};
+} __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
@@ -400,9 +400,11 @@ public:
     const WhbKeyCode step_continuous;
     const WhbKeyCode undefined;
 
+    const WhbKeyCode& getKeyCode(uint8_t keyCode) const;
+
     WhbButtonsCode();
 
-};
+} __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
@@ -516,25 +518,36 @@ private:
 //! by storing up to two button codes and axis and feed codes. The software
 //! button reflects the logical combination of two button codes if the modifier
 //! button code "Fn" is involved.
+//! TODO: refactor me
 class WhbButtonsState
 {
 public:
 
-    uint8_t getButton1Code() const;
+    uint8_t getKeyCode() const;
 
-    uint8_t getButton2Code() const;
+    uint8_t getModifierCode() const;
 
     uint8_t getAxisRotaryButtonCode() const;
 
     uint8_t getFeedRotaryButtonCode() const;
 
-    WhbSoftwareButton& getSoftwareButton() const;
+    const WhbSoftwareButton& getSoftwareButton() const;
 
     //! stores the buttons state and updates the software button state and step speed state
-    void updateButtonState(uint8_t button1Code, uint8_t button2Code, uint8_t currentAxisRotaryButtonCode,
+    void updateButtonState(uint8_t keyCode, uint8_t modifierCode, uint8_t currentAxisRotaryButtonCode,
                            uint8_t currentFeedRotaryButtonCode);
 
-    //! returns the step size value according to the current button state considering "Fn" modifer
+    void updateButtonState(const WhbSoftwareButton& softwareButton);
+
+    void setAxisCode(const WhbKeyCode& currentAxis);
+
+    const WhbKeyCode& getAxisCode() const;
+
+    void setFeedCode(const WhbKeyCode& currentFeed);
+
+    const WhbKeyCode& setFeedCode() const;
+
+    //! returns the step size value according to the current rotary step button state
     float getStepSize();
 
     //! initialized lookup references are needed to resolve software button state and step speed state
@@ -543,6 +556,8 @@ public:
                     const WhbFeedRotaryButtonCodes& feedRotaryButtonCodesLookup,
                     const WhbHandwheelStepModeStepSize& stepSizeLookup,
                     const WhbHandwheelContiunuousModeStepSize& continuousStepSizeLookup);
+
+    WhbButtonsState& operator=(const WhbButtonsState& other);
 
 private:
     friend XhcWhb04b6::WhbContext;
@@ -556,9 +571,11 @@ private:
     WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex        mCurrentStepModeSize;
     uint8_t                                                    mCurrentButton1Code;
     uint8_t                                                    mCurrentButton2Code;
-    WhbSoftwareButton* mSoftwareButton;
+    const WhbSoftwareButton* mSoftwareButton;
     uint8_t mCurrentAxisCode;
     uint8_t mCurrentFeedCode;
+    const WhbKeyCode* mCurrentAxisKeyCode;
+    const WhbKeyCode* mCurrentFeedKeyCode;
 
     void setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex stepSize);
 
@@ -950,6 +967,8 @@ public:
     //! callback method received by \ref WhbUsb when a \ref libusb_transfer is received
     virtual void handleInputData(const WhbUsbInPackage& inPackage) override;
 
+    size_t getSoftwareButtonIndex(uint8_t keyCode) const;
+
     //! todo: doxy
     void initWhb();
 
@@ -998,6 +1017,14 @@ public:
     void enableVerboseInit(bool enable);
 
     void setWaitWithTimeout(uint8_t waitSecs = 3);
+
+    void buttonPressedEvent(const WhbSoftwareButton& softwareButton);
+
+    void buttonReleasedEvent(const WhbSoftwareButton& softwareButton);
+
+    void axisActiveEvent(const WhbKeyCode& axis);
+
+    void axisInactiveEvent(const WhbKeyCode& axis);
 
 private:
     const char* mName;
@@ -1138,6 +1165,24 @@ WhbButtonsCode::WhbButtonsCode() :
 
 // ----------------------------------------------------------------------
 
+const WhbKeyCode& WhbButtonsCode::getKeyCode(uint8_t keyCode) const
+{
+    const WhbKeyCode* whbKeyCode = reinterpret_cast<const WhbKeyCode*>(this);
+
+    while (whbKeyCode->code != 0)
+    {
+        if (whbKeyCode->code == keyCode)
+        {
+            break;
+        }
+        whbKeyCode++;
+    }
+
+    return *whbKeyCode;
+}
+
+// ----------------------------------------------------------------------
+
 WhbKeyCodes::WhbKeyCodes() :
     buttons(),
     axis(),
@@ -1216,14 +1261,14 @@ WhbButtonsState::setCurrentContinuousModeStepSize(WhbHandwheelContiunuousModeSte
 
 // ----------------------------------------------------------------------
 
-uint8_t WhbButtonsState::getButton1Code() const
+uint8_t WhbButtonsState::getKeyCode() const
 {
     return mCurrentButton1Code;
 }
 
 // ----------------------------------------------------------------------
 
-uint8_t WhbButtonsState::getButton2Code() const
+uint8_t WhbButtonsState::getModifierCode() const
 {
     return mCurrentButton2Code;
 }
@@ -1232,6 +1277,7 @@ uint8_t WhbButtonsState::getButton2Code() const
 
 uint8_t WhbButtonsState::getAxisRotaryButtonCode() const
 {
+    // TODO: must return type WhbKeyCode
     return mCurrentAxisCode;
 }
 
@@ -1239,12 +1285,13 @@ uint8_t WhbButtonsState::getAxisRotaryButtonCode() const
 
 uint8_t WhbButtonsState::getFeedRotaryButtonCode() const
 {
+    // TODO: must return type WhbKeyCode
     return mCurrentFeedCode;
 }
 
 // ----------------------------------------------------------------------
 
-WhbSoftwareButton& WhbButtonsState::getSoftwareButton() const
+const WhbSoftwareButton& WhbButtonsState::getSoftwareButton() const
 {
     assert(mSoftwareButton != nullptr);
     return *mSoftwareButton;
@@ -1252,16 +1299,15 @@ WhbSoftwareButton& WhbButtonsState::getSoftwareButton() const
 
 // ----------------------------------------------------------------------
 
-void WhbButtonsState::updateButtonState(uint8_t button1Code, uint8_t button2Code, uint8_t currentAxisRotaryButtonCode,
+void WhbButtonsState::updateButtonState(uint8_t keyCode, uint8_t modifierCode, uint8_t currentAxisRotaryButtonCode,
                                         uint8_t currentFeedRotaryButtonCode)
 {
-    // TODO:
-    // find out modifier, see print button
-    // then other key is the key
-    // find the software button accordingly
-    // update the speed rotary button, see print rotary button
-    // update the axis rotary button
+    mCurrentButton1Code = keyCode;
+    mCurrentButton2Code = modifierCode;
+    mCurrentAxisCode    = currentAxisRotaryButtonCode;
+    mCurrentFeedCode    = currentFeedRotaryButtonCode;
 
+    // TODO: update step mode a. axis
 }
 
 // ----------------------------------------------------------------------
@@ -1300,8 +1346,59 @@ WhbButtonsState::WhbButtonsState(const WhbButtonsCode& buttonCodesLookup,
     mCurrentButton1Code(buttonCodesLookup.undefined.code),
     mCurrentButton2Code(buttonCodesLookup.undefined.code),
     mCurrentAxisCode(axisRotaryButtonCodesLookup.undefined.code),
-    mCurrentFeedCode(feedRotaryButtonCodesLookup.undefined.code)
+    mCurrentFeedCode(feedRotaryButtonCodesLookup.undefined.code),
+    mCurrentAxisKeyCode(&mAxisRotaryButtonCodesLookup.undefined),
+    mCurrentFeedKeyCode(&mFeedRotaryButtonCodesLookup.undefined)
 {
+}
+
+// ----------------------------------------------------------------------
+
+WhbButtonsState& WhbButtonsState::operator=(const WhbButtonsState& other)
+{
+    mCurrentContinuousModeSize = other.mCurrentContinuousModeSize;
+    mCurrentStepModeSize       = other.mCurrentStepModeSize;
+    mCurrentButton1Code        = other.mCurrentButton1Code;
+    mCurrentButton2Code        = other.mCurrentButton2Code;
+    mSoftwareButton            = other.mSoftwareButton;
+    mCurrentAxisCode           = other.mCurrentAxisCode;
+    mCurrentFeedCode           = other.mCurrentFeedCode;
+    mCurrentAxisKeyCode        = other.mCurrentAxisKeyCode;
+    mCurrentFeedKeyCode        = other.mCurrentFeedKeyCode;
+
+    return *this;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbButtonsState::updateButtonState(const WhbSoftwareButton& softwareButton)
+{
+    // TODO: update step mode a. axis
+    mSoftwareButton = &softwareButton;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbButtonsState::setAxisCode(const WhbKeyCode& currentAxis)
+{
+    mCurrentAxisKeyCode = &currentAxis;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbButtonsState::setFeedCode(const WhbKeyCode& currentFeed)
+{
+    mCurrentFeedKeyCode = &currentFeed;
+}
+
+const WhbKeyCode& WhbButtonsState::getAxisCode() const
+{
+    return *mCurrentAxisKeyCode;
+}
+
+const WhbKeyCode& WhbButtonsState::setFeedCode() const
+{
+    return *mCurrentFeedKeyCode;
 }
 
 // ----------------------------------------------------------------------
@@ -1574,15 +1671,26 @@ const char* WhbContext::getHalName() const
 
 // ----------------------------------------------------------------------
 
+//! TODO: refactor me
 void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
 {
     if (mIsSimulationMode)
     {
         printHexdump(inPackage);
+        if (inPackage.rotaryButtonFeedKeyCode != 0)
+        {
+            ios init(NULL);
+            init.copyfmt(*mRxCout);
+            *mRxCout << " delta " << setfill(' ') << setw(2) << (unsigned short)inPackage.rotaryButtonFeedKeyCode;
+            mRxCout->copyfmt(init);
+        }
+        *mRxCout << " => ";
+        printInputData(inPackage);
+        *mRxCout << endl;
     }
 
-    uint8_t modifierCode       = mKeyCodes.buttons.undefined.code;
-    uint8_t keyCode            = mKeyCodes.buttons.undefined.code;
+    uint8_t modifierCode = mKeyCodes.buttons.undefined.code;
+    uint8_t keyCode      = mKeyCodes.buttons.undefined.code;
 
     //! found modifier at key one, key two is the key
     if (inPackage.buttonKeyCode1 == mKeyCodes.buttons.function.code)
@@ -1607,54 +1715,110 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
         keyCode = inPackage.buttonKeyCode1;
     }
 
-    // update current axis and step to hal
-    *(mHal.memory.jogCount) += inPackage.stepCount;
-    *(mHal.memory.jogCountNeg)  = -*(mHal.memory.jogCount);
-    *(mHal.memory.jogEnableOff) = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.off.code);
-    *(mHal.memory.jogEnableX)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.x.code);
-    *(mHal.memory.jogEnableY)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.y.code);
-    *(mHal.memory.jogEnableZ)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.z.code);
-    *(mHal.memory.jogEnableA)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.a.code);
-    *(mHal.memory.jogEnableB)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.b.code);
-    *(mHal.memory.jogEnableC)   = (inPackage.rotaryButtonAxisKeyCode == mKeyCodes.axis.c.code);
 
-    //! print human readable data
-    if (mHal.isSimulationModeEnabled())
+    //! update previous and current button state
+    mPreviousButtonCodes = mCurrentButtonCodes;
+    mCurrentButtonCodes.updateButtonState(keyCode, modifierCode, inPackage.rotaryButtonAxisKeyCode,
+                                          inPackage.rotaryButtonFeedKeyCode);
+
+    //! update axis rotary button's state to hal and detect active/inactive event
+    // TODO: implement the same for feed rotary button
+    uint8_t newAxisKeyCode = inPackage.rotaryButtonAxisKeyCode;
+    const WhbKeyCode& currentAxisCode = mCurrentButtonCodes.getAxisCode();
+    if (currentAxisCode.code != newAxisKeyCode)
     {
-        if (inPackage.rotaryButtonFeedKeyCode != 0)
+        const WhbKeyCode *newAxisCode = nullptr;
+        axisInactiveEvent(currentAxisCode);
+        if (newAxisKeyCode == mKeyCodes.axis.off.code)
         {
-            ios init(NULL);
-            init.copyfmt(*mRxCout);
-            *mRxCout << " delta " << setfill(' ') << setw(2) << (unsigned short)inPackage.rotaryButtonFeedKeyCode;
-            mRxCout->copyfmt(init);
+            *(mHal.memory.jogEnableOff) = true;
+            newAxisCode = &mKeyCodes.axis.off;
         }
-        *mRxCout << " => ";
-        printInputData(inPackage);
-    }
-
-    //! update all buttons state to hal
-    int      buttonsCount = sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton);
-    for (int idx          = 0; idx < buttonsCount; idx++)
-    {
-        if ((mSoftwareButtons[idx].key.code == keyCode) && (mSoftwareButtons[idx].modifier.code == modifierCode))
+        else if (newAxisKeyCode == mKeyCodes.axis.x.code)
         {
-            *(mHal.memory.button_pin[idx]) = true;
-            if (mHal.isSimulationModeEnabled())
-            {
-                *mRxCout << " pressed ";
-                printPushButtonText(keyCode, modifierCode);
-            }
+            *(mHal.memory.jogEnableX) = true;
+            newAxisCode = &mKeyCodes.axis.x;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.y.code)
+        {
+            *(mHal.memory.jogEnableY) = true;
+            newAxisCode = &mKeyCodes.axis.y;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.z.code)
+        {
+            *(mHal.memory.jogEnableZ) = true;
+            newAxisCode = &mKeyCodes.axis.z;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.a.code)
+        {
+            *(mHal.memory.jogEnableA) = true;
+            newAxisCode = &mKeyCodes.axis.a;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.b.code)
+        {
+            *(mHal.memory.jogEnableB) = true;
+            newAxisCode = &mKeyCodes.axis.b;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.c.code)
+        {
+            *(mHal.memory.jogEnableC) = true;
+            newAxisCode = &mKeyCodes.axis.c;
         }
         else
         {
+            assert(false);
+        }
+        mCurrentButtonCodes.setAxisCode(*newAxisCode);
+        axisActiveEvent(*newAxisCode);
+    }
+
+    //! update all buttons' state to hal and detect button pressed/released event
+    int     buttonsCount = sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton);
+    for (
+        int idx          = 0;
+        idx < buttonsCount;
+        idx++)
+    {
+        const WhbSoftwareButton& softwareButton = mSoftwareButtons[idx];
+        hal_bit_t halButtonState             = *(mHal.memory.button_pin[idx]);
+        uint8_t   softwareButtonKeyCode      = softwareButton.key.code;
+        uint8_t   softwareButtonModifierCode = softwareButton.modifier.code;
+
+        if ((halButtonState == true) && // on last button state was pressed
+            !((softwareButtonKeyCode == keyCode) && // and current state is not pressed
+              (softwareButtonModifierCode == modifierCode)))
+        {
+            // on button released event
             *(mHal.memory.button_pin[idx]) = false;
+            if (mHal.
+
+                isSimulationModeEnabled()
+
+                )
+            {
+                buttonReleasedEvent(softwareButton);
+            }
+
+        }
+        else if ((halButtonState == false) &&  // on last button state was unpressed
+                 ((softwareButtonKeyCode == keyCode) && // and current state is pressed
+                  (softwareButtonModifierCode == modifierCode)))
+        {
+            // on button pressed event
+            *(mHal.memory.button_pin[idx]) = true;
+            mCurrentButtonCodes.
+                updateButtonState(softwareButton);
+            if (mHal.
+
+                isSimulationModeEnabled()
+
+                )
+            {
+                buttonPressedEvent(softwareButton);
+            }
         }
     }
 
-    if (mHal.isSimulationModeEnabled())
-    {
-        *mRxCout << endl;
-    }
 }
 
 // ----------------------------------------------------------------------
@@ -1789,24 +1953,16 @@ void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std:
         return;
     }
 
-    // find key code
-    const WhbKeyCode* whbKeyCode = (WhbKeyCode*)&mKeyCodes.buttons;
-    while (whbKeyCode->code != 0)
-    {
-        if (whbKeyCode->code == keyCode)
-        {
-            break;
-        }
-        whbKeyCode++;
-    }
+    const WhbKeyCode& whbKeyCode = mKeyCodes.buttons.getKeyCode(keyCode);
+
     // print key text
     if (modifierCode == mKeyCodes.buttons.function.code)
     {
-        out << setw(indent) << whbKeyCode->altText;
+        out << setw(indent) << whbKeyCode.altText;
     }
     else
     {
-        out << setw(indent) << whbKeyCode->text;
+        out << setw(indent) << whbKeyCode.text;
     }
     out.copyfmt(init);
 }
@@ -2143,7 +2299,7 @@ int WhbContext::run()
 void WhbContext::linuxcncSimulate()
 {
     static int last_jog_counts = 0; // todo: move to class field
-    //*(hal->stepsizeUp) = ((xhc->button_step != 0) && (currentButtonCodes.mCurrentButton1Code == xhc->button_step));
+    // *(hal->stepsizeUp) = ((xhc->button_step != 0) && (currentButtonCodes.mCurrentButton1Code == xhc->button_step));
 
     if (*(mHal.memory.jogCount) != last_jog_counts)
     {
@@ -2482,6 +2638,59 @@ bool WhbContext::isSimulationModeEnabled() const
 
 // ----------------------------------------------------------------------
 
+size_t WhbContext::getSoftwareButtonIndex(uint8_t keyCode) const
+{
+    int      buttonsCount = sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton);
+    for (int idx          = 0; idx < buttonsCount; idx++)
+
+        if (mSoftwareButtons[idx].key.code == keyCode)
+        {
+            return idx;
+        }
+    assert (false);
+    return 0;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::buttonPressedEvent(const WhbSoftwareButton& softwareButton)
+{
+    *mRxCout << " pressed  ";
+    printPushButtonText(softwareButton.key.code, softwareButton.modifier.code);
+    *mRxCout << endl;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::buttonReleasedEvent(const WhbSoftwareButton& softwareButton)
+{
+    *mRxCout << " released ";
+    printPushButtonText(softwareButton.key.code, softwareButton.modifier.code);
+    *mRxCout << endl;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::axisActiveEvent(const WhbKeyCode& axis)
+{
+    ios init(NULL);
+    init.copyfmt(*mRxCout);
+    *mRxCout << "axis active   " << setw(5) << axis.text << " (" << setw(4) << axis.altText << ")" << endl;
+    mRxCout->copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::axisInactiveEvent(const WhbKeyCode& axis)
+{
+    ios init(NULL);
+    init.copyfmt(*mRxCout);
+    *mRxCout << "axis inactive " << setw(5) << axis.text << " (" << setw(4) << axis.altText << ")" << endl;
+    mRxCout->copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
+
 void WhbUsb::setSimulationMode(bool isSimulationMode)
 {
     mIsSimulationMode = isSimulationMode;
@@ -2702,16 +2911,22 @@ bool WhbUsb::init()
     //logLevel = LIBUSB_LOG_LEVEL_DEBUG;
     libusb_set_debug(context, logLevel);
 
+    ios init(NULL);
+    init.copyfmt(*verboseInitOut);
     if (isWaitWithTimeout)
     {
         *verboseInitOut << "waiting maximum " << static_cast<unsigned short>(mWaitSecs) << "s for device "
-                        << mName << getUsbVendorId() << " productId=" << usbProductId << " ...";
+                        << mName << " vendorId=0x" << hex << setfill('0') << setw(2) << usbVendorId
+                        << " productId=0x" << setw(2) << usbProductId << " ...";
     }
     else
     {
-        *verboseInitOut << "not waiting for device, will continue" << static_cast<unsigned short>(mWaitSecs)
-                        << "s for device " << mName << usbVendorId << " productId=" << usbProductId << " ...";
+        *verboseInitOut << "not waiting for device " << mName
+                        << " vendorId=0x" << hex << setfill('0') << setw(2) << usbVendorId
+                        << " productId=0x" << setw(2) << usbProductId << dec
+                        << ", will continue in " << static_cast<unsigned short>(mWaitSecs) << "s ...";
     }
+    verboseInitOut->copyfmt(init);
 
     do
     {
