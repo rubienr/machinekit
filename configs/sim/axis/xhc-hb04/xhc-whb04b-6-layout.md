@@ -1,4 +1,4 @@
-# XHC WHB04B-6 Layout
+# XHC WHB04B-6 lLayout
 
 The device provides 16 buttons. One button - "Fn" - is used as key
 modifier. Any button pressed in combination with the modifier button
@@ -18,7 +18,7 @@ Macro-14. The keypad layout is as follows:
 |                             |                  | &lt;Jog Dial&gt;   |                    |                            |
 
 
-# XHC WHB04B-6 Button Naming
+# XHC WHB04B-6 button naming
 
 The HAL pin names are derived from the case sensitive text as written on
 the respecitve button. For example:
@@ -44,7 +44,7 @@ xhc-whb04b-6.Spindle+
 xhc-whb04b-6 -p
 ```
 
-# For more details:
+# For even more details:
 
 ```
 Usage: xhc-whb04b-6 [-h] | [-H] [-x] [[-u|-U] [-p] | [-a] | [-s]] 
