@@ -117,7 +117,7 @@ class WhbUsb;
 
 class ConstantPackages;
 
-class OnUsbInputPackageReceivedHandler;
+class UsbInputPackageListener;
 
 class WhbContext;
 
@@ -518,7 +518,6 @@ private:
 //! by storing up to two button codes and axis and feed codes. The software
 //! button reflects the logical combination of two button codes if the modifier
 //! button code "Fn" is involved.
-//! TODO: refactor me
 class WhbButtonsState
 {
 public:
@@ -545,10 +544,10 @@ public:
 
     void setFeedCode(const WhbKeyCode& currentFeed);
 
-    const WhbKeyCode& setFeedCode() const;
+    const WhbKeyCode& getFeedCode() const;
 
     //! returns the step size value according to the current rotary step button state
-    float getStepSize();
+    hal_float_t getStepSize();
 
     //! initialized lookup references are needed to resolve software button state and step speed state
     WhbButtonsState(const WhbButtonsCode& buttonCodesLookup,
@@ -558,6 +557,16 @@ public:
                     const WhbHandwheelContiunuousModeStepSize& continuousStepSizeLookup);
 
     WhbButtonsState& operator=(const WhbButtonsState& other);
+
+    void setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex stepSize);
+
+    void setCurrentContinuousModeStepSize(WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex stepSize);
+
+    void clearCurrentStepModeStepSize();
+
+    bool isCurrentModeStepMode() const;
+
+    bool isCurrentModeContinuousMode() const;
 
 private:
     friend XhcWhb04b6::WhbContext;
@@ -577,9 +586,6 @@ private:
     const WhbKeyCode* mCurrentAxisKeyCode;
     const WhbKeyCode* mCurrentFeedKeyCode;
 
-    void setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex stepSize);
-
-    void setCurrentContinuousModeStepSize(WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex stepSize);
 };
 
 // ----------------------------------------------------------------------
@@ -847,7 +853,7 @@ class WhbUsb
 public:
     static const WhbConstantUsbPackages ConstantPackages;
 
-    WhbUsb(const char* name, OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalMemory& halMemory);
+    WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback, WhbHalMemory& halMemory);
 
     ~WhbUsb();
 
@@ -908,10 +914,10 @@ private:
     WhbUsbInPackageBuffer  inputPackageBuffer;
     WhbUsbOutPackageBuffer outputPackageBuffer;
     WhbUsbOutPackageData   outputPackageData;
-    OnUsbInputPackageReceivedHandler& mDataHandler;
-    WhbHalMemory                    & mHalMemory;
-    struct libusb_transfer          * inTransfer;
-    struct libusb_transfer          * outTransfer;
+    UsbInputPackageListener& mDataHandler;
+    WhbHalMemory           & mHalMemory;
+    struct libusb_transfer * inTransfer;
+    struct libusb_transfer * outTransfer;
     std::ostream devNull;
     std::ostream* verboseTxOut;
     std::ostream* verboseRxOut;
@@ -927,21 +933,49 @@ const WhbConstantUsbPackages WhbUsb::ConstantPackages;
 
 // ----------------------------------------------------------------------
 
-class OnUsbInputPackageReceivedHandler
+class UsbInputPackageListener
 {
 public:
-    virtual void handleInputData(const WhbUsbInPackage& inPackage) = 0;
+    virtual void onInputDataReceived(const WhbUsbInPackage& inPackage) = 0;
 
-    virtual ~OnUsbInputPackageReceivedHandler()
+    virtual ~UsbInputPackageListener()
     {
     }
+};
+
+class WhbKeyEventListener
+{
+public:
+    virtual void onButtonPressedEvent(const WhbSoftwareButton& softwareButton) = 0;
+
+    virtual void onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) = 0;
+
+    virtual void onAxisActiveEvent(const WhbKeyCode& axis) = 0;
+
+    virtual void onAxisInactiveEvent(const WhbKeyCode& axis) = 0;
+
+    virtual void onFeedActiveEvent(const WhbKeyCode& axis) = 0;
+
+    virtual void onFeedInactiveEvent(const WhbKeyCode& axis) = 0;
+
+    virtual void jogDialEvent(int8_t delta) = 0;
+
+    virtual ~WhbKeyEventListener();
+};
+
+class UsbInputPackageInterpreted
+{
+public:
+    virtual void onDataInterpreted() = 0;
+
+    virtual ~UsbInputPackageInterpreted();
 };
 
 // ----------------------------------------------------------------------
 
 //! program context
 class WhbContext :
-    public OnUsbInputPackageReceivedHandler
+    public UsbInputPackageListener, public WhbKeyEventListener, public UsbInputPackageInterpreted
 {
 public:
     WhbContext();
@@ -965,7 +999,7 @@ public:
     const char* getHalName() const;
 
     //! callback method received by \ref WhbUsb when a \ref libusb_transfer is received
-    virtual void handleInputData(const WhbUsbInPackage& inPackage) override;
+    void onInputDataReceived(const WhbUsbInPackage& inPackage) override;
 
     size_t getSoftwareButtonIndex(uint8_t keyCode) const;
 
@@ -1008,6 +1042,8 @@ public:
 
     void setSimulationMode(bool enableSimulationMode);
 
+    void setEnableVerboseKeyEvents(bool enable);
+
     void enableVerboseRx(bool enable);
 
     void enableVerboseTx(bool enable);
@@ -1018,13 +1054,29 @@ public:
 
     void setWaitWithTimeout(uint8_t waitSecs = 3);
 
-    void buttonPressedEvent(const WhbSoftwareButton& softwareButton);
+    void onButtonPressedEvent(const WhbSoftwareButton& softwareButton) override;
 
-    void buttonReleasedEvent(const WhbSoftwareButton& softwareButton);
+    void onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) override;
 
-    void axisActiveEvent(const WhbKeyCode& axis);
+    void onAxisActiveEvent(const WhbKeyCode& axis) override;
 
-    void axisInactiveEvent(const WhbKeyCode& axis);
+    void onAxisInactiveEvent(const WhbKeyCode& axis) override;
+
+    void onDataInterpreted() override;
+
+    void onFeedActiveEvent(const WhbKeyCode& axis) override;
+
+    void onFeedInactiveEvent(const WhbKeyCode& axis) override;
+
+    void jogDialEvent(int8_t delta) override;
+
+    void updateAxisRotaryButton(const WhbUsbInPackage& inPackage);
+
+    void updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode);
+
+    void updateJogDial(const WhbUsbInPackage& inPackage);
+
+    void updateStepRotaryButton(const WhbUsbInPackage& inPackage);
 
 private:
     const char* mName;
@@ -1039,10 +1091,14 @@ private:
     WhbButtonsState         mCurrentButtonCodes;
     WhbVelocityComputation  velocityComputation;
     std::ostream            mDevNull;
-    std::ostream* mTxCout;
-    std::ostream* mRxCout;
-    std::ostream* mHalInitCout;
-    std::ostream* mInitCout;
+    std::ostream              * mTxCout;
+    std::ostream              * mRxCout;
+    std::ostream              * mKeyEventCout;
+    std::ostream              * mHalInitCout;
+    std::ostream              * mInitCout;
+    WhbKeyEventListener       & keyEventReceiver;
+    UsbInputPackageListener   & packageReceivedEventReceiver;
+    UsbInputPackageInterpreted& packageIntepretedEventReceiver;
 
     //! prints human readable output of the push buttons state
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out);
@@ -1069,6 +1125,19 @@ private:
     void printHexdump(const WhbUsbInPackage& inPackage);
 
 };
+
+// ----------------------------------------------------------------------
+
+UsbInputPackageInterpreted::~UsbInputPackageInterpreted()
+{
+}
+
+// ----------------------------------------------------------------------
+
+WhbKeyEventListener::~WhbKeyEventListener()
+{
+
+}
 
 // ----------------------------------------------------------------------
 
@@ -1244,6 +1313,21 @@ WhbStepHandler::WhbStepHandler() :
 
 // ----------------------------------------------------------------------
 
+bool WhbButtonsState::isCurrentModeStepMode() const
+{
+    return mCurrentStepModeSize != WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex::RotaryButtonUndefined;
+}
+
+// ----------------------------------------------------------------------
+
+bool WhbButtonsState::isCurrentModeContinuousMode() const
+{
+    return mCurrentContinuousModeSize !=
+           WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex::RotaryButtonUndefined;
+}
+
+// ----------------------------------------------------------------------
+
 void WhbButtonsState::setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex stepSize)
 {
     mCurrentStepModeSize       = stepSize;
@@ -1312,7 +1396,7 @@ void WhbButtonsState::updateButtonState(uint8_t keyCode, uint8_t modifierCode, u
 
 // ----------------------------------------------------------------------
 
-float WhbButtonsState::getStepSize()
+hal_float_t WhbButtonsState::getStepSize()
 {
     if (mCurrentStepModeSize == WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex::RotaryButtonUndefined)
     {
@@ -1396,9 +1480,15 @@ const WhbKeyCode& WhbButtonsState::getAxisCode() const
     return *mCurrentAxisKeyCode;
 }
 
-const WhbKeyCode& WhbButtonsState::setFeedCode() const
+const WhbKeyCode& WhbButtonsState::getFeedCode() const
 {
     return *mCurrentFeedKeyCode;
+}
+
+void WhbButtonsState::clearCurrentStepModeStepSize()
+{
+    mCurrentStepModeSize       = WhbHandwheelStepModeStepSize::RotaryButtonUndefined;
+    mCurrentContinuousModeSize = WhbHandwheelContiunuousModeStepSize::RotaryButtonUndefined;
 }
 
 // ----------------------------------------------------------------------
@@ -1568,7 +1658,7 @@ void WhbUsb::setDoReconnect(bool doReconnect)
 
 // ----------------------------------------------------------------------
 
-WhbUsb::WhbUsb(const char* name, OnUsbInputPackageReceivedHandler& onDataReceivedCallback, WhbHalMemory& halMemory) :
+WhbUsb::WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback, WhbHalMemory& halMemory) :
 // usbVendorId(0x10ce), // xhc-whb04-4
 // usbProductId(0xeb70),// xhc-whb04-4
     usbVendorId(0x10ce), // xhc-whb04-6
@@ -1671,8 +1761,9 @@ const char* WhbContext::getHalName() const
 
 // ----------------------------------------------------------------------
 
-//! TODO: refactor me
-void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
+
+//! interprets data packages as delivered by the XHC WHB04B-6 device
+void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
 {
     if (mIsSimulationMode)
     {
@@ -1681,8 +1772,13 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
         {
             ios init(NULL);
             init.copyfmt(*mRxCout);
-            *mRxCout << " delta " << setfill(' ') << setw(2) << (unsigned short)inPackage.rotaryButtonFeedKeyCode;
+            *mRxCout << " delta " << setfill(' ') << setw(2)
+                     << static_cast<unsigned short>(inPackage.rotaryButtonFeedKeyCode);
             mRxCout->copyfmt(init);
+        }
+        else
+        {
+            *mRxCout << " delta NA";
         }
         *mRxCout << " => ";
         printInputData(inPackage);
@@ -1715,109 +1811,16 @@ void WhbContext::handleInputData(const WhbUsbInPackage& inPackage)
         keyCode = inPackage.buttonKeyCode1;
     }
 
-
     //! update previous and current button state
     mPreviousButtonCodes = mCurrentButtonCodes;
     mCurrentButtonCodes.updateButtonState(keyCode, modifierCode, inPackage.rotaryButtonAxisKeyCode,
                                           inPackage.rotaryButtonFeedKeyCode);
 
-    //! update axis rotary button's state to hal and detect active/inactive event
-    // TODO: implement the same for feed rotary button
-    uint8_t newAxisKeyCode = inPackage.rotaryButtonAxisKeyCode;
-    const WhbKeyCode& currentAxisCode = mCurrentButtonCodes.getAxisCode();
-    if (currentAxisCode.code != newAxisKeyCode)
-    {
-        const WhbKeyCode *newAxisCode = nullptr;
-        axisInactiveEvent(currentAxisCode);
-        if (newAxisKeyCode == mKeyCodes.axis.off.code)
-        {
-            *(mHal.memory.jogEnableOff) = true;
-            newAxisCode = &mKeyCodes.axis.off;
-        }
-        else if (newAxisKeyCode == mKeyCodes.axis.x.code)
-        {
-            *(mHal.memory.jogEnableX) = true;
-            newAxisCode = &mKeyCodes.axis.x;
-        }
-        else if (newAxisKeyCode == mKeyCodes.axis.y.code)
-        {
-            *(mHal.memory.jogEnableY) = true;
-            newAxisCode = &mKeyCodes.axis.y;
-        }
-        else if (newAxisKeyCode == mKeyCodes.axis.z.code)
-        {
-            *(mHal.memory.jogEnableZ) = true;
-            newAxisCode = &mKeyCodes.axis.z;
-        }
-        else if (newAxisKeyCode == mKeyCodes.axis.a.code)
-        {
-            *(mHal.memory.jogEnableA) = true;
-            newAxisCode = &mKeyCodes.axis.a;
-        }
-        else if (newAxisKeyCode == mKeyCodes.axis.b.code)
-        {
-            *(mHal.memory.jogEnableB) = true;
-            newAxisCode = &mKeyCodes.axis.b;
-        }
-        else if (newAxisKeyCode == mKeyCodes.axis.c.code)
-        {
-            *(mHal.memory.jogEnableC) = true;
-            newAxisCode = &mKeyCodes.axis.c;
-        }
-        else
-        {
-            assert(false);
-        }
-        mCurrentButtonCodes.setAxisCode(*newAxisCode);
-        axisActiveEvent(*newAxisCode);
-    }
-
-    //! update all buttons' state to hal and detect button pressed/released event
-    int     buttonsCount = sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton);
-    for (
-        int idx          = 0;
-        idx < buttonsCount;
-        idx++)
-    {
-        const WhbSoftwareButton& softwareButton = mSoftwareButtons[idx];
-        hal_bit_t halButtonState             = *(mHal.memory.button_pin[idx]);
-        uint8_t   softwareButtonKeyCode      = softwareButton.key.code;
-        uint8_t   softwareButtonModifierCode = softwareButton.modifier.code;
-
-        if ((halButtonState == true) && // on last button state was pressed
-            !((softwareButtonKeyCode == keyCode) && // and current state is not pressed
-              (softwareButtonModifierCode == modifierCode)))
-        {
-            // on button released event
-            *(mHal.memory.button_pin[idx]) = false;
-            if (mHal.
-
-                isSimulationModeEnabled()
-
-                )
-            {
-                buttonReleasedEvent(softwareButton);
-            }
-
-        }
-        else if ((halButtonState == false) &&  // on last button state was unpressed
-                 ((softwareButtonKeyCode == keyCode) && // and current state is pressed
-                  (softwareButtonModifierCode == modifierCode)))
-        {
-            // on button pressed event
-            *(mHal.memory.button_pin[idx]) = true;
-            mCurrentButtonCodes.
-                updateButtonState(softwareButton);
-            if (mHal.
-
-                isSimulationModeEnabled()
-
-                )
-            {
-                buttonPressedEvent(softwareButton);
-            }
-        }
-    }
+    updateAxisRotaryButton(inPackage);
+    updateStepRotaryButton(inPackage);
+    updateHalButtons(inPackage, keyCode, modifierCode);
+    updateJogDial(inPackage);
+    onDataInterpreted();
 
 }
 
@@ -1905,8 +1908,12 @@ WhbContext::WhbContext() :
     mDevNull(nullptr),
     mTxCout(&mDevNull),
     mRxCout(&mDevNull),
+    mKeyEventCout(&mDevNull),
     mHalInitCout(&mDevNull),
-    mInitCout(&mDevNull)
+    mInitCout(&mDevNull),
+    keyEventReceiver(*this),
+    packageReceivedEventReceiver(*this),
+    packageIntepretedEventReceiver(*this)
 {
     setSimulationMode(true);
     enableVerboseRx(false);
@@ -2653,40 +2660,316 @@ size_t WhbContext::getSoftwareButtonIndex(uint8_t keyCode) const
 
 // ----------------------------------------------------------------------
 
-void WhbContext::buttonPressedEvent(const WhbSoftwareButton& softwareButton)
+void WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
 {
-    *mRxCout << " pressed  ";
+    *mKeyEventCout << "pressed  ";
     printPushButtonText(softwareButton.key.code, softwareButton.modifier.code);
-    *mRxCout << endl;
+    *mKeyEventCout << endl;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::buttonReleasedEvent(const WhbSoftwareButton& softwareButton)
+void WhbContext::onButtonReleasedEvent(const WhbSoftwareButton& softwareButton)
 {
-    *mRxCout << " released ";
+    *mKeyEventCout << "released ";
     printPushButtonText(softwareButton.key.code, softwareButton.modifier.code);
-    *mRxCout << endl;
+    *mKeyEventCout << endl;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::axisActiveEvent(const WhbKeyCode& axis)
+void WhbContext::onAxisActiveEvent(const WhbKeyCode& axis)
 {
     ios init(NULL);
-    init.copyfmt(*mRxCout);
-    *mRxCout << "axis active   " << setw(5) << axis.text << " (" << setw(4) << axis.altText << ")" << endl;
-    mRxCout->copyfmt(init);
+    init.copyfmt(*mKeyEventCout);
+    *mKeyEventCout << "axis active   " << setw(5) << axis.text << " (" << setw(4) << axis.altText << ")" << endl;
+    mKeyEventCout->copyfmt(init);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::axisInactiveEvent(const WhbKeyCode& axis)
+void WhbContext::onAxisInactiveEvent(const WhbKeyCode& axis)
 {
     ios init(NULL);
-    init.copyfmt(*mRxCout);
-    *mRxCout << "axis inactive " << setw(5) << axis.text << " (" << setw(4) << axis.altText << ")" << endl;
-    mRxCout->copyfmt(init);
+    init.copyfmt(*mKeyEventCout);
+    *mKeyEventCout << "axis inactive " << setw(5) << axis.text << " (" << setw(4) << axis.altText << ")" << endl;
+    mKeyEventCout->copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::onDataInterpreted()
+{
+    ios init(NULL);
+    init.copyfmt(*mKeyEventCout);
+    *mKeyEventCout << "data interpreted, display data ready" << endl;
+    // mIsDisplayDataReady = true;
+    mKeyEventCout->copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
+
+//! update axis rotary button's state to hal and detect active/inactive event
+void WhbContext::updateAxisRotaryButton(const WhbUsbInPackage& inPackage)
+{
+    uint8_t newAxisKeyCode = inPackage.rotaryButtonAxisKeyCode;
+    const WhbKeyCode& currentAxisCode = mCurrentButtonCodes.getAxisCode();
+    if (currentAxisCode.code != newAxisKeyCode)
+    {
+        const WhbKeyCode* newAxisCode = nullptr;
+        keyEventReceiver.onAxisInactiveEvent(currentAxisCode);
+        if (newAxisKeyCode == mKeyCodes.axis.off.code)
+        {
+            *(mHal.memory.jogEnableOff) = true;
+            newAxisCode = &mKeyCodes.axis.off;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.x.code)
+        {
+            *(mHal.memory.jogEnableX) = true;
+            newAxisCode = &mKeyCodes.axis.x;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.y.code)
+        {
+            *(mHal.memory.jogEnableY) = true;
+            newAxisCode = &mKeyCodes.axis.y;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.z.code)
+        {
+            *(mHal.memory.jogEnableZ) = true;
+            newAxisCode = &mKeyCodes.axis.z;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.a.code)
+        {
+            *(mHal.memory.jogEnableA) = true;
+            newAxisCode = &mKeyCodes.axis.a;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.b.code)
+        {
+            *(mHal.memory.jogEnableB) = true;
+            newAxisCode = &mKeyCodes.axis.b;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.c.code)
+        {
+            *(mHal.memory.jogEnableC) = true;
+            newAxisCode = &mKeyCodes.axis.c;
+        }
+        else if (newAxisKeyCode == mKeyCodes.axis.undefined.code)
+        {
+            newAxisCode = &mKeyCodes.axis.undefined;
+        }
+        else
+        {
+            *mRxCout << "received unexpected axis id " << static_cast<unsigned short>(newAxisKeyCode) << endl;
+            assert(false);
+        }
+        mCurrentButtonCodes.setAxisCode(*newAxisCode);
+        keyEventReceiver.onAxisActiveEvent(*newAxisCode);
+    }
+}
+
+// ----------------------------------------------------------------------
+
+//! update all buttons' state to hal and detect button pressed/released event
+void WhbContext::updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode)
+{
+    int      buttonsCount = sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton);
+    for (int idx          = 0; idx < buttonsCount; idx++)
+    {
+        const WhbSoftwareButton& softwareButton = mSoftwareButtons[idx];
+        hal_bit_t halButtonState             = *(mHal.memory.button_pin[idx]);
+        uint8_t   softwareButtonKeyCode      = softwareButton.key.code;
+        uint8_t   softwareButtonModifierCode = softwareButton.modifier.code;
+
+        if ((halButtonState == true) && // on last button state was pressed
+            !((softwareButtonKeyCode == keyCode) && // and current state is not pressed
+              (softwareButtonModifierCode == modifierCode)))
+        {
+            // on button released event
+            *(mHal.memory.button_pin[idx]) = false;
+            if (mHal.
+
+                isSimulationModeEnabled()
+
+                )
+            {
+                keyEventReceiver.onButtonReleasedEvent(softwareButton);
+            }
+
+        }
+        else if ((halButtonState == false) &&  // on last button state was unpressed
+                 ((softwareButtonKeyCode == keyCode) && // and current state is pressed
+                  (softwareButtonModifierCode == modifierCode)))
+        {
+            // on button pressed event
+            *(mHal.memory.button_pin[idx]) = true;
+            mCurrentButtonCodes.
+                updateButtonState(softwareButton);
+            if (mHal.isSimulationModeEnabled())
+            {
+                keyEventReceiver.onButtonPressedEvent(softwareButton);
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------------
+
+//! update axis rotary button's state to hal and detect active/inactive event
+void WhbContext::updateStepRotaryButton(const WhbUsbInPackage& inPackage)
+{
+    uint8_t newStepKeyCode = inPackage.rotaryButtonFeedKeyCode;
+    const WhbKeyCode& currentStepCode = mCurrentButtonCodes.getFeedCode();
+
+    if (currentStepCode.code != newStepKeyCode)
+    {
+        mCurrentButtonCodes.clearCurrentStepModeStepSize();
+        keyEventReceiver.onFeedInactiveEvent(currentStepCode);
+        const WhbKeyCode* newFeedCode = nullptr;
+
+        if (newStepKeyCode == mKeyCodes.feed.speed_0_001.code)
+        {
+            if (mCurrentButtonCodes.isCurrentModeStepMode())
+            {
+                mCurrentButtonCodes.setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::RotaryButton0001);
+            }
+            else
+            {
+                mCurrentButtonCodes.setCurrentContinuousModeStepSize(
+                    WhbHandwheelContiunuousModeStepSize::RotaryButton2percent);
+            }
+            newFeedCode = &mKeyCodes.feed.speed_0_001;
+        }
+        else if (newStepKeyCode == mKeyCodes.feed.speed_0_01.code)
+        {
+            if (mCurrentButtonCodes.isCurrentModeStepMode())
+            {
+                mCurrentButtonCodes.setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::RotaryButton0010);
+            }
+            else
+            {
+                mCurrentButtonCodes.setCurrentContinuousModeStepSize(
+                    WhbHandwheelContiunuousModeStepSize::RotaryButton5percent);
+            }
+            newFeedCode = &mKeyCodes.feed.speed_0_01;
+        }
+        else if (newStepKeyCode == mKeyCodes.feed.speed_0_1.code)
+        {
+            if (mCurrentButtonCodes.isCurrentModeStepMode())
+            {
+                mCurrentButtonCodes.setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::RotaryButton0100);
+            }
+            else
+            {
+                mCurrentButtonCodes.setCurrentContinuousModeStepSize(
+                    WhbHandwheelContiunuousModeStepSize::RotaryButton10percent);
+            }
+            newFeedCode = &mKeyCodes.feed.speed_0_1;
+        }
+        else if (newStepKeyCode == mKeyCodes.feed.speed_1.code)
+        {
+            if (mCurrentButtonCodes.isCurrentModeStepMode())
+            {
+                mCurrentButtonCodes.setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::RotaryButton100);
+            }
+            else
+            {
+                mCurrentButtonCodes.setCurrentContinuousModeStepSize(
+                    WhbHandwheelContiunuousModeStepSize::RotaryButton30percent);
+            }
+            newFeedCode = &mKeyCodes.feed.speed_1;
+        }
+        else if (newStepKeyCode == mKeyCodes.feed.percent_60.code)
+        {
+            if (mCurrentButtonCodes.isCurrentModeContinuousMode())
+            {
+                mCurrentButtonCodes.setCurrentContinuousModeStepSize(
+                    WhbHandwheelContiunuousModeStepSize::RotaryButton60percent);
+            }
+            newFeedCode = &mKeyCodes.feed.percent_60;
+        }
+        else if (newStepKeyCode == mKeyCodes.feed.percent_100.code)
+        {
+            if (mCurrentButtonCodes.isCurrentModeContinuousMode())
+            {
+                mCurrentButtonCodes.setCurrentContinuousModeStepSize(
+                    WhbHandwheelContiunuousModeStepSize::RotaryButton100percent);
+            }
+            newFeedCode = &mKeyCodes.feed.percent_100;
+        }
+        else if (newStepKeyCode == mKeyCodes.feed.lead.code)
+        {
+            newFeedCode = &mKeyCodes.feed.lead;
+        }
+        else
+        {
+            // \p newFeedCode value may be unexpected i.e. on device power off
+        }
+
+        //! feed rotary button position changed but no valid feed step size available for this mode
+        if (newFeedCode != nullptr)
+        {
+            *(mHal.memory.feedrate) = mCurrentButtonCodes.getStepSize();
+            mCurrentButtonCodes.setFeedCode(*newFeedCode);
+            keyEventReceiver.onFeedActiveEvent(*newFeedCode);
+        }
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::onFeedActiveEvent(const WhbKeyCode& axis)
+{
+    ios init(NULL);
+    init.copyfmt(*mKeyEventCout);
+    *mKeyEventCout << "feed   active  " << setfill(' ') << setw(5) << axis.text << "(" << setw(4) << axis.altText << ")"
+                   << endl;
+    mKeyEventCout->copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::onFeedInactiveEvent(const WhbKeyCode& axis)
+{
+    ios init(NULL);
+    init.copyfmt(*mKeyEventCout);
+    *mKeyEventCout << "feed inactive  " << setfill(' ') << setw(5) << axis.text << "(" << setw(4) << axis.altText << ")"
+                   << endl;
+    mKeyEventCout->copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::setEnableVerboseKeyEvents(bool enable)
+{
+    mUsb.enableVerboseRx(enable);
+    if (enable)
+    {
+        mKeyEventCout = &std::cout;
+    }
+    else
+    {
+        mKeyEventCout = &mDevNull;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::jogDialEvent(int8_t delta)
+{
+    ios init(NULL);
+    init.copyfmt(*mKeyEventCout);
+    *mKeyEventCout << "jog dial event " << setfill(' ') << setw(3) << static_cast<short>(delta) << endl;
+    mKeyEventCout->copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
+
+void WhbContext::updateJogDial(const WhbUsbInPackage& inPackage)
+{
+    if (inPackage.stepCount != 0)
+    {
+        jogDialEvent(inPackage.stepCount);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -2791,7 +3074,7 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
 
                 }
                 // pass structured transfer to usb data handler
-                mDataHandler.handleInputData(inputPackageBuffer.asFields);
+                mDataHandler.onInputDataReceived(inputPackageBuffer.asFields);
             }
             else
             {
@@ -3308,9 +3591,13 @@ static int printUsage(char* programName, bool isError = false)
     *os << programName << " version " << PACKAGE_VERSION << " 2017 by Raoul Rubien (github.com/rubienr)" << endl
         << "Usage: " << programName << " [-h] | [-H] [-x] [[-u|-U] [-p] | [-a] | [-s]] " << endl
         << " -h usage help text" << endl << " -H run " << Whb.getName() << "in HAL-mode instead of interactive mode"
-        << endl << " -t wait for USB device before processing with HAL initialization" << endl
+        << endl
+        << " -t wait for USB device before processing with HAL initialization" << endl
         << " -u print received data" << endl << " -U print received and transmitted data" << endl
-        << " -p print initialized HAL pins " << endl << " -a enable all verbose facilities" << "-s be silent" << endl;
+        << " -p print initialized HAL pins " << endl
+        << " -e print key events" << endl
+        << " -a enable all verbose facilities" << endl
+        << " -s be silent" << endl;
 
     if (isError)
     {
@@ -3346,7 +3633,7 @@ void usbInputResponseCallback(struct libusb_transfer* transfer)
 
 int main(int argc, char** argv)
 {
-    const char* optargs = "HtuUpahs";
+    const char* optargs = "HtuUpahse";
     for (int opt = getopt(argc, argv, optargs); opt != -1; opt = getopt(argc, argv, optargs))
     {
         switch (opt)
@@ -3356,6 +3643,9 @@ int main(int argc, char** argv)
                 break;
             case 't':
                 Whb.setWaitWithTimeout(3);
+                break;
+            case 'e':
+                Whb.setEnableVerboseKeyEvents(true);
                 break;
             case 'u':
                 Whb.enableVerboseInit(true);
@@ -3372,6 +3662,7 @@ int main(int argc, char** argv)
                 break;
             case 'a':
                 Whb.enableVerboseInit(true);
+                Whb.setEnableVerboseKeyEvents(true);
                 Whb.enableVerboseRx(true);
                 Whb.enableVerboseTx(true);
                 Whb.enableVerboseHalInit(true);
