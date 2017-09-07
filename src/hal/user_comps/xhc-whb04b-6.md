@@ -2,6 +2,7 @@
 Since the manufacturer's ([Chengdu Xinhecheng Technology Co.,Ltd.](http://cdxhctech.com/)) developers refuse to release any protocol information, we had to reverse engineer the protocol.
 After lots of begging we received at least some sort of source code for PHB04 - it was hard to believe that this was serious productive code in terms of programming capability. 
 However here we list findings and thoughts on the USB communication protocol.
+
 **Any discussion regarding this topic is welcome!**
 
 ## Findings
@@ -30,7 +31,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 
 | Byte# | Width   | Data                                                                 | Value               | Clarification Needed | 
 |:------|:--------|:---------------------------------------------------------------------|:--------------------|:-:|
-| 0x00  | [0:15]  | header, unclear if different headers (commands) can be sent          | constant 0xfdfe     | * |
+| 0x00  | [0:15]  | header, **unclear if different headers (commands) can be sent**      | constant 0xfdfe     | * |
 | 0x02  | [0:7]   | sometimes described as **day of month**                              |                     | * |
 | 0x03  | [0:1]   | display indicator flags: step mode                                   |                     |   |
 | 0x03  | [2:5]   | display indicator flags: **unknown**                                 |                     | * |
@@ -58,6 +59,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 * Did not install the driver and Mach3 on Windows guest VM and sniff the USB protocol using SOTA tools such as
     * Wireshark
     * usbmon
+    
 **Any help in that regard is appreciated.**
 
 ## Key codes in detail
@@ -91,7 +93,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | percent_60                  | 0x1a     | &lt;NA&gt;  | 60%                     |
 | percent_100                 | 0x1b     |   | 100%                    |
 | lead                        | 0x1c     | Lead        | &lt;NA&gt;              |
-| undefined                   | 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
+| &lt;no button pressed&gt;   | 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
 
 |  Feed Rotary Button Name    | Key Code | Button Text | Button Alternative Text |
 |:----------------------------|:---------|:------------|:------------------------|
@@ -102,4 +104,4 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | a                           | 0x14     | A           | &lt;NA&gt;              |
 | b                           | 0x15     | B           | &lt;NA&gt;              |
 | c                           | 0x16     | C           | &lt;NA&gt;              |
-| undefined                   | 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
+| &lt;no button pressed&gt;   | 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
