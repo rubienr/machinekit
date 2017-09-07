@@ -1,4 +1,4 @@
-# Protocol description
+# XHC WHB04B-6 Protocol description
 Since the manufacturer's ([Chengdu Xinhecheng Technology Co.,Ltd.](http://cdxhctech.com/)) developers refuse to release any protocol information, we had to reverse engineer the protocol.
 After lots of begging we received at least some sort of source code for PHB04 - it was hard to believe that this was serious productive code in terms of programming capability. 
 However here we list findings and thoughts on the USB communication protocol.
