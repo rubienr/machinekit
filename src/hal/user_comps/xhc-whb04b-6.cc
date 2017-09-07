@@ -2663,7 +2663,7 @@ size_t WhbContext::getSoftwareButtonIndex(uint8_t keyCode) const
 void WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
 {
     *mKeyEventCout << "pressed  ";
-    printPushButtonText(softwareButton.key.code, softwareButton.modifier.code);
+    printPushButtonText(softwareButton.key.code, softwareButton.modifier.code, *mKeyEventCout);
     *mKeyEventCout << endl;
 }
 
@@ -2672,7 +2672,7 @@ void WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
 void WhbContext::onButtonReleasedEvent(const WhbSoftwareButton& softwareButton)
 {
     *mKeyEventCout << "released ";
-    printPushButtonText(softwareButton.key.code, softwareButton.modifier.code);
+    printPushButtonText(softwareButton.key.code, softwareButton.modifier.code, *mKeyEventCout);
     *mKeyEventCout << endl;
 }
 
