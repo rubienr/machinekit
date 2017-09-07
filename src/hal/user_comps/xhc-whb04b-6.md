@@ -93,7 +93,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | percent_60                  | 0x1a     | &lt;NA&gt;  | 60%                     |
 | percent_100                 | 0x1b     |   | 100%                    |
 | lead                        | 0x1c     | Lead        | &lt;NA&gt;              |
-| undefined                   | 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
+| &lt;no button pressed&gt;   | 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
 
 |  Feed Rotary Button Name    | Key Code | Button Text | Button Alternative Text |
 |:----------------------------|:---------|:------------|:------------------------|
@@ -104,4 +104,4 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | a                           | 0x14     | A           | &lt;NA&gt;              |
 | b                           | 0x15     | B           | &lt;NA&gt;              |
 | c                           | 0x16     | C           | &lt;NA&gt;              |
-| undefined                   | 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
+| &lt;no button pressed&gt;   | 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
