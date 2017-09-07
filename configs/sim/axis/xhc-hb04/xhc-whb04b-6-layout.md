@@ -1,8 +1,8 @@
 # XHC WHB04B-6 Layout
 
-The device provides 16 buttons. One button - "Fn" is used as key
+The device provides 16 buttons. One button - "Fn" - is used as key
 modifier. Any button pressed in combination with the modifier button
-generates an alternative event - Macro-n (with n being the a macro
+generates an alternative event - Macro-n (with n being the macro
 number). This holds for any button, even if Macro-n is not written
 on the button. We have extended the macros beyond Macro-10 until
 Macro-14. The keypad layout is as follows:
@@ -18,7 +18,8 @@ Macro-14. The keypad layout is as follows:
 |                             |                  | &lt;Jog Dial&gt;   |                    |                            |
 
 
-## XHC WHB04B-6 Button Naming
+# XHC WHB04B-6 Button Naming
+
 The HAL pin names are derived from the case sensitive text as written on
 the respecitve button. For example:
 
@@ -34,10 +35,26 @@ xhc-whb04b-6.Macro-1
 xhc-whb04b-6.Feed-
 xhc-whb04b-6.Macro-2
 xhc-whb04b-6.Spindle+
+...
 ```
 
-For an extensive list of HAL pins consider running:
+# For an extensive list of HAL pins consider running:
 
 ```
 xhc-whb04b-6 -p
 ```
+
+# For more details:
+
+```
+Usage: xhc-whb04b-6 [-h] | [-H] [-x] [[-u|-U] [-p] | [-a] | [-s]] 
+ -h usage help text
+ -H run XHC-WHB04B-6in HAL-mode instead of interactive mode
+ -t wait for USB device before processing with HAL initialization
+ -u print received data
+ -U print received and transmitted data
+ -p print initialized HAL pins 
+ -e print key events
+ -a enable all verbose facilities
+ -s be silent
+ ```
