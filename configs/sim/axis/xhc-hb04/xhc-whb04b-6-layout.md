@@ -1,4 +1,4 @@
-# XHC WHB04B-6 lLayout
+# XHC WHB04B-6 layout
 
 The device provides 16 buttons. One button - "Fn" - is used as key
 modifier. Any button pressed in combination with the modifier button
