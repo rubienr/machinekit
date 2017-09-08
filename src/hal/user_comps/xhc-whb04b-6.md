@@ -54,7 +54,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 
 ## What we did so far
 * Searched the web and found not 100% related but interesting information on this [site](http://forum.planet-cnc.com/viewtopic.php?f=12&t=1125).
-* Politely contact the manufacturer and requested an interface controld document or equivalent information (without success).
+* Politely contacted the manufacturer and requested an interface controld document or equivalent information (without success).
 
 ## What we didn't
 * Did not install the driver and Mach3 on Windows guest VM and sniff the USB protocol using SOTA tools such as
