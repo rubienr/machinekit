@@ -24,11 +24,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include  <iomanip>
+#include <iomanip>
 #include <assert.h>
 #include <signal.h>
 #include <libusb.h>
 #include <unistd.h>
+#include <string.h>
 #include <stdarg.h>
 #include <google/protobuf/stubs/common.h>
 #include "rtapi_math.h"
@@ -43,8 +44,6 @@ using std::setw;
 using std::hex;
 using std::dec;
 using std::ios;
-using std::setprecision;
-using std::fixed;
 
 //! function for libusb's incoming data callback function
 void usbInputResponseCallback(struct libusb_transfer* transfer);
@@ -341,10 +340,10 @@ public:
 class WhbAxisRotaryButtonCodes
 {
 public:
-    /*typedef enum
-    {
-        Off = 0, X = 1, Y = 2, Z = 3, A = 4, B = 5, C = 6
-    } AxisIndexName;*/
+    //typedef enum
+    //{
+    //    Off = 0, X = 1, Y = 2, Z = 3, A = 4, B = 5, C = 6
+    //} AxisIndexName;
 
     const WhbKeyCode off;
     const WhbKeyCode x;
@@ -1694,8 +1693,8 @@ void WhbUsb::sendDisplayData()
 
     if (mIsSimulationMode)
     {
-        *verboseTxOut << dec << "out bytes count " << sizeof(outputPackageBuffer.asBlockArray)
-                      << endl << "0x" << outputPackageBuffer.asBlocks << endl << outputPackageData << endl;
+        *verboseTxOut << "out   0x" << outputPackageBuffer.asBlocks << endl <<
+        dec << "out   size " << sizeof(outputPackageBuffer.asBlockArray) << "B " << outputPackageData << endl;
     }
 
     for (size_t idx = 0; idx < (sizeof(outputPackageBuffer.asBlockArray) / sizeof(WhbUsbOutPackageBlockFields)); idx++)
@@ -1767,6 +1766,7 @@ void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
 {
     if (mIsSimulationMode)
     {
+        *mRxCout << "in    ";
         printHexdump(inPackage);
         if (inPackage.rotaryButtonFeedKeyCode != 0)
         {
@@ -1922,6 +1922,8 @@ WhbContext::WhbContext() :
     enableVerboseHalInit(false);
 }
 
+// ----------------------------------------------------------------------
+
 WhbContext::~WhbContext()
 {
 }
@@ -2029,9 +2031,9 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate&
 {
     ios init(NULL);
     init.copyfmt(os);
-
-    os << ((coordinate.coordinateSign == 1) ? "-" : "") << static_cast<unsigned short>(coordinate.integerValue) << "."
-       << setfill('0') << setw(4) << static_cast<unsigned short>(coordinate.fractionValue);
+    os << ((coordinate.coordinateSign == 1) ? "-" : "+") << setfill('0')
+       << setw(4)<< static_cast<unsigned short>(coordinate.integerValue)<< "."
+       << setw(4) << static_cast<unsigned short>(coordinate.fractionValue);
 
     os.copyfmt(init);
     return os;
@@ -2148,13 +2150,26 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data)
     ios init(NULL);
     init.copyfmt(os);
 
-    os << hex << setfill('0') << "header       0x" << setw(2) << data.header << endl << "day of month   0x" << setw(2)
-       << static_cast<unsigned short>(data.dayOfMonth) << endl << "status 0x" << setw(2)
-       << static_cast<unsigned short>(data.displayModeFlags.asByte) << endl << dec << "coordinate1  "
-       << data.row1Coordinate << endl << "coordinate2  " << data.row2Coordinate << endl << "coordinate3  "
-       << data.row3Coordinate << endl << "feed rate        " << data.feedRate << endl << "spindle rps      "
-       << data.spindleSpeed;
-
+    bool enableMultiline = false;
+    if (enableMultiline)
+    {
+        os << hex << setfill('0') << "header       0x" << setw(2) << data.header << endl << "day of month   0x"
+           << setw(2)
+           << static_cast<unsigned short>(data.dayOfMonth) << endl << "status 0x" << setw(2)
+           << static_cast<unsigned short>(data.displayModeFlags.asByte) << endl << dec << "coordinate1  "
+           << data.row1Coordinate << endl << "coordinate2  " << data.row2Coordinate << endl << "coordinate3  "
+           << data.row3Coordinate << endl << "feed rate        " << data.feedRate << endl << "spindle rps      "
+           << data.spindleSpeed;
+    }
+    else
+    {
+        os << hex << setfill('0') << "hdr 0x" << setw(2) << data.header << " dom 0x" << setw(2)
+           << static_cast<unsigned short>(data.dayOfMonth) << " status 0x" << setw(2)
+           << static_cast<unsigned short>(data.displayModeFlags.asByte) << dec << " coord1 "
+           << data.row1Coordinate << " coord2 " << data.row2Coordinate << " coord3 "
+           << data.row3Coordinate << " feed " << setw(4) << data.feedRate << " spindle rps "
+           << setw(5) << data.spindleSpeed;
+    }
     os.copyfmt(init);
     return os;
 }
@@ -2164,13 +2179,15 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data)
 WhbUsbOutPackageBuffer::WhbUsbOutPackageBuffer() :
     asBlocks()
 {
-    /*cout << "sizeof usb data " << sizeof(WhbUsbOutPackageData) << endl
-         << " blocks count   " << sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlockFields) << endl
-         << " sizeof block   " << sizeof(WhbUsbOutPackageBlockFields) << endl
-         << " sizeof blocks  " << sizeof(WhbUsbOutPackageBlocks) << endl
-         << " sizeof array   " << sizeof(asBlockArray) << endl
-         << " sizeof package " << sizeof(WhbUsbOutPackageData) << endl
-         << " sizeof buffer  " << sizeof(asBytes) << endl;*/
+    if (false)
+    {
+        std::cout << "sizeof usb data " << sizeof(WhbUsbOutPackageData) << endl
+                  << " blocks count   " << sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlockFields) << endl
+                  << " sizeof block   " << sizeof(WhbUsbOutPackageBlockFields) << endl
+                  << " sizeof blocks  " << sizeof(WhbUsbOutPackageBlocks) << endl
+                  << " sizeof array   " << sizeof(asBlockArray) << endl
+                  << " sizeof package " << sizeof(WhbUsbOutPackageData) << endl;
+    }
     assert(sizeof(WhbUsbOutPackageBlocks) == sizeof(asBlockArray));
     size_t blocksCount = sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlockFields);
     assert ((sizeof(WhbUsbOutPackageData) + blocksCount) == sizeof(WhbUsbOutPackageBlocks));
@@ -2252,6 +2269,12 @@ void WhbContext::printHexdump(const WhbUsbInPackage& inPackage, std::ostream& ou
 
 int WhbContext::run()
 {
+
+    if (mHal.isSimulationModeEnabled())
+    {
+        *mInitCout << "starting in simulation mode" << endl;
+    }
+
     bool isHalReady = false;
     initWhb();
     halInit();
@@ -2348,19 +2371,19 @@ void WhbContext::linuxcncSimulate()
             *(mHal.memory.cWorkpieceCoordinate) += delta;
         }
 
-        /*if (*(hal->jog_enable_spindle)) {
-            *(hal->spindle_override) += delta_int * 0.01;
-            if (*(hal->spindle_override) > 1) *(hal->spindle_override) = 1;
-            if (*(hal->spindle_override) < 0) *(hal->spindle_override) = 0;
-            *(hal->spindle_rps) = 25000.0/60.0 * *(hal->spindle_override);
-        }
+        //if (*(hal->jog_enable_spindle)) {
+        //*(hal->spindle_override) += delta_int * 0.01;
+        //if (*(hal->spindle_override) > 1) *(hal->spindle_override) = 1;
+        //if (*(hal->spindle_override) < 0) *(hal->spindle_override) = 0;
+        //*(hal->spindle_rps) = 25000.0/60.0 * *(hal->spindle_override);
+        //}
 
-        if (*(hal->jog_enable_feedrate)) {
-            *(hal->feedrate_override) += delta_int * 0.01;
-            if (*(hal->feedrate_override) > 1) *(hal->feedrate_override) = 1;
-            if (*(hal->feedrate_override) < 0) *(hal->feedrate_override) = 0;
-            *(hal->feedrate) = 3000.0/60.0 * *(hal->feedrate_override);
-        }*/
+        //if (*(hal->jog_enable_feedrate)) {
+        //*(hal->feedrate_override) += delta_int * 0.01;
+        //if (*(hal->feedrate_override) > 1) *(hal->feedrate_override) = 1;
+        //if (*(hal->feedrate_override) < 0) *(hal->feedrate_override) = 0;
+        //*(hal->feedrate) = 3000.0/60.0 * *(hal->feedrate_override);
+        //}
 
         last_jog_counts = *(mHal.memory.jogCount);
     }
@@ -2431,25 +2454,7 @@ void WhbContext::computeVelocity()
 
 void WhbContext::handleStep()
 {
-    /*
-            int inc_step_status = *(mHal.memory.stepsizeUp);
-            //! Use a local variable to avoid STEP display as 0 on pendant during transitions
-            int stepSize        = *(mHal.memory.stepsize);
 
-            if (inc_step_status && !stepHandler.old_inc_step_status)
-            {
-                stepsize_idx++;
-                // restart idx when 0 terminator reached:
-                if (stepsize_sequence[stepsize_idx] == 0) stepsize_idx = 0;
-                stepSize = stepsize_sequence[stepsize_idx];
-            }
-
-            stepHandler.old_inc_step_status = inc_step_status;
-    */
-    // todo: refactor me
-    *(mHal.memory.stepsize) = mCurrentButtonCodes.getStepSize() * 100;
-    // todo: refactor me
-    *(mHal.memory.jogScale) = *(mHal.memory.stepsize);// * 0.001f;
 }
 
 // ----------------------------------------------------------------------
@@ -2662,7 +2667,7 @@ size_t WhbContext::getSoftwareButtonIndex(uint8_t keyCode) const
 
 void WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
 {
-    *mKeyEventCout << "pressed  ";
+    *mKeyEventCout << "event pressed  ";
     printPushButtonText(softwareButton.key.code, softwareButton.modifier.code, *mKeyEventCout);
     *mKeyEventCout << endl;
 }
@@ -2671,7 +2676,7 @@ void WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
 
 void WhbContext::onButtonReleasedEvent(const WhbSoftwareButton& softwareButton)
 {
-    *mKeyEventCout << "released ";
+    *mKeyEventCout << "event released ";
     printPushButtonText(softwareButton.key.code, softwareButton.modifier.code, *mKeyEventCout);
     *mKeyEventCout << endl;
 }
@@ -2682,7 +2687,7 @@ void WhbContext::onAxisActiveEvent(const WhbKeyCode& axis)
 {
     ios init(NULL);
     init.copyfmt(*mKeyEventCout);
-    *mKeyEventCout << "axis active   " << setw(5) << axis.text << " (" << setw(4) << axis.altText << ")" << endl;
+    *mKeyEventCout << "event axis active   " << setw(5) << axis.text << " (" << setw(4) << axis.altText << ")" << endl;
     mKeyEventCout->copyfmt(init);
 }
 
@@ -2692,7 +2697,7 @@ void WhbContext::onAxisInactiveEvent(const WhbKeyCode& axis)
 {
     ios init(NULL);
     init.copyfmt(*mKeyEventCout);
-    *mKeyEventCout << "axis inactive " << setw(5) << axis.text << " (" << setw(4) << axis.altText << ")" << endl;
+    *mKeyEventCout << "event axis inactive " << setw(5) << axis.text << " (" << setw(4) << axis.altText << ")" << endl;
     mKeyEventCout->copyfmt(init);
 }
 
@@ -2702,7 +2707,7 @@ void WhbContext::onDataInterpreted()
 {
     ios init(NULL);
     init.copyfmt(*mKeyEventCout);
-    *mKeyEventCout << "data interpreted, display data ready" << endl;
+    *mKeyEventCout << "event data interpreted, display data ready" << endl;
     // mIsDisplayDataReady = true;
     mKeyEventCout->copyfmt(init);
 }
@@ -2958,7 +2963,7 @@ void WhbContext::jogDialEvent(int8_t delta)
 {
     ios init(NULL);
     init.copyfmt(*mKeyEventCout);
-    *mKeyEventCout << "jog dial event " << setfill(' ') << setw(3) << static_cast<short>(delta) << endl;
+    *mKeyEventCout << "event jog dial " << setfill(' ') << setw(3) << static_cast<short>(delta) << endl;
     mKeyEventCout->copyfmt(init);
 }
 
@@ -3051,7 +3056,7 @@ void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
                     {
                         struct timeval now;
                         gettimeofday(&now, nullptr);
-                        *verboseTxOut << "going to sleep: device was idle for "
+                        *verboseTxOut << "event going to sleep: device was idle for "
                                       << (now.tv_sec - sleepState.mLastWakeupTimestamp.tv_sec) << " seconds" << endl;
                     }
                 }
@@ -3677,6 +3682,7 @@ int main(int argc, char** argv)
                 break;
         }
     }
+
     registerSignalHandler();
 
     Whb.run();
