@@ -64,9 +64,9 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 **Any help in that regard is appreciated.**
 
 ## Issues
-* if de device is powered on it does not (always) send data on its own
-    * does send most likely if the rotary buttons' state has changed, but not always
-* if the axis rotary button is in "OFF" state the device does not refresh coordinates on display
+* if de device is powered on it does not (always) send data on its own to disclose the current rotary buttons' state
+    * does send most likely if the rotary buttons' state has changed during power-off, but not always
+* if the axis rotary button is in "OFF" state, the device does not refresh coordinates on display
 
 ## Key codes in detail
 
