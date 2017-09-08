@@ -12,13 +12,22 @@ However here we list findings and thoughts on the USB communication protocol.
 | Byte# | Width | Data                        | Value                    | Clarification Needed | 
 |:------|:------|:----------------------------|:-------------------------|:-:|
 | 0x00  | [0:7] | retport ID                  | constant 0x04            |   |
-| 0x01  | [0:7] | **read back value**         | arbitrary, non constant  | * | 
+| 0x01  | [0:7] | **random**                  | arbitrary, non constant  | * | 
 | 0x02  | [0:7] | button 1 key code           | 0x00-0x10                |   |
 | 0x03  | [0:7] | button 2 key code           | 0x00-0x10                |   |
 | 0x04  | [0:7] | feed rotary button key code | 0x0d-0x10, 0x1a-0x1c     |   | 
 | 0x05  | [0:7] | axis rotary button key code | 0x11-0x16, 0x06          |   | 
 | 0x06  | [0:7] | jog dial delta | int8_t     |                          |   | 
-| 0x07  | [0:7] | **eventualy checksum?**     |                          | * |
+| 0x07  | [0:7] | **checksum**                |                          | * |
+
+* On jog dial, 
+* on rotary button or 
+* button released event:
+```
+random & token == checksum
+```
+
+
 
 ### Transmission data structure
 ```
@@ -32,7 +41,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | Byte# | Width   | Data                                                                 | Value               | Clarification Needed | 
 |:------|:--------|:---------------------------------------------------------------------|:--------------------|:-:|
 | 0x00  | [0:15]  | header, **unclear if different headers (commands) can be sent**      | constant 0xfdfe     | * |
-| 0x02  | [0:7]   | sometimes described as **day of month**                              |                     | * |
+| 0x02  | [0:7]   | **token**                                                            |                     | * |
 | 0x03  | [0:1]   | display indicator flags: step mode                                   |                     |   |
 | 0x03  | [2:5]   | display indicator flags: **unknown**                                 |                     | * |
 | 0x03  | [6:6]   | display indicator flags: reset                                       |                     |   |
