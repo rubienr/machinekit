@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
+#include <bitset>
 #include <iomanip>
 #include <assert.h>
 #include <signal.h>
@@ -718,7 +719,7 @@ class WhbUsbOutPackageData
 public:
     //! constant: 0xfdfe
     uint16_t header;
-    uint8_t  dayOfMonth;
+    uint8_t  seed;
 
     DisplayIndicator displayModeFlags;
 
@@ -736,6 +737,7 @@ public:
     void clear();
 
 private:
+    // TODO: investigate if this is still needed. it was needed when copying data chunks to blocks to avoid invalid read
     uint8_t padding;
 
 } __attribute__((packed));
@@ -763,14 +765,14 @@ class WhbUsbInPackage
 {
 public:
     //! constant 0x04
-    const unsigned char header;
-    const unsigned char dayOfMonth;
-    const unsigned char buttonKeyCode1;
-    const unsigned char buttonKeyCode2;
-    const unsigned char rotaryButtonFeedKeyCode;
-    const unsigned char rotaryButtonAxisKeyCode;
-    const signed char   stepCount;
-    const unsigned char crc;
+    const uint8_t header;
+    const uint8_t randomByte;
+    const uint8_t buttonKeyCode1;
+    const uint8_t buttonKeyCode2;
+    const uint8_t rotaryButtonFeedKeyCode;
+    const uint8_t rotaryButtonAxisKeyCode;
+    const int8_t  stepCount;
+    const uint8_t crc;
 
     WhbUsbInPackage();
 
@@ -788,7 +790,7 @@ union WhbUsbInPackageBuffer
 {
 public:
     const WhbUsbInPackage asFields;
-    unsigned char         asBuffer[sizeof(WhbUsbInPackage)];
+    uint8_t               asBuffer[sizeof(WhbUsbInPackage)];
 
     WhbUsbInPackageBuffer();
 
@@ -899,6 +901,8 @@ public:
     bool init();
 
     void setWaitWithTimeout(uint8_t waitSecs);
+
+    const WhbUsbOutPackageData& getOutputPackageData();
 
 private:
     const uint16_t usbVendorId;
@@ -1051,6 +1055,8 @@ public:
 
     void enableVerboseInit(bool enable);
 
+    void enableCrcDebugging(bool enable);
+
     void setWaitWithTimeout(uint8_t waitSecs = 3);
 
     void onButtonPressedEvent(const WhbSoftwareButton& softwareButton) override;
@@ -1077,6 +1083,8 @@ public:
 
     void updateStepRotaryButton(const WhbUsbInPackage& inPackage);
 
+    void printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOutPackageData& outPackageBuffer) const;
+
 private:
     const char* mName;
     const WhbKeyCodes       mKeyCodes;
@@ -1098,6 +1106,7 @@ private:
     WhbKeyEventListener       & keyEventReceiver;
     UsbInputPackageListener   & packageReceivedEventReceiver;
     UsbInputPackageInterpreted& packageIntepretedEventReceiver;
+    bool mIsCrcDebuggingEnabled;
 
     //! prints human readable output of the push buttons state
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out);
@@ -1691,10 +1700,14 @@ void WhbUsb::sendDisplayData()
 {
     outputPackageBuffer.asBlocks.init(&outputPackageData);
 
+    static uint16_t u = 0;
+    outputPackageData.row1Coordinate.setCoordinate(++u);
+
     if (mIsSimulationMode)
     {
         *verboseTxOut << "out   0x" << outputPackageBuffer.asBlocks << endl <<
-        dec << "out   size " << sizeof(outputPackageBuffer.asBlockArray) << "B " << outputPackageData << endl;
+                      dec << "out   size " << sizeof(outputPackageBuffer.asBlockArray) << "B " << outputPackageData
+                      << endl;
     }
 
     for (size_t idx = 0; idx < (sizeof(outputPackageBuffer.asBlockArray) / sizeof(WhbUsbOutPackageBlockFields)); idx++)
@@ -1760,6 +1773,80 @@ const char* WhbContext::getHalName() const
 
 // ----------------------------------------------------------------------
 
+void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOutPackageData& outPackageBuffer) const
+{
+    ios init(NULL);
+    init.copyfmt(*mRxCout);
+    *mRxCout << setfill('0') << std::hex;
+
+    if (inPackage.buttonKeyCode1 == mKeyCodes.buttons.undefined.code)
+    {
+        bool isValid = (inPackage.crc == (inPackage.randomByte & outPackageBuffer.seed));
+        *mRxCout << "checksum " << ((isValid) ? "OK" : "FAIL");
+        mRxCout->copyfmt(init);
+        assert(isValid);
+        return;
+    }
+
+    std::bitset<8> random(inPackage.randomByte), buttonKeyCode(inPackage.buttonKeyCode1), crc(inPackage.crc);
+    std::bitset<8> delta(0);
+
+    if (inPackage.randomByte > inPackage.crc)
+    {
+        delta = inPackage.randomByte - inPackage.crc;
+    }
+    else
+    {
+        delta = inPackage.crc - inPackage.randomByte;
+    }
+    delta = inPackage.randomByte - inPackage.crc;
+
+    *mRxCout << endl;
+    *mRxCout << "0x key " << setw(8) << static_cast<unsigned short>(inPackage.buttonKeyCode1)
+             << " random " << setw(8) << static_cast<unsigned short>(inPackage.randomByte)
+             << " crc " << setw(8) << static_cast<unsigned short>(inPackage.crc)
+             << " delta " << setw(8) << static_cast<unsigned short>(delta.to_ulong()) << endl;
+
+    *mRxCout << "0b key " << buttonKeyCode
+             << " random " << random
+             << " crc " << crc
+             << " delta " << delta << endl;
+
+    //! Experimental: checksum generator not clear yet, but this is a good starting point.
+    //! The implementation has several flaws, but works with seed 0xfe and 0xff (which is a bad seed).
+    //! \sa WhbUsbOutPackageData::seed.
+    //! The checksum implementation does not work reliable with other seeds.
+    //! TODO: implement me correctly
+    std::bitset<8> seed(outPackageBuffer.seed), nonSeed(~seed);
+    std::bitset<8> nonSeedAndRandom(nonSeed & random);
+    std::bitset<8> keyXorNonSeedAndRandom(buttonKeyCode ^ nonSeedAndRandom);
+
+    *mRxCout << endl
+             << "~seed                  " << nonSeed << endl
+             << "random                 " << random << endl
+             << "                       -------- &" << endl
+             << "~seed & random         " << nonSeedAndRandom << endl
+             << "key                    " << buttonKeyCode << endl
+             << "                       -------- ^" << endl
+             << "key ^ (~seed & random) " << keyXorNonSeedAndRandom
+             << " = calculated delta " << setw(2) << static_cast<unsigned short>(keyXorNonSeedAndRandom.to_ulong())
+             << " vs " << setw(2) << static_cast<unsigned short>(delta.to_ulong())
+             << ((keyXorNonSeedAndRandom == delta) ? " OK" : " FAIL") << endl;
+
+    uint16_t calculatedCrc = static_cast<unsigned short>(0x00ff &
+                                                         (random.to_ulong() - keyXorNonSeedAndRandom.to_ulong()));
+    std::bitset<8> calculatedCrcBitset(calculatedCrc);
+    uint16_t expectedCrc   = static_cast<unsigned short>(inPackage.crc);
+    *mRxCout << "calculated crc         " << calculatedCrcBitset << " " << setw(2) << calculatedCrc << " vs " << setw(2) << expectedCrc
+             << ((calculatedCrc == expectedCrc) ? "                    OK" : "                    FAIL") << " (random - (key ^ (~seed & random))";
+
+    //assert(calculatedCrc == expectedCrc);
+    //assert(keyXorNonSeedAndRandom == delta);
+
+    mRxCout->copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
 
 //! interprets data packages as delivered by the XHC WHB04B-6 device
 void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
@@ -1782,7 +1869,14 @@ void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
         }
         *mRxCout << " => ";
         printInputData(inPackage);
+
+        // en-/disable crc output
+        if (mIsCrcDebuggingEnabled)
+        {
+            printCrcDebug(inPackage, mUsb.getOutputPackageData());
+        }
         *mRxCout << endl;
+
     }
 
     uint8_t modifierCode = mKeyCodes.buttons.undefined.code;
@@ -1913,7 +2007,8 @@ WhbContext::WhbContext() :
     mInitCout(&mDevNull),
     keyEventReceiver(*this),
     packageReceivedEventReceiver(*this),
-    packageIntepretedEventReceiver(*this)
+    packageIntepretedEventReceiver(*this),
+    mIsCrcDebuggingEnabled(false)
 {
     setSimulationMode(true);
     enableVerboseRx(false);
@@ -2032,7 +2127,7 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate&
     ios init(NULL);
     init.copyfmt(os);
     os << ((coordinate.coordinateSign == 1) ? "-" : "+") << setfill('0')
-       << setw(4)<< static_cast<unsigned short>(coordinate.integerValue)<< "."
+       << setw(4) << static_cast<unsigned short>(coordinate.integerValue) << "."
        << setw(4) << static_cast<unsigned short>(coordinate.fractionValue);
 
     os.copyfmt(init);
@@ -2130,8 +2225,9 @@ WhbUsbOutPackageData::WhbUsbOutPackageData()
 
 void WhbUsbOutPackageData::clear()
 {
-    header     = 0xfdfe;
-    dayOfMonth = 0x0c;
+    header = 0xfdfe;
+    //! \sa WhbContext::printCrcDebug(const WhbUsbInPackage&, const WhbUsbOutPackageData&)
+    seed   = 0xfe;
     displayModeFlags.asByte = 0;
 
     row1Coordinate.clear();
@@ -2155,7 +2251,7 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data)
     {
         os << hex << setfill('0') << "header       0x" << setw(2) << data.header << endl << "day of month   0x"
            << setw(2)
-           << static_cast<unsigned short>(data.dayOfMonth) << endl << "status 0x" << setw(2)
+           << static_cast<unsigned short>(data.seed) << endl << "status 0x" << setw(2)
            << static_cast<unsigned short>(data.displayModeFlags.asByte) << endl << dec << "coordinate1  "
            << data.row1Coordinate << endl << "coordinate2  " << data.row2Coordinate << endl << "coordinate3  "
            << data.row3Coordinate << endl << "feed rate        " << data.feedRate << endl << "spindle rps      "
@@ -2163,8 +2259,8 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data)
     }
     else
     {
-        os << hex << setfill('0') << "hdr 0x" << setw(2) << data.header << " dom 0x" << setw(2)
-           << static_cast<unsigned short>(data.dayOfMonth) << " status 0x" << setw(2)
+        os << hex << setfill('0') << "hdr 0x" << setw(4) << data.header << " dom 0x" << setw(2)
+           << static_cast<unsigned short>(data.seed) << " status 0x" << setw(2)
            << static_cast<unsigned short>(data.displayModeFlags.asByte) << dec << " coord1 "
            << data.row1Coordinate << " coord2 " << data.row2Coordinate << " coord3 "
            << data.row3Coordinate << " feed " << setw(4) << data.feedRate << " spindle rps "
@@ -2197,7 +2293,7 @@ WhbUsbOutPackageBuffer::WhbUsbOutPackageBuffer() :
 
 WhbUsbInPackage::WhbUsbInPackage() :
     header(0),
-    dayOfMonth(0),
+    randomByte(0),
     buttonKeyCode1(0),
     buttonKeyCode2(0),
     rotaryButtonFeedKeyCode(0),
@@ -2213,7 +2309,7 @@ WhbUsbInPackage::WhbUsbInPackage(const uint8_t notAvailable1, const uint8_t notA
                                  const uint8_t buttonKeyCode2, const uint8_t rotaryButtonFeedKeyCode,
                                  const uint8_t rotaryButtonAxisKeyCode, const int8_t stepCount, const uint8_t crc) :
     header(notAvailable1),
-    dayOfMonth(notAvailable2),
+    randomByte(notAvailable2),
     buttonKeyCode1(buttonKeyCode1),
     buttonKeyCode2(buttonKeyCode2),
     rotaryButtonFeedKeyCode(rotaryButtonFeedKeyCode),
@@ -2225,13 +2321,14 @@ WhbUsbInPackage::WhbUsbInPackage(const uint8_t notAvailable1, const uint8_t notA
 
 // ----------------------------------------------------------------------
 
+
 void WhbContext::printInputData(const WhbUsbInPackage& inPackage, std::ostream& out)
 {
     ios init(NULL);
     init.copyfmt(out);
 
     out << "| " << setfill('0') << hex << setw(2) << static_cast<unsigned short>(inPackage.header) << " | " << setw(2)
-        << static_cast<unsigned short>(inPackage.dayOfMonth) << " | ";
+        << static_cast<unsigned short>(inPackage.randomByte) << " | ";
     out.copyfmt(init);
     printPushButtonText(inPackage.buttonKeyCode1, inPackage.buttonKeyCode2, out);
     out << " | ";
@@ -2254,14 +2351,13 @@ void WhbContext::printHexdump(const WhbUsbInPackage& inPackage, std::ostream& ou
     init.copyfmt(out);
 
     out << setfill('0') << hex << "0x" << setw(2) << static_cast<unsigned short>(inPackage.header) << " " << setw(2)
-        << static_cast<unsigned short>(inPackage.dayOfMonth) << " " << setw(2)
+        << static_cast<unsigned short>(inPackage.randomByte) << " " << setw(2)
         << static_cast<unsigned short>(inPackage.buttonKeyCode1) << " " << setw(2)
         << static_cast<unsigned short>(inPackage.buttonKeyCode2) << " " << setw(2)
         << static_cast<unsigned short>(inPackage.rotaryButtonFeedKeyCode) << " " << setw(2)
         << static_cast<unsigned short>(inPackage.rotaryButtonAxisKeyCode) << " " << setw(2)
         << static_cast<unsigned short>(inPackage.stepCount & 0xff) << " " << setw(2)
         << static_cast<unsigned short>(inPackage.crc);
-
     out.copyfmt(init);
 }
 
@@ -2979,6 +3075,13 @@ void WhbContext::updateJogDial(const WhbUsbInPackage& inPackage)
 
 // ----------------------------------------------------------------------
 
+void WhbContext::enableCrcDebugging(bool enable)
+{
+    mIsCrcDebuggingEnabled = enable;
+}
+
+// ----------------------------------------------------------------------
+
 void WhbUsb::setSimulationMode(bool isSimulationMode)
 {
     mIsSimulationMode = isSimulationMode;
@@ -3282,6 +3385,13 @@ void WhbUsb::setWaitWithTimeout(uint8_t waitSecs)
         return;
     }
     isWaitWithTimeout = false;
+}
+
+// ----------------------------------------------------------------------
+
+const WhbUsbOutPackageData& WhbUsb::getOutputPackageData()
+{
+    return outputPackageData;
 }
 
 // ----------------------------------------------------------------------
@@ -3602,6 +3712,8 @@ static int printUsage(char* programName, bool isError = false)
         << " -p print initialized HAL pins " << endl
         << " -e print key events" << endl
         << " -a enable all verbose facilities" << endl
+        //! this feature must be removed when checksum is implemented
+        << " -c enable checksum debugging (experimental)" << endl
         << " -s be silent" << endl;
 
     if (isError)
@@ -3638,7 +3750,7 @@ void usbInputResponseCallback(struct libusb_transfer* transfer)
 
 int main(int argc, char** argv)
 {
-    const char* optargs = "HtuUpahse";
+    const char* optargs = "phaseHuctU";
     for (int opt = getopt(argc, argv, optargs); opt != -1; opt = getopt(argc, argv, optargs))
     {
         switch (opt)
@@ -3671,6 +3783,9 @@ int main(int argc, char** argv)
                 Whb.enableVerboseRx(true);
                 Whb.enableVerboseTx(true);
                 Whb.enableVerboseHalInit(true);
+                break;
+            case 'c':
+                Whb.enableCrcDebugging(true);
                 break;
             case 's':
                 break;
