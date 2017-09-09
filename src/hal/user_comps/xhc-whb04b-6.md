@@ -31,7 +31,8 @@ checksum == random & seed
 
 * On button pressed event:
 ```
-//! works if seed is 0xff, otherwise does not reliable. some equation part must be missing
+//! Works if seed is 0xfe, 0xff, otherwise not reliable. Some equation part must be missing.
+//! Not sure whether crc or hand-crafted algorithm is applied.
 checksum == random - (keyCode ^ (~seed & random)) 
 ```
 
