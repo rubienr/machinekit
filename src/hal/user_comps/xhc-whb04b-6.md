@@ -16,8 +16,8 @@ However here we list findings and thoughts on the USB communication protocol.
 | 0x02  | [0:7] | button 1 key code           | 0x00-0x10                |   |
 | 0x03  | [0:7] | button 2 key code           | 0x00-0x10                |   |
 | 0x04  | [0:7] | feed rotary button key code | 0x0d-0x10, 0x1a-0x1c     |   | 
-| 0x05  | [0:7] | axis rotary button key code | 0x11-0x16, 0x06          |   | 
-| 0x06  | [0:7] | jog dial delta | int8_t     |                          |   | 
+| 0x05  | [0:7] | axis rotary button key code, **if axis in state OFF, display cannot be updated** | 0x11-0x16, 0x06          | * | 
+| 0x06  | [0:7] | jog dial delta              | int8_t                   |   | 
 | 0x07  | [0:7] | checksum                    |                          | * |
 
 #### Checksum investigation
@@ -63,7 +63,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | 0x14  | [15:15] | axis coordinate on display line 3: sign                              | **same as axis 1**  |   |
 | 0x16  | [0:15]  | feed rate                                                            |                     |   |
 | 0x18  | [0:15]  | spindle speed                                                        |                     |   |
-| 0x20  | [0:x]   | **unclear if axis A, B, C are also transmitted or just lines 1-3**   |                     | * |
+| 0x20  | [0:x]   | **unclear if axis A, B, C, X1, Y1, Z1, A1, B1, C1 are also transmitted or just coordinates for lines 1-3**   |                     | * |
 | 0x20  | [0:x]   | unclear if the device interprets subsequent bytes                    |                     | * |
 | 0xn   | [0:x]   | the **maximum length** is also **unclear**                           |                     | * |
 
