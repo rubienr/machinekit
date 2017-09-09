@@ -24,7 +24,7 @@ However here we list findings and thoughts on the USB communication protocol.
 * on rotary button or 
 * on button released event:
 ```
-checksum == random & seed ==
+checksum == random & seed
 ```
 
 * On button pressed event:
