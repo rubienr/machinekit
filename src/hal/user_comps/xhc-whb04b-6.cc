@@ -277,13 +277,13 @@ private:
     int newSimulatedHalPin(char* pin_name, void** ptr, int s);
 
     //! allocates new hal_float_t according to \ref mIsSimulationMode
-    int newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int comp_id, const char* fmt, ...);
+    int newFloatHalPin(hal_pin_dir_t direction, hal_float_t** ptr, int componentId, const char* fmt, ...);
 
     //! allocates new hal_s32_t pin according to \ref mIsSimulationMode
-    int newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int comp_id, const char* fmt, ...);
+    int newSigned32HalPin(hal_pin_dir_t direction, hal_s32_t** ptr, int componentId, const char* fmt, ...);
 
     //! allocates new hal_bit_t pin according to \ref mIsSimulationMode
-    int newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_id, const char* fmt, ...);
+    int newBitHalPin(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId, const char* fmt, ...);
 
     //! allocates new hal pin according to \ref mIsSimulationMode
     void freeSimulatedPin(void** pin);
@@ -814,7 +814,7 @@ public:
     //! \see operator==(const WhbUsbInPackage&)
     bool operator!=(const WhbUsbInPackage& other) const;
 
-}__attribute__((packed));
+} __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
@@ -832,7 +832,7 @@ public:
     //! \see operator==(const WhbUsbInPackage&)
     bool operator!=(const WhbUsbInPackage& other) const;
 
-}__attribute__((packed));
+} __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
@@ -880,7 +880,7 @@ public:
 
     void setDoReconnect(bool doReconnect);
 
-    void cbResponseIn(struct libusb_transfer* transfer);
+    void onUsbDataReceived(struct libusb_transfer* transfer);
 
     void setSimulationMode(bool isSimulationMode);
 
@@ -1010,27 +1010,24 @@ public:
     void initWhb();
 
     //! todo: doxy
-    void halInit();
+    void initHal();
 
     //! todo: doxy
     void teardownHal();
 
     //! todo: doxy
-    void cbResponseIn(struct libusb_transfer* transfer);
+    void onUsbDataReceivedCallback(struct libusb_transfer* transfer);
 
     //! todo: doxy
     bool enableReceiveAsyncTransfer();
 
-    //! todo: doxy
+    //! todo: remove
     void computeVelocity();
 
     // todo: refactor me
     void sendDisplayData();
 
-    //! todo: doxy
-    void handleStep();
-
-    //! todo: doxy
+    //! todo: remove
     void linuxcncSimulate();
 
     //! todo: doxy
@@ -1745,7 +1742,7 @@ void WhbUsb::sendDisplayData()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::halInit()
+void WhbContext::initHal()
 {
     mHal.halInit(mSoftwareButtons, sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton), mKeyCodes);
 }
@@ -1779,10 +1776,22 @@ void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOut
     init.copyfmt(*mRxCout);
     *mRxCout << setfill('0') << std::hex;
 
+    // calculate checksum on button released, jog dial or rotary button change
     if (inPackage.buttonKeyCode1 == mKeyCodes.buttons.undefined.code)
     {
         bool isValid = (inPackage.crc == (inPackage.randomByte & outPackageBuffer.seed));
-        *mRxCout << "checksum " << ((isValid) ? "OK" : "FAIL");
+
+        if (isValid)
+        {
+            if (mIsCrcDebuggingEnabled)
+            {
+                *mRxCout << "crc   checksum OK";
+            }
+        }
+        else
+        {
+            *mRxCout << "warn  checksum error" << endl;
+        }
         mRxCout->copyfmt(init);
         assert(isValid);
         return;
@@ -1799,19 +1808,23 @@ void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOut
     {
         delta = inPackage.crc - inPackage.randomByte;
     }
-    delta = inPackage.randomByte - inPackage.crc;
+    delta                        = inPackage.randomByte - inPackage.crc;
 
-    *mRxCout << endl;
-    *mRxCout << "0x key " << setw(8) << static_cast<unsigned short>(inPackage.buttonKeyCode1)
-             << " random " << setw(8) << static_cast<unsigned short>(inPackage.randomByte)
-             << " crc " << setw(8) << static_cast<unsigned short>(inPackage.crc)
-             << " delta " << setw(8) << static_cast<unsigned short>(delta.to_ulong()) << endl;
+    if (mIsCrcDebuggingEnabled)
+    {
+        *mRxCout << endl;
+        *mRxCout << "0x key " << setw(8) << static_cast<unsigned short>(inPackage.buttonKeyCode1)
+                 << " random " << setw(8) << static_cast<unsigned short>(inPackage.randomByte)
+                 << " crc " << setw(8) << static_cast<unsigned short>(inPackage.crc)
+                 << " delta " << setw(8) << static_cast<unsigned short>(delta.to_ulong()) << endl;
 
-    *mRxCout << "0b key " << buttonKeyCode
-             << " random " << random
-             << " crc " << crc
-             << " delta " << delta << endl;
+        *mRxCout << "0b key " << buttonKeyCode
+                 << " random " << random
+                 << " crc " << crc
+                 << " delta " << delta << endl;
+    }
 
+    //! \brief On button pressed checksum calculation.
     //! Experimental: checksum generator not clear yet, but this is a good starting point.
     //! The implementation has several flaws, but works with seed 0xfe and 0xff (which is a bad seed).
     //! \sa WhbUsbOutPackageData::seed.
@@ -1820,25 +1833,35 @@ void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOut
     std::bitset<8> seed(outPackageBuffer.seed), nonSeed(~seed);
     std::bitset<8> nonSeedAndRandom(nonSeed & random);
     std::bitset<8> keyXorNonSeedAndRandom(buttonKeyCode ^ nonSeedAndRandom);
-
-    *mRxCout << endl
-             << "~seed                  " << nonSeed << endl
-             << "random                 " << random << endl
-             << "                       -------- &" << endl
-             << "~seed & random         " << nonSeedAndRandom << endl
-             << "key                    " << buttonKeyCode << endl
-             << "                       -------- ^" << endl
-             << "key ^ (~seed & random) " << keyXorNonSeedAndRandom
-             << " = calculated delta " << setw(2) << static_cast<unsigned short>(keyXorNonSeedAndRandom.to_ulong())
-             << " vs " << setw(2) << static_cast<unsigned short>(delta.to_ulong())
-             << ((keyXorNonSeedAndRandom == delta) ? " OK" : " FAIL") << endl;
-
-    uint16_t calculatedCrc = static_cast<unsigned short>(0x00ff &
-                                                         (random.to_ulong() - keyXorNonSeedAndRandom.to_ulong()));
+    uint16_t       expectedCrc   = static_cast<unsigned short>(inPackage.crc);
+    uint16_t       calculatedCrc = static_cast<unsigned short>(0x00ff &
+                                                               (random.to_ulong() - keyXorNonSeedAndRandom.to_ulong()));
     std::bitset<8> calculatedCrcBitset(calculatedCrc);
-    uint16_t expectedCrc   = static_cast<unsigned short>(inPackage.crc);
-    *mRxCout << "calculated crc         " << calculatedCrcBitset << " " << setw(2) << calculatedCrc << " vs " << setw(2) << expectedCrc
-             << ((calculatedCrc == expectedCrc) ? "                    OK" : "                    FAIL") << " (random - (key ^ (~seed & random))";
+    bool           isValid       = (calculatedCrc == expectedCrc);
+
+    if (mIsCrcDebuggingEnabled)
+    {
+        *mRxCout << endl
+                 << "~seed                  " << nonSeed << endl
+                 << "random                 " << random << endl
+                 << "                       -------- &" << endl
+                 << "~seed & random         " << nonSeedAndRandom << endl
+                 << "key                    " << buttonKeyCode << endl
+                 << "                       -------- ^" << endl
+                 << "key ^ (~seed & random) " << keyXorNonSeedAndRandom
+                 << " = calculated delta " << setw(2) << static_cast<unsigned short>(keyXorNonSeedAndRandom.to_ulong())
+                 << " vs " << setw(2) << static_cast<unsigned short>(delta.to_ulong())
+                 << ((keyXorNonSeedAndRandom == delta) ? " OK" : " FAIL") << endl
+                 << "calculated crc         " << calculatedCrcBitset << " " << setw(2) << calculatedCrc << " vs "
+                 << setw(2)
+                 << expectedCrc << ((isValid) ? "                    OK" : "                    FAIL")
+                 << " (random - (key ^ (~seed & random))";
+    }
+
+    if (!isValid)
+    {
+        *mRxCout << "warn  checksum error";
+    }
 
     //assert(calculatedCrc == expectedCrc);
     //assert(keyXorNonSeedAndRandom == delta);
@@ -1869,14 +1892,8 @@ void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
         }
         *mRxCout << " => ";
         printInputData(inPackage);
-
-        // en-/disable crc output
-        if (mIsCrcDebuggingEnabled)
-        {
-            printCrcDebug(inPackage, mUsb.getOutputPackageData());
-        }
+        printCrcDebug(inPackage, mUsb.getOutputPackageData());
         *mRxCout << endl;
-
     }
 
     uint8_t modifierCode = mKeyCodes.buttons.undefined.code;
@@ -2227,7 +2244,7 @@ void WhbUsbOutPackageData::clear()
 {
     header = 0xfdfe;
     //! \sa WhbContext::printCrcDebug(const WhbUsbInPackage&, const WhbUsbOutPackageData&)
-    seed   = 0xfe;
+    seed   = 0x0C;
     displayModeFlags.asByte = 0;
 
     row1Coordinate.clear();
@@ -2373,7 +2390,7 @@ int WhbContext::run()
 
     bool isHalReady = false;
     initWhb();
-    halInit();
+    initHal();
 
     if (!mUsb.isWaitForPendantBeforeHalEnabled() && !mHal.isSimulationModeEnabled())
     {
@@ -2548,13 +2565,6 @@ void WhbContext::computeVelocity()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::handleStep()
-{
-
-}
-
-// ----------------------------------------------------------------------
-
 bool WhbContext::enableReceiveAsyncTransfer()
 {
     return mUsb.setupAsyncTransfer();
@@ -2562,10 +2572,10 @@ bool WhbContext::enableReceiveAsyncTransfer()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::cbResponseIn(struct libusb_transfer* transfer)
+void WhbContext::onUsbDataReceivedCallback(struct libusb_transfer* transfer)
 {
-    // pass transfer to usb data parser
-    mUsb.cbResponseIn(transfer);
+    // pass transfer to data parser
+    mUsb.onUsbDataReceived(transfer);
 }
 
 // ----------------------------------------------------------------------
@@ -2610,7 +2620,7 @@ void WhbContext::process()
             struct timeval tv;
             tv.tv_sec  = 4;
             tv.tv_usec = 0;
-            // TODO: investigate why no synchronization is implemented here
+
             int r = libusb_handle_events_timeout_completed(getUsbContext(), &tv, nullptr);
             assert((r == LIBUSB_SUCCESS) || (r == LIBUSB_ERROR_NO_DEVICE) || (r == LIBUSB_ERROR_BUSY) ||
                    (r == LIBUSB_ERROR_TIMEOUT) || (r == LIBUSB_ERROR_INTERRUPTED));
@@ -2619,7 +2629,6 @@ void WhbContext::process()
             {
                 linuxcncSimulate();
             }
-            //handleStep();
             sendDisplayData();
         }
 
@@ -3121,7 +3130,7 @@ bool WhbUsb::setupAsyncTransfer()
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::cbResponseIn(struct libusb_transfer* transfer)
+void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
 {
     int expectedPckageSize = static_cast<int>(sizeof(WhbUsbInPackage));
     ios init(NULL);
@@ -3493,7 +3502,7 @@ int WhbHal::newSimulatedHalPin(char* pin_name, void** ptr, int s)
 
 // ----------------------------------------------------------------------
 
-int WhbHal::newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int comp_id, const char* fmt, ...)
+int WhbHal::newFloatHalPin(hal_pin_dir_t direction, hal_float_t** ptr, int componentId, const char* fmt, ...)
 {
     char    pin_name[256];
     va_list args;
@@ -3503,18 +3512,18 @@ int WhbHal::newFloatHalPin(hal_pin_dir_t dir, hal_float_t** data_ptr_addr, int c
 
     if (mIsSimulationMode)
     {
-        return newSimulatedHalPin(pin_name, (void**)data_ptr_addr, sizeof(hal_float_t));
+        return newSimulatedHalPin(pin_name, (void**)ptr, sizeof(hal_float_t));
     }
     else
     {
         *mHalCout << "registered " << pin_name << endl;
-        return hal_pin_float_new(pin_name, dir, data_ptr_addr, comp_id);
+        return hal_pin_float_new(pin_name, direction, ptr, componentId);
     }
 }
 
 // ----------------------------------------------------------------------
 
-int WhbHal::newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int comp_id, const char* fmt, ...)
+int WhbHal::newSigned32HalPin(hal_pin_dir_t direction, hal_s32_t** ptr, int componentId, const char* fmt, ...)
 {
     char    pin_name[256];
     va_list args;
@@ -3524,18 +3533,18 @@ int WhbHal::newSigned32HalPin(hal_pin_dir_t dir, hal_s32_t** data_ptr_addr, int 
 
     if (mIsSimulationMode)
     {
-        return newSimulatedHalPin(pin_name, (void**)data_ptr_addr, sizeof(hal_s32_t));
+        return newSimulatedHalPin(pin_name, (void**)ptr, sizeof(hal_s32_t));
     }
     else
     {
         *mHalCout << "registered " << pin_name << endl;
-        return hal_pin_s32_new(pin_name, dir, data_ptr_addr, comp_id);
+        return hal_pin_s32_new(pin_name, direction, ptr, componentId);
     }
 }
 
 // ----------------------------------------------------------------------
 
-int WhbHal::newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_id, const char* fmt, ...)
+int WhbHal::newBitHalPin(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId, const char* fmt, ...)
 {
     char    pin_name[256];
     va_list args;
@@ -3545,12 +3554,12 @@ int WhbHal::newBitHalPin(hal_pin_dir_t dir, hal_bit_t** data_ptr_addr, int comp_
 
     if (mIsSimulationMode)
     {
-        return newSimulatedHalPin(pin_name, (void**)data_ptr_addr, sizeof(hal_bit_t));
+        return newSimulatedHalPin(pin_name, (void**)ptr, sizeof(hal_bit_t));
     }
     else
     {
         *mHalCout << "registered " << pin_name << endl;
-        return hal_pin_bit_new(pin_name, dir, data_ptr_addr, comp_id);
+        return hal_pin_bit_new(pin_name, direction, ptr, componentId);
     }
 }
 
@@ -3743,7 +3752,7 @@ static void quit(int signal)
 void usbInputResponseCallback(struct libusb_transfer* transfer)
 {
     // pass transfer to usb data parser
-    Whb.cbResponseIn(transfer);
+    Whb.onUsbDataReceivedCallback(transfer);
 }
 
 // ----------------------------------------------------------------------
