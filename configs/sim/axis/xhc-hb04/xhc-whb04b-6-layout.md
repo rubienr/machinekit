@@ -13,8 +13,8 @@ Macro-16. The keypad layout is as follows:
 | Feed + (Macro-1)            | Feed-  (Macro-2) | Spindle+ (Macro-3)     | Spindle- (Macro-4) |                            |
 | M-HOME (Macro-5)            | Safe-Z (Macro-6) | W-HOME   (Macro-7)     | S-ON/OFF (Macro-8) | Fn                         |
 |                             |                  | Probe-Z (Macro-9)      |                    |                            |
-| &lt;Axis Rotary Button&gt;  |                  | Macro-10 (Macro-16)    |                    | &lt;Feed Rotary Button&gt; |
-| MPG (Macro-14)              |                  |                        |                    | Step (Macro-15)            |
+| &lt;Axis Rotary Button&gt;  |                  | Macro-10 (Macro-14)    |                    | &lt;Feed Rotary Button&gt; |
+| MPG (Macro-15)              |                  |                        |                    | Step (Macro-16)            |
 |                             |                  | &lt;Jog Dial&gt;       |                    |                            |
 
 
