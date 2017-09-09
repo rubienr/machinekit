@@ -29,7 +29,7 @@ checksum == random & seed
 
 * On button pressed event:
 ```
-//! works most of the cases, some quation part is missing
+//! works most of the cases, some equation part is missing
 checksum == random - (keyCode ^ (~seed & random)) 
 ```
 
