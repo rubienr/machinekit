@@ -299,27 +299,142 @@ public:
 
     int getHalComponentId() const;
 
+    hal_bit_t* getButtonHalBit(size_t pinNumber);
+
     const char* getHalComponentName() const;
 
+    //! Enables verbose hal output.
+    //! \param enable true to enable hal messages, disable otherwise
     void setEnableVerbose(bool enable);
 
+    //! If set indicates that no other axis is active.
+    //! \param enabled true if no axis is active, false otherwise
     void setNoAxisActive(bool enabled);
 
+    //! Sets the A axis to active or disables the same.
+    //! \param enabled true if axis should be the one and only active
     void setAxisXActive(bool enabled);
 
+    //! \sa setAxisXActive(bool)
     void setAxisYActive(bool enabled);
 
+    //! \sa setAxisXActive(bool)
     void setAxisZActive(bool enabled);
 
+    //! \sa setAxisXActive(bool)
     void setAxisAActive(bool enabled);
 
+    //! \sa setAxisXActive(bool)
     void setAxisBActive(bool enabled);
 
+    //! \sa setAxisXActive(bool)
     void setAxisCActive(bool enabled);
 
+    //! Sets the new feed rate. The step mode must be set accordingly.
+    //! \param feedRate the new feed rate independent of step mode
     void setFeedRate(const hal_float_t& feedRate);
 
+    //! If lead is active.
     void setLead();
+
+    //! Sets the hal state of the reset pin. Usually called in case the reset
+    //! button is pressed or released.
+    //! \param enabled the new pin value, (true if the button was pressed, false otherwise)
+    //! \param pinNumber The pin number in \ref WhbHalMemory as registered in
+    //! \ref WhbHal::halInit(const WhbSoftwareButton* , size_t , const WhbKeyCodes&)
+    void setReset(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setStop(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setStart(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setFeedPlus(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setFeedMinus(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setSpindlePlus(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setSpindleMinus(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setMachineHome(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setSafeZ(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setWorkpieceHome(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setSpindleOn(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setProbeZ(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setContinuousMode(bool enabled, size_t pinNumber);
+
+    //! \sa setReset(bool, size_t)
+    void setStepMode(bool enabled, size_t pinNumber);
+
+    //! Sets the hal state of the macro pin. Usually called in case the macro
+    //! button is pressed or released. A macro button can be any button
+    //! when pressed together with the modifier key.
+    //! \param enabled the new pin value, (true if the button was pressed, false otherwise)
+    //! \param pinNumber The pin number in \ref WhbHalMemory.
+    //! \sa setReset(bool, size_t)
+    void setMacro1(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro2(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro3(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro4(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro5(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro6(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro7(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro8(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro9(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro10(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro11(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro12(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro13(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro14(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro15(bool enabled, size_t pinNumber);
+
+    //! \sa setMacro1(bool, size_t)
+    void setMacro16(bool enabled, size_t pinNumber);
 
     void computeVelocity();
 
@@ -330,20 +445,37 @@ private:
     std::ostream mDevNull;
     std::ostream* mHalCout;
 
-    //! allocates new hal pin according to \ref mIsSimulationMode
+    //! //! Allocates new hal_bit_t pin according to \ref mIsSimulationMode. If \ref mIsSimulationMode then
+    //! mallocs memory, hal_pin_bit_new allocation otherwise.
+    //! \param pin_name the pin name when registered to hal
+    //! \param ptr will point to the allocated memory
+    //! \param s size in bytes
+    //! \return != 0 on error, 0 otherwise
     int newSimulatedHalPin(char* pin_name, void** ptr, int s);
 
-    //! allocates new hal_float_t according to \ref mIsSimulationMode
+    //! \sa  newBitHalPin(hal_pin_dir_t, hal_bit_t**, int, const char*, ...)
     int newFloatHalPin(hal_pin_dir_t direction, hal_float_t** ptr, int componentId, const char* fmt, ...);
 
-    //! allocates new hal_s32_t pin according to \ref mIsSimulationMode
+    //! \sa  newBitHalPin(hal_pin_dir_t, hal_bit_t**, int, const char*, ...)
     int newSigned32HalPin(hal_pin_dir_t direction, hal_s32_t** ptr, int componentId, const char* fmt, ...);
 
-    //! allocates new hal_bit_t pin according to \ref mIsSimulationMode
+    //! \param direction module input or output
+    //! \param ptr will point to the allocated memory
+    //! \param componentId hal id
+    //! \param fmt the pin name when registered to hal
+    //! \param ... va agrgs
+    //! \return != 0 on error, 0 otherwise
     int newBitHalPin(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId, const char* fmt, ...);
 
     //! allocates new hal pin according to \ref mIsSimulationMode
+    //! \param pin pointer reference to the memory to be fred
+    //! \post pin == nullptr
     void freeSimulatedPin(void** pin);
+
+    //! \param enabled the new pin value
+    //! \param pinNumber the pin number to set the value
+    //! \param pinName arbitrary name for logging
+    void setPin(bool enabled, size_t pinNumber, const char* pinName);
 
 };
 
@@ -1011,7 +1143,7 @@ public:
 class WhbKeyEventListener
 {
 public:
-    //! called on button pressed
+    //! Called when button is pressed.
     //! \param softwareButton the button pressed
     //! \return true if a subsequent re-evaluation should be performed.
     //! Example: A button event changes the feed rotary buttons step mode from
@@ -1019,7 +1151,13 @@ public:
     //! button state remains untouched until the next button's event.
     virtual bool onButtonPressedEvent(const WhbSoftwareButton& softwareButton) = 0;
 
-    virtual void onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) = 0;
+    //! Called when button is released.
+    //! \param softwareButton the button released
+    //! \return true if a subsequent re-evaluation should be performed.
+    //! Example: A button event changes the feed rotary buttons step mode from
+    //! step to continuous. The button must be re-evaluated, otherwise the
+    //! button state remains untouched until the next button's event.
+    virtual bool onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) = 0;
 
     virtual void onAxisActiveEvent(const WhbKeyCode& axis) = 0;
 
@@ -1074,31 +1212,22 @@ public:
 
     size_t getSoftwareButtonIndex(uint8_t keyCode) const;
 
-    //! todo: doxy
     void initWhb();
 
-    //! todo: doxy
     void initHal();
 
-    //! todo: doxy
     void teardownHal();
 
-    //! todo: doxy
     void onUsbDataReceivedCallback(struct libusb_transfer* transfer);
 
-    //! todo: doxy
     bool enableReceiveAsyncTransfer();
 
-    // todo: refactor me
     void sendDisplayData();
 
-    //! todo: remove
     void linuxcncSimulate();
 
-    //! todo: doxy
     void requestTermination(int signal = -42);
 
-    //! todo: doxy, move
     bool isRunning() const;
 
     int run();
@@ -1123,7 +1252,7 @@ public:
 
     bool onButtonPressedEvent(const WhbSoftwareButton& softwareButton) override;
 
-    void onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) override;
+    bool onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) override;
 
     void onAxisActiveEvent(const WhbKeyCode& axis) override;
 
@@ -1143,7 +1272,7 @@ public:
     //! \param inPackage input package to interpret
     //! \param keyCode pressed button
     //! \param modifierCode Optional pressed modifier button. Wsually "Fn", but could be any button.
-    //! \return \sa WhbKeyEventListener::onButtonPressedEvent
+    //! \return \ref WhbKeyEventListener::onButtonPressedEvent
     bool updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode);
 
     void updateJogDial(const WhbUsbInPackage& inPackage);
@@ -1152,11 +1281,13 @@ public:
 
     void printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOutPackageData& outPackageBuffer) const;
 
+    size_t getHalPinNumber(const WhbSoftwareButton& button);
+
 private:
     const char* mName;
     const WhbKeyCodes       mKeyCodes;
     const WhbStepHandler    mStepHandler;
-    const WhbSoftwareButton mSoftwareButtons[31];
+    const WhbSoftwareButton mSoftwareButtons[32];
     WhbHal                  mHal;
     WhbUsb                  mUsb;
     bool                    mIsRunning;
@@ -1197,6 +1328,8 @@ private:
 
     //! prints a hexdump of the input package to \ref verboseRxOut stream
     void printHexdump(const WhbUsbInPackage& inPackage);
+
+    bool dispatchButtonEventToHal(const WhbSoftwareButton& softwareButton, bool isButtonPressed);
 
 };
 
@@ -1307,7 +1440,7 @@ WhbFeedRotaryButtonCodes::WhbFeedRotaryButtonCodes() :
 WhbButtonsCode::WhbButtonsCode() :
     reset(0x01, "RESET", "Macro-11"),
     stop(0x02, "STOP", "Macro-12"),
-    start(0x03, "Start", "Pause"),
+    start(0x03, "Start", "Macro-13"),
     feed_plus(0x04, "Feed+", "Macro-1"),
     feed_minus(0x05, "Feed-", "Macro-2"),
     spindle_plus(0x06, "Spindle+", "Macro-3"),
@@ -1318,8 +1451,8 @@ WhbButtonsCode::WhbButtonsCode() :
     spindle_on_off(0x0b, "S-ON/OFF", "Macro-8"),
     function(0x0c, "Fn", "Fnx"),
     probe_z(0x0d, "Probe-Z", "Macro-9"),
-    macro10(0x10, "Macro-10", "Macro-13"),
-    manual_pulse_generator(0x0e, "MPG", "Macro-14"),
+    macro10(0x10, "Macro-10", "Macro-14"),
+    manual_pulse_generator(0x0e, "MPG", "Macro-15"),
     step_continuous(0x0f, "STEP", "Continuous"),
     undefined(0x00, "", "")
 {
@@ -1917,7 +2050,7 @@ void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOut
     //! \brief On button pressed checksum calculation.
     //! Experimental: checksum generator not clear yet, but this is a good starting point.
     //! The implementation has several flaws, but works with seed 0xfe and 0xff (which is a bad seed).
-    //! \sa WhbUsbOutPackageData::seed.
+    //! \sa WhbUsbOutPackageData::seed
     //! The checksum implementation does not work reliable with other seeds.
     //! TODO: implement me correctly
     std::bitset<8> seed(outPackageBuffer.seed), nonSeed(~seed);
@@ -2095,7 +2228,8 @@ WhbContext::WhbContext() :
                      WhbSoftwareButton(mKeyCodes.buttons.manual_pulse_generator, mKeyCodes.buttons.undefined),
                      WhbSoftwareButton(mKeyCodes.buttons.manual_pulse_generator, mKeyCodes.buttons.function),
                      WhbSoftwareButton(mKeyCodes.buttons.step_continuous, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.step_continuous, mKeyCodes.buttons.function)
+                     WhbSoftwareButton(mKeyCodes.buttons.step_continuous, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.undefined, mKeyCodes.buttons.undefined)
     },
     mHal(),
     mUsb(mName, *this, mHal.memory),
@@ -2508,7 +2642,7 @@ int WhbContext::run()
 
         if (mUsb.isDeviceOpen())
         {
-            *mInitCout << "enabling reception ...";
+            *mInitCout << "init  enabling reception ...";
             if (!enableReceiveAsyncTransfer())
             {
                 cerr << endl << "failed to enable reception" << endl;
@@ -2859,7 +2993,189 @@ size_t WhbContext::getSoftwareButtonIndex(uint8_t keyCode) const
     return 0;
 }
 
+bool WhbContext::dispatchButtonEventToHal(const WhbSoftwareButton& softwareButton, bool isButtonPressed)
+{
+    const WhbButtonsCode& buttonCodes = mKeyCodes.buttons;
+
+    // reset button
+    if (softwareButton.containsKeys(buttonCodes.reset, buttonCodes.undefined))
+    {
+        mHal.setReset(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // stop button
+    else if (softwareButton.containsKeys(buttonCodes.stop, buttonCodes.undefined))
+    {
+        mHal.setStop(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // start pause button
+    else if (softwareButton.containsKeys(buttonCodes.start, buttonCodes.undefined))
+    {
+        mHal.setStart(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // feed + button
+    else if (softwareButton.containsKeys(buttonCodes.feed_plus, buttonCodes.undefined))
+    {
+        mHal.setFeedPlus(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // feed - button
+    else if (softwareButton.containsKeys(buttonCodes.feed_minus, buttonCodes.undefined))
+    {
+        mHal.setFeedMinus(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // spindle + button
+    else if (softwareButton.containsKeys(buttonCodes.spindle_plus, buttonCodes.undefined))
+    {
+        mHal.setSpindlePlus(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // spindle - button
+    else if (softwareButton.containsKeys(buttonCodes.spindle_minus, buttonCodes.undefined))
+    {
+        mHal.setSpindleMinus(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // machine home button
+    else if (softwareButton.containsKeys(buttonCodes.machine_home, buttonCodes.undefined))
+    {
+        mHal.setMachineHome(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // safe-z button
+    else if (softwareButton.containsKeys(buttonCodes.safe_z, buttonCodes.undefined))
+    {
+        mHal.setSafeZ(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // workpiece home button
+    else if (softwareButton.containsKeys(buttonCodes.workpiece_home, buttonCodes.undefined))
+    {
+        mHal.setWorkpieceHome(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // spindle on/off button
+    else if (softwareButton.containsKeys(buttonCodes.spindle_on_off, buttonCodes.undefined))
+    {
+        mHal.setSpindleOn(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // probe-z button
+    else if (softwareButton.containsKeys(buttonCodes.probe_z, buttonCodes.undefined))
+    {
+        mHal.setProbeZ(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 10 button
+    else if (softwareButton.containsKeys(buttonCodes.macro10, buttonCodes.undefined))
+    {
+        mHal.setMacro10(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 11 button
+    else if (softwareButton.containsKeys(buttonCodes.reset, buttonCodes.function))
+    {
+        mHal.setMacro11(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 12 button
+    else if (softwareButton.containsKeys(buttonCodes.stop, buttonCodes.function))
+    {
+        mHal.setMacro12(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 13 button
+    else if (softwareButton.containsKeys(buttonCodes.start, buttonCodes.function))
+    {
+        mHal.setMacro13(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 1 button
+    else if (softwareButton.containsKeys(buttonCodes.feed_plus, buttonCodes.function))
+    {
+        mHal.setMacro1(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 2 button
+    else if (softwareButton.containsKeys(buttonCodes.feed_minus, buttonCodes.function))
+    {
+        mHal.setMacro2(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 3 button
+    else if (softwareButton.containsKeys(buttonCodes.spindle_plus, buttonCodes.function))
+    {
+        mHal.setMacro3(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 4 button
+    else if (softwareButton.containsKeys(buttonCodes.spindle_minus, buttonCodes.function))
+    {
+        mHal.setMacro4(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 5 button
+    else if (softwareButton.containsKeys(buttonCodes.machine_home, buttonCodes.function))
+    {
+        mHal.setMacro5(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 6 button
+    else if (softwareButton.containsKeys(buttonCodes.safe_z, buttonCodes.function))
+    {
+        mHal.setMacro6(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 7 button
+    else if (softwareButton.containsKeys(buttonCodes.workpiece_home, buttonCodes.function))
+    {
+        mHal.setMacro7(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 8 button
+    else if (softwareButton.containsKeys(buttonCodes.spindle_on_off, buttonCodes.function))
+    {
+        mHal.setMacro8(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 9 button
+    else if (softwareButton.containsKeys(buttonCodes.probe_z, buttonCodes.function))
+    {
+        mHal.setMacro9(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 16 button
+    else if (softwareButton.containsKeys(buttonCodes.step_continuous, buttonCodes.function))
+    {
+        mHal.setMacro16(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 14 button
+    else if (softwareButton.containsKeys(buttonCodes.macro10, buttonCodes.function))
+    {
+        mHal.setMacro14(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 15 button
+    else if (softwareButton.containsKeys(buttonCodes.manual_pulse_generator, buttonCodes.function))
+    {
+        mHal.setMacro15(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+        // macro 16 button
+    else if (softwareButton.containsKeys(buttonCodes.manual_pulse_generator, buttonCodes.function))
+    {
+        mHal.setMacro16(isButtonPressed, getHalPinNumber(softwareButton));
+        return true;
+    }
+
+    return false;
+}
 // ----------------------------------------------------------------------
+
 
 bool WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
 {
@@ -2867,17 +3183,22 @@ bool WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
     *mKeyEventCout << "event pressed  ";
     printPushButtonText(softwareButton.key.code, softwareButton.modifier.code, *mKeyEventCout);
     *mKeyEventCout << endl;
-    const WhbButtonsCode& buttonCodes = mKeyCodes.buttons;
 
-    if (softwareButton.containsKeys(buttonCodes.step_continuous, buttonCodes.undefined))
+    if (!dispatchButtonEventToHal(softwareButton, true))
     {
-        mCurrentButtonCodes.setCurrentModeContinuousMode();
-        isUpdateRecommended = true;
-    }
-    else if (softwareButton.containsKeys(buttonCodes.manual_pulse_generator, buttonCodes.undefined))
-    {
-        mCurrentButtonCodes.setCurrentModeStepMode();
-        isUpdateRecommended = true;
+        const WhbButtonsCode& buttonCodes = mKeyCodes.buttons;
+        // continuous button (MPG)
+        if (softwareButton.containsKeys(buttonCodes.manual_pulse_generator, buttonCodes.undefined))
+        {
+            mCurrentButtonCodes.setCurrentModeStepMode();
+            isUpdateRecommended = true;
+        }
+            // step button
+        else if (softwareButton.containsKeys(buttonCodes.step_continuous, buttonCodes.undefined))
+        {
+            mCurrentButtonCodes.setCurrentModeContinuousMode();
+            isUpdateRecommended = true;
+        }
     }
 
     return isUpdateRecommended;
@@ -2885,11 +3206,16 @@ bool WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
 
 // ----------------------------------------------------------------------
 
-void WhbContext::onButtonReleasedEvent(const WhbSoftwareButton& softwareButton)
+bool WhbContext::onButtonReleasedEvent(const WhbSoftwareButton& softwareButton)
 {
+    bool isUpdateRecommended = false;
     *mKeyEventCout << "event released ";
     printPushButtonText(softwareButton.key.code, softwareButton.modifier.code, *mKeyEventCout);
     *mKeyEventCout << endl;
+
+    dispatchButtonEventToHal(softwareButton, false);
+
+    return isUpdateRecommended;
 }
 
 // ----------------------------------------------------------------------
@@ -3197,6 +3523,31 @@ void WhbContext::enableCrcDebugging(bool enable)
 
 // ----------------------------------------------------------------------
 
+size_t WhbContext::getHalPinNumber(const WhbSoftwareButton& button)
+{
+    size_t idx = 0;
+    for (; idx < (sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton)); idx++)
+    {
+        uint8_t keyCode      = mSoftwareButtons[idx].key.code;
+        uint8_t modifierCode = mSoftwareButtons[idx].modifier.code;
+
+        if ((keyCode == button.key.code) && (modifierCode == button.modifier.code))
+        {
+            break;
+        }
+
+        if ((keyCode == mKeyCodes.buttons.undefined.code) && (modifierCode == mKeyCodes.buttons.undefined.code))
+        {
+            assert(false);
+            break;
+        }
+    }
+
+    return idx;
+}
+
+// ----------------------------------------------------------------------
+
 void WhbUsb::setSimulationMode(bool isSimulationMode)
 {
     mIsSimulationMode = isSimulationMode;
@@ -3394,7 +3745,7 @@ bool WhbUsb::init()
     if (getDoReconnect() == true)
     {
         int pauseSecs = 3;
-        *verboseInitOut << "pausing " << pauseSecs << "s, waiting for device to be gone ...";
+        *verboseInitOut << "init  pausing " << pauseSecs << "s, waiting for device to be gone ...";
         while ((pauseSecs--) >= 0)
         {
             *verboseInitOut << "." << std::flush;
@@ -3404,7 +3755,7 @@ bool WhbUsb::init()
         *verboseInitOut << " done" << endl;
     }
 
-    *verboseInitOut << "init usb context ...";
+    *verboseInitOut << "init  usb context ...";
     int r = libusb_init(&context);
     if (r != 0)
     {
@@ -3421,13 +3772,13 @@ bool WhbUsb::init()
     init.copyfmt(*verboseInitOut);
     if (isWaitWithTimeout)
     {
-        *verboseInitOut << "waiting maximum " << static_cast<unsigned short>(mWaitSecs) << "s for device "
+        *verboseInitOut << "init  waiting maximum " << static_cast<unsigned short>(mWaitSecs) << "s for device "
                         << mName << " vendorId=0x" << hex << setfill('0') << setw(2) << usbVendorId
                         << " productId=0x" << setw(2) << usbProductId << " ...";
     }
     else
     {
-        *verboseInitOut << "not waiting for device " << mName
+        *verboseInitOut << "init  not waiting for device " << mName
                         << " vendorId=0x" << hex << setfill('0') << setw(2) << usbVendorId
                         << " productId=0x" << setw(2) << usbProductId << dec
                         << ", will continue in " << static_cast<unsigned short>(mWaitSecs) << "s ...";
@@ -3462,11 +3813,12 @@ bool WhbUsb::init()
             sleep(1);
         }
     } while ((isDeviceOpen() == false) && mIsRunning);
-    *verboseInitOut << " ok" << endl << mName << " device found" << endl;
+    *verboseInitOut << " ok" << endl
+                    << "init  " << mName << " device found" << endl;
 
     if (isDeviceOpen())
     {
-        *verboseInitOut << "detaching active kernel driver ...";
+        *verboseInitOut << "init  detaching active kernel driver ...";
         if (libusb_kernel_driver_active(deviceHandle, 0) == 1)
         {
             int r = libusb_detach_kernel_driver(deviceHandle, 0);
@@ -3477,7 +3829,7 @@ bool WhbUsb::init()
         {
             *verboseInitOut << " already detached" << endl;
         }
-        *verboseInitOut << "claiming interface ...";
+        *verboseInitOut << "init  claiming interface ...";
         int r = libusb_claim_interface(deviceHandle, 0);
         if (r != 0)
         {
@@ -3603,7 +3955,7 @@ int WhbHal::newSimulatedHalPin(char* pin_name, void** ptr, int s)
     *ptr = calloc(s, 1);
     assert(*ptr != nullptr);
     memset(*ptr, 0, s);
-    *mHalCout << "allocated hal pin " << pin_name << endl;
+    *mHalCout << "hal   new pin " << pin_name << endl;
     return 0;
 }
 
@@ -3712,6 +4064,7 @@ void WhbHal::halInit(const WhbSoftwareButton* softwareButtons, size_t buttonsCou
         }
     }
 
+    // TODO: refactorme: end of array is if button and modifer == undefined, remove buttonsCount parameter
     // register all known xhc-whb04b-6 buttons
     for (size_t idx = 0; idx < buttonsCount; idx++)
     {
@@ -3729,6 +4082,7 @@ void WhbHal::halInit(const WhbSoftwareButton* softwareButtons, size_t buttonsCou
     }
 
     int r = 0;
+
     r |= newFloatHalPin(HAL_IN, &(memory.in.xMachineCoordinate), mHalCompId, "%s.x.pos-absolute", mName);
     r |= newFloatHalPin(HAL_IN, &(memory.in.yMachineCoordinate), mHalCompId, "%s.y.pos-absolute", mName);
     r |= newFloatHalPin(HAL_IN, &(memory.in.zMachineCoordinate), mHalCompId, "%s.z.pos-absolute", mName);
@@ -3810,7 +4164,7 @@ void WhbHal::setNoAxisActive(bool enabled)
 {
     ios init(NULL);
     init.copyfmt(*mHalCout);
-    *mHalCout << "hal   OFF no active" << endl;
+    *mHalCout << "hal   OFF no axis active" << endl;
     mHalCout->copyfmt(init);
     *memory.out.jogEnableOff = enabled;
 }
@@ -3896,6 +4250,232 @@ void WhbHal::setLead()
     init.copyfmt(*mHalCout);
     *mHalCout << "hal   feed rate Lead" << endl;
     mHalCout->copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
+
+
+void WhbHal::setReset(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "reset");
+}
+
+// ----------------------------------------------------------------------
+
+hal_bit_t* WhbHal::getButtonHalBit(size_t pinNumber)
+{
+    assert(memory.out.button_pin[pinNumber] != nullptr);
+    return memory.out.button_pin[pinNumber];
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setStop(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "stop");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setStart(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "start");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setFeedPlus(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "feed-plus");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setFeedMinus(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "feed-minus");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setSpindlePlus(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "spindle-plus");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setSpindleMinus(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "spindle-minus");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMachineHome(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "machine-home");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setSafeZ(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "safe-z");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setWorkpieceHome(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "workpiece-home");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setSpindleOn(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "spindle-on");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setProbeZ(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "probe-z");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setContinuousMode(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "continuous-mode");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setStepMode(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "step-mode");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro1(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-1");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro2(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-2");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro3(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-3");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro4(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-4");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro5(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-5");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro6(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-6");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro7(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-7");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro8(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-8");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro9(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-9");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro10(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-10");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro11(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-11");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro12(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-12");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro13(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-13");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro14(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-14");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro15(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-15");
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setMacro16(bool enabled, size_t pinNumber)
+{
+    setPin(enabled, pinNumber, "macro-16");
+}
+
+void WhbHal::setPin(bool enabled, size_t pinNumber, const char* pinName)
+{
+    *mHalCout << "hal   " << pinName << ((enabled) ? " enabled" : " disabled") << " (pin # " << pinNumber << ")"
+              << endl;
+    *(memory.out.button_pin[pinNumber]) = enabled;
 }
 
 } // namespace
