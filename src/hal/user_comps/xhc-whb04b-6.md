@@ -20,6 +20,8 @@ However here we list findings and thoughts on the USB communication protocol.
 | 0x06  | [0:7] | jog dial delta | int8_t     |                          |   | 
 | 0x07  | [0:7] | checksum                    |                          | * |
 
+#### Checksum investigation
+
 * On jog dial, 
 * on rotary button or 
 * on button released event:
@@ -29,7 +31,7 @@ checksum == random & seed
 
 * On button pressed event:
 ```
-//! works most of the cases, some equation part is missing
+//! works if seed is 0xff, otherwise does not reliable. some equation part must be missing
 checksum == random - (keyCode ^ (~seed & random)) 
 ```
 
