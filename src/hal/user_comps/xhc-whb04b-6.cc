@@ -179,13 +179,13 @@ public:
     {
     public:
         hal_bit_t  * button_pin[64];
-        hal_bit_t  * jogEnableOff;
-        hal_bit_t  * jogEnableX;
+        //hal_bit_t  * jogEnableOff;
+        /*hal_bit_t  * jogEnableX;
         hal_bit_t  * jogEnableY;
         hal_bit_t  * jogEnableZ;
         hal_bit_t  * jogEnableA;
         hal_bit_t  * jogEnableB;
-        hal_bit_t  * jogEnableC;
+        hal_bit_t  * jogEnableC;*/
         hal_float_t* jogScale;
         hal_s32_t  * jogCount;
         hal_s32_t  * jogCountNeg;
@@ -285,21 +285,34 @@ public:
         //! to be connected to \ref halui.home-all
         hal_bit_t* homeAll;
 
-        // TODO: begin: to be removed
         hal_float_t* jogIncrement;
-        hal_bit_t  * jogPlusX;
-        hal_bit_t  * jogPlusY;
-        hal_bit_t  * jogPlusZ;
-        hal_bit_t  * jogPlusA;
-        hal_bit_t  * jogPlusB;
-        hal_bit_t  * jogPlusC;
-        hal_bit_t  * jogMinusX;
-        hal_bit_t  * jogMinusY;
-        hal_bit_t  * jogMinusZ;
-        hal_bit_t  * jogMinusA;
-        hal_bit_t  * jogMinusB;
-        hal_bit_t  * jogMinusC;
-        // TODO: end: to be removed
+        /*
+          hal_bit_t  * jogPlusX;
+          hal_bit_t  *         // TODO: begin: to be removed
+;
+          hal_bit_t  * jogPlusZ;
+          hal_bit_t  * jogPlusA;
+          hal_bit_t  * jogPlusB;
+          hal_bit_t  * jogPlusC;
+          hal_bit_t  * jogMinusX;
+          hal_bit_t  * jogMinusY;
+          hal_bit_t  * jogMinusZ;
+          hal_bit_t  * jogMinusA;
+          hal_bit_t  * jogMinusB;
+          hal_bit_t  * jogMinusC;
+  */
+        //!to be connected to \ref halui.joint.N.select
+        hal_bit_t  * jointXSelect;
+        //!to be connected to \ref halui.joint.N.select
+        hal_bit_t  * jointYSelect;
+        //!to be connected to \ref halui.joint.N.select
+        hal_bit_t  * jointZSelect;
+        //!to be connected to \ref halui.joint.N.select
+        hal_bit_t  * jointASelect;
+        //!to be connected to \ref halui.joint.N.select
+        hal_bit_t  * jointBSelect;
+        //!to be connected to \ref halui.joint.N.select
+        hal_bit_t  * jointCSelect;
 
         // TODO: where should it be connected to
         hal_s32_t* stepsize;
@@ -324,13 +337,13 @@ public:
 
         Out() :
             button_pin{0},
-            jogEnableOff(nullptr),
-            jogEnableX(nullptr),
+            //jogEnableOff(nullptr),
+            /*jogEnableX(nullptr),
             jogEnableY(nullptr),
             jogEnableZ(nullptr),
             jogEnableA(nullptr),
             jogEnableB(nullptr),
-            jogEnableC(nullptr),
+            jogEnableC(nullptr),*/
             jogScale(nullptr),
             jogCount(nullptr),
             jogCountNeg(nullptr),
@@ -372,7 +385,7 @@ public:
             jogCSpeedMinus(nullptr),
             homeAll(nullptr),
             jogIncrement(nullptr),
-            jogPlusX(nullptr),
+            /*jogPlusX(nullptr),
             jogPlusY(nullptr),
             jogPlusZ(nullptr),
             jogPlusA(nullptr),
@@ -383,7 +396,13 @@ public:
             jogMinusZ(nullptr),
             jogMinusA(nullptr),
             jogMinusB(nullptr),
-            jogMinusC(nullptr),
+            jogMinusC(nullptr),*/
+            jointXSelect(nullptr),
+            jointYSelect(nullptr),
+            jointZSelect(nullptr),
+            jointASelect(nullptr),
+            jointBSelect(nullptr),
+            jointCSelect(nullptr),
             stepsize(nullptr),
             isPendantSleeping(nullptr),
             isPendantConnected(nullptr),
@@ -473,7 +492,7 @@ public:
 
     //! Sets the new feed rate. The step mode must be set accordingly.
     //! \param feedRate the new feed rate independent of step mode
-    void setFeedRate(const hal_float_t& feedRate);
+    void setStepSize(const hal_float_t& feedRate);
     //! If lead is active.
     void setLead();
     //! Sets the hal state of the reset pin. Usually called in case the reset
@@ -548,7 +567,7 @@ public:
     void setMacro15(bool enabled, size_t pinNumber);
     //! \sa setMacro1(bool, size_t)
     void setMacro16(bool enabled, size_t pinNumber);
-    void newJogDialDelta(uint8_t delta);
+    void newJogDialDelta(int8_t delta);
     void computeVelocity();
 
     void process();
@@ -729,6 +748,10 @@ public:
         RotaryButton100       = 3,
         RotaryButtonUndefined = 4
     };
+
+    //! Translates the button position to step metric units.
+    //! \param buttonPosition
+    //! \return the step size in units ∈ {0.001, 0.01, 0.1, 1.0, 0,0}
     float getStepSize(ButtonCodeToStepIndex buttonPosition) const;
     WhbHandwheelStepModeStepSize();
 
@@ -754,6 +777,10 @@ public:
         RotaryButton100percent = 5,
         RotaryButtonUndefined  = 6
     };
+
+    //! Translates the button position to step size in %.
+    //! \param buttonPosition
+    //! \return the step size in percent ∈ [0, 100]
     uint8_t getStepSize(ButtonCodeToStepIndex buttonPosition) const;
     WhbHandwheelContiunuousModeStepSize();
 
@@ -827,6 +854,7 @@ public:
     void setCurrentContinuousModeStepSize(WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex stepSize);
     void setCurrentModeStepMode();
     void setCurrentModeContinuousMode();
+    JogWheelStepMode::StepMode currentStepMode() const;
     bool isCurrentModeStepMode() const;
     bool isCurrentModeContinuousMode() const;
 
@@ -1489,6 +1517,13 @@ WhbStepHandler::WhbStepHandler() :
 
 // ----------------------------------------------------------------------
 
+JogWheelStepMode::StepMode WhbButtonsState::currentStepMode() const
+{
+    return mCurrentStepMode;
+}
+
+// ----------------------------------------------------------------------
+
 bool WhbButtonsState::isCurrentModeStepMode() const
 {
     return mCurrentStepMode == JogWheelStepMode::STEP;
@@ -1573,13 +1608,19 @@ void WhbButtonsState::updateButtonState(uint8_t keyCode, uint8_t modifierCode, u
 
 hal_float_t WhbButtonsState::getStepSize()
 {
+    // TODO: remove hotfix
+    float maxVelocity_mm_sec = 40.0;
+    float stepsPerUnit_mm    = 200.0 / 5.0;
+
     if (mCurrentStepMode == JogWheelStepMode::CONTINUOUS)
     {
-        return mContinuousModeStepSizeLookup.getStepSize(mCurrentContinuousModeSize);
+        // transform step size into percental of maximum-velocity
+        return maxVelocity_mm_sec * (0.01 * mContinuousModeStepSizeLookup.getStepSize(mCurrentContinuousModeSize));
     }
     else if (mCurrentStepMode == JogWheelStepMode::STEP)
     {
-        return mStepModeStepSizeLookup.getStepSize(mCurrentStepModeSize);
+        // transform step size to metric units
+        return stepsPerUnit_mm * mStepModeStepSizeLookup.getStepSize(mCurrentStepModeSize);
     }
     else
     {
@@ -2695,19 +2736,19 @@ void WhbHal::computeVelocity()
     {
         *(memory.out.jogVelocity)  = (1 - k) * *(memory.out.jogVelocity) + k * velocity;
         *(memory.out.jogIncrement) = rtapi_fabs(delta_pos);
-        // TODO: refactor sign to one hal pin instead of two: plus/minus
-        *(memory.out.jogPlusX)     = (delta_pos > 0) && *(memory.out.jogEnableX);
-        *(memory.out.jogMinusX)    = (delta_pos < 0) && *(memory.out.jogEnableX);
-        *(memory.out.jogPlusY)     = (delta_pos > 0) && *(memory.out.jogEnableY);
-        *(memory.out.jogMinusY)    = (delta_pos < 0) && *(memory.out.jogEnableY);
-        *(memory.out.jogPlusZ)     = (delta_pos > 0) && *(memory.out.jogEnableZ);
-        *(memory.out.jogMinusZ)    = (delta_pos < 0) && *(memory.out.jogEnableZ);
-        *(memory.out.jogPlusA)     = (delta_pos > 0) && *(memory.out.jogEnableA);
-        *(memory.out.jogMinusA)    = (delta_pos < 0) && *(memory.out.jogEnableA);
-        *(memory.out.jogPlusB)     = (delta_pos > 0) && *(memory.out.jogEnableB);
-        *(memory.out.jogMinusB)    = (delta_pos < 0) && *(memory.out.jogEnableB);
-        *(memory.out.jogPlusC)     = (delta_pos > 0) && *(memory.out.jogEnableC);
-        *(memory.out.jogMinusC)    = (delta_pos < 0) && *(memory.out.jogEnableC);
+
+        *(memory.out.jogXIncrementPlus)  = (delta_pos > 0) && *(memory.out.jointXSelect);
+        *(memory.out.jogXIncrementMinus) = (delta_pos < 0) && *(memory.out.jointXSelect);
+        *(memory.out.jogYIncrementPlus)  = (delta_pos > 0) && *(memory.out.jointYSelect);
+        *(memory.out.jogYIncrementMinus) = (delta_pos < 0) && *(memory.out.jointYSelect);
+        *(memory.out.jogZIncrementPlus)  = (delta_pos > 0) && *(memory.out.jointZSelect);
+        *(memory.out.jogZIncrementMinus) = (delta_pos < 0) && *(memory.out.jointZSelect);
+        *(memory.out.jogAIncrementPlus)  = (delta_pos > 0) && *(memory.out.jointASelect);
+        *(memory.out.jogAIncrementMinus) = (delta_pos < 0) && *(memory.out.jointASelect);
+        *(memory.out.jogBIncrementPlus)  = (delta_pos > 0) && *(memory.out.jointBSelect);
+        *(memory.out.jogBIncrementMinus) = (delta_pos < 0) && *(memory.out.jointBSelect);
+        *(memory.out.jogCIncrementPlus)  = (delta_pos > 0) && *(memory.out.jointCSelect);
+        *(memory.out.jogCIncrementMinus) = (delta_pos < 0) && *(memory.out.jointCSelect);
         velocityComputation.last_jog_counts = *(memory.out.jogCount);
         velocityComputation.last_tv         = now;
     }
@@ -2716,19 +2757,19 @@ void WhbHal::computeVelocity()
         *(memory.out.jogVelocity) = (1 - k) * *(memory.out.jogVelocity);
         if (elapsed > 0.25)
         {
-            *(memory.out.jogVelocity) = 0;
-            *(memory.out.jogPlusX)    = 0;
-            *(memory.out.jogMinusX)   = 0;
-            *(memory.out.jogPlusY)    = 0;
-            *(memory.out.jogMinusY)   = 0;
-            *(memory.out.jogPlusZ)    = 0;
-            *(memory.out.jogMinusZ)   = 0;
-            *(memory.out.jogPlusA)    = 0;
-            *(memory.out.jogMinusA)   = 0;
-            *(memory.out.jogPlusB)    = 0;
-            *(memory.out.jogMinusB)   = 0;
-            *(memory.out.jogPlusC)    = 0;
-            *(memory.out.jogMinusC)   = 0;
+            *(memory.out.jogVelocity)        = 0;
+            *(memory.out.jogXIncrementPlus)  = 0;
+            *(memory.out.jogXIncrementMinus) = 0;
+            *(memory.out.jogYIncrementPlus)  = 0;
+            *(memory.out.jogYIncrementMinus) = 0;
+            *(memory.out.jogZIncrementPlus)  = 0;
+            *(memory.out.jogZIncrementMinus) = 0;
+            *(memory.out.jogAIncrementPlus)  = 0;
+            *(memory.out.jogAIncrementMinus) = 0;
+            *(memory.out.jogBIncrementPlus)  = 0;
+            *(memory.out.jogBIncrementMinus) = 0;
+            *(memory.out.jogCIncrementPlus)  = 0;
+            *(memory.out.jogCIncrementMinus) = 0;
         }
     }
 }
@@ -3400,7 +3441,8 @@ void WhbContext::updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool f
         {
             if ((*newFeedCode) != mKeyCodes.feed.lead)
             {
-                mHal.setFeedRate(mCurrentButtonCodes.getStepSize());
+                mHal.setJogWheelStepMode(mCurrentButtonCodes.currentStepMode());
+                mHal.setStepSize(mCurrentButtonCodes.getStepSize());
             }
             mCurrentButtonCodes.setFeedCode(*newFeedCode);
             keyEventReceiver.onFeedActiveEvent(*newFeedCode);
@@ -3453,7 +3495,7 @@ void WhbContext::onJogDialEvent(int8_t delta)
 {
     ios init(NULL);
     init.copyfmt(*mKeyEventCout);
-    *mKeyEventCout << "event jog dial " << setfill(' ') << setw(3) << static_cast<short>(delta) << endl;
+    *mKeyEventCout << "event jog dial " << setfill(' ') << setw(3) << static_cast<signed short>(delta) << endl;
     mKeyEventCout->copyfmt(init);
     mHal.newJogDialDelta(delta);
 }
@@ -3864,13 +3906,13 @@ WhbHal::~WhbHal()
     {
         freeSimulatedPin((void**)(&memory.out.button_pin[idx]));
     }
-    freeSimulatedPin((void**)(&memory.out.jogEnableOff));
-    freeSimulatedPin((void**)(&memory.out.jogEnableX));
+    //freeSimulatedPin((void**)(&memory.out.jogEnableOff));
+    /*freeSimulatedPin((void**)(&memory.out.jogEnableX));
     freeSimulatedPin((void**)(&memory.out.jogEnableY));
     freeSimulatedPin((void**)(&memory.out.jogEnableZ));
     freeSimulatedPin((void**)(&memory.out.jogEnableA));
     freeSimulatedPin((void**)(&memory.out.jogEnableB));
-    freeSimulatedPin((void**)(&memory.out.jogEnableC));
+    freeSimulatedPin((void**)(&memory.out.jogEnableC));*/
     freeSimulatedPin((void**)(&memory.out.jogScale));
     freeSimulatedPin((void**)(&memory.out.jogCount));
     freeSimulatedPin((void**)(&memory.out.jogCountNeg));
@@ -3915,19 +3957,25 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory.out.jogCSpeedPlus));
     freeSimulatedPin((void**)(&memory.out.jogCSpeedMinus));
     freeSimulatedPin((void**)(&memory.out.homeAll));
-    freeSimulatedPin((void**)(&memory.out.jogPlusX));
-    freeSimulatedPin((void**)(&memory.out.jogPlusY));
-    freeSimulatedPin((void**)(&memory.out.jogPlusZ));
-    freeSimulatedPin((void**)(&memory.out.jogPlusA));
-    freeSimulatedPin((void**)(&memory.out.jogPlusB));
-    freeSimulatedPin((void**)(&memory.out.jogPlusC));
-    freeSimulatedPin((void**)(&memory.out.jogMinusX));
-    freeSimulatedPin((void**)(&memory.out.jogMinusY));
-    freeSimulatedPin((void**)(&memory.out.jogMinusZ));
-    freeSimulatedPin((void**)(&memory.out.jogMinusA));
-    freeSimulatedPin((void**)(&memory.out.jogMinusB));
-    freeSimulatedPin((void**)(&memory.out.jogMinusC));
+    /* freeSimulatedPin((void**)(&memory.out.jogPlusX));
+     freeSimulatedPin((void**)(&memory.out.jogPlusY));
+     freeSimulatedPin((void**)(&memory.out.jogPlusZ));
+     freeSimulatedPin((void**)(&memory.out.jogPlusA));
+     freeSimulatedPin((void**)(&memory.out.jogPlusB));
+     freeSimulatedPin((void**)(&memory.out.jogPlusC));
+     freeSimulatedPin((void**)(&memory.out.jogMinusX));
+     freeSimulatedPin((void**)(&memory.out.jogMinusY));
+     freeSimulatedPin((void**)(&memory.out.jogMinusZ));
+     freeSimulatedPin((void**)(&memory.out.jogMinusA));
+     freeSimulatedPin((void**)(&memory.out.jogMinusB));
+     freeSimulatedPin((void**)(&memory.out.jogMinusC));*/
     freeSimulatedPin((void**)(&memory.in.stepsizeUp));
+    freeSimulatedPin((void**)(&memory.out.jointXSelect));
+    freeSimulatedPin((void**)(&memory.out.jointYSelect));
+    freeSimulatedPin((void**)(&memory.out.jointZSelect));
+    freeSimulatedPin((void**)(&memory.out.jointASelect));
+    freeSimulatedPin((void**)(&memory.out.jointBSelect));
+    freeSimulatedPin((void**)(&memory.out.jointCSelect));
     freeSimulatedPin((void**)(&memory.out.stepsize));
     freeSimulatedPin((void**)(&memory.out.isPendantSleeping));
     freeSimulatedPin((void**)(&memory.out.isPendantConnected));
@@ -4100,6 +4148,14 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
 
     r |= newFloatHalPin(HAL_IN, &(memory.in.feedrate), mHalCompId, "%s.in.feed", mName);
     r |= newFloatHalPin(HAL_IN, &(memory.in.feedrateOverride), mHalCompId, "%s.in.halui.feed-override.value", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.feedOverrideIncrease), mHalCompId, "%s.out.halui.feed-override.increase",
+                      mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.feedOverrideDecrease), mHalCompId, "%s.out.halui.feed-override.decrease",
+                      mName);
+
+    r |= newSigned32HalPin(HAL_OUT, &(memory.out.stepsize), mHalCompId, "%s.out.stepsize", mName);
+    r |= newBitHalPin(HAL_IN, &(memory.in.stepsizeUp), mHalCompId, "%s.in.stepsize-up", mName);
+
     r |= newFloatHalPin(HAL_IN, &(memory.in.spindleRps), mHalCompId, "%s.in.spindle-rps", mName);
     r |= newBitHalPin(HAL_IN, &(memory.in.spindleIsOn), mHalCompId, "%s.in.halui.spindle.is-on", mName);
     r |= newFloatHalPin(HAL_IN, &(memory.in.spindleOverrideValue), mHalCompId, "%s.in.halui.spindle-override.value",
@@ -4121,21 +4177,20 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     r |= newBitHalPin(HAL_OUT, &(memory.out.doRunProgram), mHalCompId, "%s.out.halui.program.run", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.doStopProgram), mHalCompId, "%s.out.halui.program.stop", mName);
 
-    r |= newSigned32HalPin(HAL_OUT, &(memory.out.stepsize), mHalCompId, "%s.out.stepsize", mName);
-    r |= newBitHalPin(HAL_IN, &(memory.in.stepsizeUp), mHalCompId, "%s.in.stepsize-up", mName);
-
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableOff), mHalCompId, "%s.out.jog.enable-off", mName);
+    /*r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableOff), mHalCompId, "%s.out.jog.enable-off", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableX), mHalCompId, "%s.out.jog.enable-x", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableY), mHalCompId, "%s.out.jog.enable-y", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableZ), mHalCompId, "%s.out.jog.enable-z", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableA), mHalCompId, "%s.out.jog.enable-a", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableB), mHalCompId, "%s.out.jog.enable-b", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableC), mHalCompId, "%s.out.jog.enable-c", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableC), mHalCompId, "%s.out.jog.enable-c", mName);*/
 
-    r |= newBitHalPin(HAL_OUT, &(memory.out.feedOverrideIncrease), mHalCompId, "%s.out.halui.feed-override.increase",
-                      mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.feedOverrideDecrease), mHalCompId, "%s.out.halui.feed-override.decrease",
-                      mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jointXSelect), mHalCompId, "%s.out.halui.joint.x.select", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jointYSelect), mHalCompId, "%s.out.halui.joint.y.select", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jointZSelect), mHalCompId, "%s.out.halui.joint.z.select", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jointASelect), mHalCompId, "%s.out.halui.joint.a.select", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jointBSelect), mHalCompId, "%s.out.halui.joint.b.select", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jointCSelect), mHalCompId, "%s.out.halui.joint.c.select", mName);
 
     r |= newFloatHalPin(HAL_OUT, &(memory.out.jogXIncrementValue), mHalCompId, "%s.out.halui.jog.x.increment", mName);
     r |= newFloatHalPin(HAL_OUT, &(memory.out.jogYIncrementValue), mHalCompId, "%s.out.halui.jog.y.increment", mName);
@@ -4188,6 +4243,7 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     r |= newFloatHalPin(HAL_IN, &(memory.in.jogMaxVelocity), mHalCompId, "%s.in.halui.max-velocity.value", mName);
     r |= newFloatHalPin(HAL_OUT, &(memory.out.jogIncrement), mHalCompId, "%s.out.jog.increment", mName);
 
+    /*
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusX), mHalCompId, "%s.out.jog.plus-x", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusY), mHalCompId, "%s.out.jog.plus-y", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusZ), mHalCompId, "%s.out.jog.plus-z", mName);
@@ -4200,7 +4256,7 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusZ), mHalCompId, "%s.out.jog.minus-z", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusA), mHalCompId, "%s.out.jog.minus-a", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusB), mHalCompId, "%s.out.jog.minus-b", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusC), mHalCompId, "%s.out.jog.minus-c", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusC), mHalCompId, "%s.out.jog.minus-c", mName);*/
 
     r |= newBitHalPin(HAL_OUT, &(memory.out.homeAll), mHalCompId, "%s.out.halui.home-all", mName);
 
@@ -4225,88 +4281,89 @@ void WhbHal::setEnableVerbose(bool enable)
 
 void WhbHal::setNoAxisActive(bool enabled)
 {
-    ios init(NULL);
-    init.copyfmt(*mHalCout);
     *mHalCout << "hal   OFF no axis active" << endl;
-    mHalCout->copyfmt(init);
-    *memory.out.jogEnableOff = enabled;
 }
 
 // ----------------------------------------------------------------------
 
 void WhbHal::setAxisXActive(bool enabled)
 {
-    ios init(NULL);
-    init.copyfmt(*mHalCout);
+    if (enabled)
+    {
+        *memory.out.jointXSelect = enabled;
+    }
     *mHalCout << "hal   X axis active" << endl;
-    mHalCout->copyfmt(init);
-    *memory.out.jogEnableX = enabled;
 }
 
 // ----------------------------------------------------------------------
 
 void WhbHal::setAxisYActive(bool enabled)
 {
-    ios init(NULL);
-    init.copyfmt(*mHalCout);
+    if (enabled)
+    {
+        *memory.out.jointYSelect = enabled;
+    }
     *mHalCout << "hal   Y axis active" << endl;
-    mHalCout->copyfmt(init);
-    *memory.out.jogEnableY = enabled;
 }
 
 // ----------------------------------------------------------------------
 
 void WhbHal::setAxisZActive(bool enabled)
 {
-    ios init(NULL);
-    init.copyfmt(*mHalCout);
+    if (enabled)
+    {
+        *memory.out.jointZSelect = enabled;
+    }
     *mHalCout << "hal   Z axis active" << endl;
-    mHalCout->copyfmt(init);
-    *memory.out.jogEnableZ = enabled;
 }
 
 // ----------------------------------------------------------------------
 
 void WhbHal::setAxisAActive(bool enabled)
 {
-    ios init(NULL);
-    init.copyfmt(*mHalCout);
+    if (enabled)
+    {
+        *memory.out.jointASelect = enabled;
+    }
     *mHalCout << "hal   A axis active" << endl;
-    mHalCout->copyfmt(init);
-    *memory.out.jogEnableA = enabled;
 }
 
 // ----------------------------------------------------------------------
 
 void WhbHal::setAxisBActive(bool enabled)
 {
-    ios init(NULL);
-    init.copyfmt(*mHalCout);
+    if (enabled)
+    {
+        *memory.out.jointBSelect = enabled;
+    }
     *mHalCout << "hal   B axis active" << endl;
-    mHalCout->copyfmt(init);
-    *memory.out.jogEnableB = enabled;
 }
 
 // ----------------------------------------------------------------------
 
 void WhbHal::setAxisCActive(bool enabled)
 {
-    ios init(NULL);
-    init.copyfmt(*mHalCout);
+    if (enabled)
+    {
+        *memory.out.jointCSelect = enabled;
+    }
     *mHalCout << "hal   C axis active" << endl;
-    mHalCout->copyfmt(init);
-    *memory.out.jogEnableC = enabled;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedRate(const hal_float_t& feedRate)
+void WhbHal::setStepSize(const hal_float_t& stepSize)
 {
-    ios init(NULL);
-    init.copyfmt(*mHalCout);
-    *mHalCout << "hal   feed rate " << feedRate << endl;
-    mHalCout->copyfmt(init);
-    *memory.out.jogScale = feedRate;
+    if (mStepMode == JogWheelStepMode::STEP)
+    {
+        *memory.out.jogIncrement = stepSize;
+    }
+    else
+    {
+        *memory.out.jogSpeedValue = stepSize;
+    }
+    *mHalCout << "hal   step size " << stepSize << endl;
+    *memory.out.jogScale = stepSize;
 }
 
 // ----------------------------------------------------------------------
@@ -4593,7 +4650,7 @@ void WhbHal::setPin(bool enabled, size_t pinNumber, const char* pinName)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::newJogDialDelta(uint8_t delta)
+void WhbHal::newJogDialDelta(int8_t delta)
 {
     if (mStepMode == JogWheelStepMode::STEP)
     {
@@ -4620,10 +4677,12 @@ void WhbHal::setJogWheelStepMode(JogWheelStepMode::StepMode stepMode)
     if (stepMode == JogWheelStepMode::STEP)
     {
         mPendingStepsContinuousMode = 0;
+        *mHalCout << "hal   step mode is step" << endl;
     }
     else
     {
         mPendingStepsStepMode = 0;
+        *mHalCout << "hal   step mode is continuous" << endl;
     }
 }
 
@@ -4631,14 +4690,19 @@ void WhbHal::setJogWheelStepMode(JogWheelStepMode::StepMode stepMode)
 
 void WhbHal::process()
 {
-    if (mStepMode == JogWheelStepMode::STEP) {
+    if (mStepMode == JogWheelStepMode::STEP)
+    {
         // consume pending steps
-        if ( mPendingStepsStepMode != 0) {
+        if (mPendingStepsStepMode != 0)
+        {
             // TODO: have some thoughts on options we have for returning signal to zero after rising edge
         }
-    } else {
+    }
+    else
+    {
         // consume pending steps
-        if ( mPendingStepsContinuousMode != 0) {
+        if (mPendingStepsContinuousMode != 0)
+        {
             // TODO: have some thoughts on options we have for returning signal to zero after rising edge
         }
     }
