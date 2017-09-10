@@ -69,7 +69,8 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | 0xn   | [0:x]   | the **maximum length** is also **unclear**                           |                     | * |
 
 ## What we did so far
-* Searched the web and found not 100% related but interesting information on this [site](http://forum.planet-cnc.com/viewtopic.php?f=12&t=1125).
+* Searched the web and found not 100% related but interesting information on this [site](http://forum.planet-cnc.com/viewtopic.php?f=12&t=1125), and
+* this [site](http://wiki.linuxcnc.org/cgi-bin/wiki.pl?Using_A_XHC-HB04_Wireless_MPG_Pendant).
 * Politely contacted the manufacturer and requested an interface controld document or equivalent information (without success).
 
 ## What we didn't
