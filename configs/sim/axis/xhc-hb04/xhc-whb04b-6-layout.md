@@ -47,14 +47,56 @@ xhc-whb04b-6 -p
 # For even more details:
 
 ```
-Usage: xhc-whb04b-6 [-h] | [-H] [-x] [[-u|-U] [-p] | [-a] | [-s]] 
- -h usage help text
- -H run XHC-WHB04B-6in HAL-mode instead of interactive mode
- -t wait for USB device before processing with HAL initialization
- -u print received data
- -U print received and transmitted data
- -p print initialized HAL pins 
- -e print key events
- -a enable all verbose facilities
- -s be silent
+$ ./xhc-whb04b-6 -h
+xhc-whb04b-6 version 0.1 Sep 10 2017 08:57:04
+
+SYNOPSIS
+    xhc-whb04b-6 [-h] | [-H] [OPTIONS] 
+
+NAME
+    xhc-whb04b-6 - jog dial HAL module for the XHC-WHB04B-6 device
+
+DESCRIPTION
+    xhc-whb04b-6 is a HAL module that receives events from the XHC-WHB04B-6 device and exposes them to HAL via HAL pins.
+
+OPTIONS
+ -h 
+    Prints the synonpsis and the most commonly used commands.
+
+ -H 
+    run XHC-WHB04B-6 in HAL-mode instead of interactive mode. When in HAL mode commands from device will be exposed to HAL's shred memory. Interactive mode is useful for testing device connectivity and debugging.
+
+ -t 
+    Wait with timeout for USB device then proceed, exit otherwise. Without -t the timeout is ipmlicitely infinite.
+
+ -u, -U 
+    Show received data from device. With -U received and transmitted data will be printed. Output is prefixed with "usb".
+
+ -p 
+    Show HAL pins and HAL related messages. Output is prefixed with "hal".
+
+ -e 
+    Show captured events such as button pressed/released, jog dial, axis rotary button, and feed rotary button event. Output is prefixed with "event".and in case.
+
+ -a 
+    Enable all logging facilities without explicitly specifying each.
+
+ -c 
+    Enable checksum output which is necessary for debugging the checksum generator function. Do not rely on this featue since it will be removed once the generator is implemented.
+ -s 
+    Force being silent and not printing any output except of errors.
+
+EXAMPLES
+xhc-whb04b-6 -ue
+    Prints incoming USB data transfer and generated key pressed/released events.
+
+xhc-whb04b-6 -p
+    Prints hal pin names and events distributed to HAL memory.
+
+xhc-whb04b-6 -Ha
+    Start in HAL mode and avoid output, except of errors.
+
+AUTHORS
+    This module was started by Raoul Rubien (github.com/rubienr) based on predecessor device's module xhc-hb04.cc. https://github.com/machinekit/machinekit/graphs/contributors gives you a more complete list of contributors.
+
  ```
