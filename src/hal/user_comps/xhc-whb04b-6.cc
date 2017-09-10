@@ -50,13 +50,10 @@ using std::ios;
 
 //! function for libusb's incoming data callback function
 void usbInputResponseCallback(struct libusb_transfer* transfer);
-
 //! registers signal handler
 void registerSignalHandler();
-
 //! called on program termination requested
 static void quit(int signal);
-
 namespace XhcWhb04b6 {
 
 class WhbHalMemory;
@@ -124,11 +121,8 @@ class UsbInputPackageListener;
 class WhbContext;
 
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate& coordinate);
-
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data);
-
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlockFields& block);
-
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlocks& blocks);
 
 // ----------------------------------------------------------------------
@@ -152,15 +146,12 @@ public:
         hal_float_t* aMachineCoordinate;
         hal_float_t* bMachineCoordinate;
         hal_float_t* cMachineCoordinate;
-
         hal_float_t* feedrateOverride;
         hal_float_t* feedrate;
         hal_float_t* spindleOverride;
         hal_float_t* spindleRps;
-
         hal_float_t* jogMaxVelocity;
-
-        hal_bit_t* stepsizeUp;
+        hal_bit_t  * stepsizeUp;
 
         In() :
             xWorkpieceCoordinate(nullptr),
@@ -183,14 +174,12 @@ public:
             stepsizeUp(nullptr)
         {
         }
-
     };
 
     class Out
     {
     public:
-        hal_bit_t* button_pin[64];
-
+        hal_bit_t  * button_pin[64];
         hal_bit_t  * jogEnableOff;
         hal_bit_t  * jogEnableX;
         hal_bit_t  * jogEnableY;
@@ -215,11 +204,10 @@ public:
         hal_bit_t  * jogMinusA;
         hal_bit_t  * jogMinusB;
         hal_bit_t  * jogMinusC;
-
-        hal_s32_t* stepsize;
-        hal_bit_t* sleeping;
-        hal_bit_t* isPendantConnected;
-        hal_bit_t* isPendantRequired;
+        hal_s32_t  * stepsize;
+        hal_bit_t  * sleeping;
+        hal_bit_t  * isPendantConnected;
+        hal_bit_t  * isPendantRequired;
 
         Out() :
             button_pin{0},
@@ -272,7 +260,6 @@ class WhbVelocityComputation
 public:
     hal_s32_t      last_jog_counts;
     struct timeval last_tv;
-
     WhbVelocityComputation();
 };
 
@@ -284,106 +271,73 @@ class WhbHal
 public:
     WhbHalMemory           memory;
     WhbVelocityComputation velocityComputation;
-
     WhbHal();
-
     ~WhbHal();
-
     //! initializes hal pins according to simulation mode, must not be called twice
     //! \ref setIsSimulationMode() must be set before accordingly
     void halInit(const WhbSoftwareButton* softwareButtons, size_t buttonsCount, const WhbKeyCodes& codes);
-
     bool isSimulationModeEnabled() const;
-
     //! indicates the program has been invoked in hal mode or normal
     void setSimulationMode(bool isSimulationMode);
-
     int getHalComponentId() const;
-
     hal_bit_t* getButtonHalBit(size_t pinNumber);
-
     const char* getHalComponentName() const;
-
     //! Enables verbose hal output.
     //! \param enable true to enable hal messages, disable otherwise
     void setEnableVerbose(bool enable);
-
     //! If set indicates that no other axis is active.
     //! \param enabled true if no axis is active, false otherwise
     void setNoAxisActive(bool enabled);
-
     //! Sets the A axis to active or disables the same.
     //! \param enabled true if axis should be the one and only active
     void setAxisXActive(bool enabled);
-
     //! \sa setAxisXActive(bool)
     void setAxisYActive(bool enabled);
-
     //! \sa setAxisXActive(bool)
     void setAxisZActive(bool enabled);
-
     //! \sa setAxisXActive(bool)
     void setAxisAActive(bool enabled);
-
     //! \sa setAxisXActive(bool)
     void setAxisBActive(bool enabled);
-
     //! \sa setAxisXActive(bool)
     void setAxisCActive(bool enabled);
-
     //! Sets the new feed rate. The step mode must be set accordingly.
     //! \param feedRate the new feed rate independent of step mode
     void setFeedRate(const hal_float_t& feedRate);
-
     //! If lead is active.
     void setLead();
-
     //! Sets the hal state of the reset pin. Usually called in case the reset
     //! button is pressed or released.
     //! \param enabled the new pin value, (true if the button was pressed, false otherwise)
     //! \param pinNumber The pin number in \ref WhbHalMemory as registered in
     //! \ref WhbHal::halInit(const WhbSoftwareButton* , size_t , const WhbKeyCodes&)
     void setReset(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setStop(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setStart(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setFeedPlus(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setFeedMinus(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setSpindlePlus(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setSpindleMinus(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setMachineHome(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setSafeZ(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setWorkpieceHome(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setSpindleOn(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setProbeZ(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setContinuousMode(bool enabled, size_t pinNumber);
-
     //! \sa setReset(bool, size_t)
     void setStepMode(bool enabled, size_t pinNumber);
-
     //! Sets the hal state of the macro pin. Usually called in case the macro
     //! button is pressed or released. A macro button can be any button
     //! when pressed together with the modifier key.
@@ -391,52 +345,36 @@ public:
     //! \param pinNumber The pin number in \ref WhbHalMemory.
     //! \sa setReset(bool, size_t)
     void setMacro1(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro2(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro3(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro4(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro5(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro6(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro7(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro8(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro9(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro10(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro11(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro12(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro13(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro14(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro15(bool enabled, size_t pinNumber);
-
     //! \sa setMacro1(bool, size_t)
     void setMacro16(bool enabled, size_t pinNumber);
-
     void computeVelocity();
 
 private:
@@ -445,7 +383,6 @@ private:
     int          mHalCompId;
     std::ostream mDevNull;
     std::ostream* mHalCout;
-
     //! //! Allocates new hal_bit_t pin according to \ref mIsSimulationMode. If \ref mIsSimulationMode then
     //! mallocs memory, hal_pin_bit_new allocation otherwise.
     //! \param pin_name the pin name when registered to hal
@@ -453,13 +390,10 @@ private:
     //! \param s size in bytes
     //! \return != 0 on error, 0 otherwise
     int newSimulatedHalPin(char* pin_name, void** ptr, int s);
-
     //! \sa  newBitHalPin(hal_pin_dir_t, hal_bit_t**, int, const char*, ...)
     int newFloatHalPin(hal_pin_dir_t direction, hal_float_t** ptr, int componentId, const char* fmt, ...);
-
     //! \sa  newBitHalPin(hal_pin_dir_t, hal_bit_t**, int, const char*, ...)
     int newSigned32HalPin(hal_pin_dir_t direction, hal_s32_t** ptr, int componentId, const char* fmt, ...);
-
     //! \param direction module input or output
     //! \param ptr will point to the allocated memory
     //! \param componentId hal id
@@ -467,17 +401,14 @@ private:
     //! \param ... va agrgs
     //! \return != 0 on error, 0 otherwise
     int newBitHalPin(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId, const char* fmt, ...);
-
     //! allocates new hal pin according to \ref mIsSimulationMode
     //! \param pin pointer reference to the memory to be fred
     //! \post pin == nullptr
     void freeSimulatedPin(void** pin);
-
     //! \param enabled the new pin value
     //! \param pinNumber the pin number to set the value
     //! \param pinName arbitrary name for logging
     void setPin(bool enabled, size_t pinNumber, const char* pinName);
-
 };
 
 // ----------------------------------------------------------------------
@@ -507,13 +438,9 @@ public:
     const char* text;
     //! alternative button text as written on pendant (if available)
     const char* altText;
-
     bool operator==(const WhbKeyCode& other) const;
-
     bool operator!=(const WhbKeyCode& other) const;
-
     WhbKeyCode(uint8_t code, const char* text, const char* altText);
-
     WhbKeyCode(const WhbKeyCode& other);
 } __attribute__((packed));
 
@@ -525,9 +452,7 @@ class WhbSoftwareButton
 public:
     const WhbKeyCode& key;
     const WhbKeyCode& modifier;
-
     bool containsKeys(const WhbKeyCode& key, const WhbKeyCode& modifier) const;
-
     WhbSoftwareButton(const WhbKeyCode& key, const WhbKeyCode& modifier);
 };
 
@@ -550,7 +475,6 @@ public:
     const WhbKeyCode b;
     const WhbKeyCode c;
     const WhbKeyCode undefined;
-
     WhbAxisRotaryButtonCodes();
 } __attribute__((packed));
 
@@ -568,7 +492,6 @@ public:
     const WhbKeyCode percent_100;
     const WhbKeyCode lead;
     const WhbKeyCode undefined;
-
     WhbFeedRotaryButtonCodes();
 } __attribute__((packed));
 
@@ -595,11 +518,8 @@ public:
     const WhbKeyCode manual_pulse_generator;
     const WhbKeyCode step_continuous;
     const WhbKeyCode undefined;
-
     const WhbKeyCode& getKeyCode(uint8_t keyCode) const;
-
     WhbButtonsCode();
-
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -611,7 +531,6 @@ public:
     const WhbButtonsCode           buttons;
     const WhbAxisRotaryButtonCodes axis;
     const WhbFeedRotaryButtonCodes feed;
-
     WhbKeyCodes();
 };
 
@@ -622,17 +541,15 @@ public:
 class WhbHandwheelStepModeStepSize
 {
 public:
-    typedef enum
+    enum ButtonCodeToStepIndexenum
     {
         RotaryButton0001      = 0,
         RotaryButton0010      = 1,
         RotaryButton0100      = 2,
         RotaryButton100       = 3,
         RotaryButtonUndefined = 4
-    } ButtonCodeToStepIndex;
-
+    };
     float getStepSize(ButtonCodeToStepIndex buttonPosition) const;
-
     WhbHandwheelStepModeStepSize();
 
 private:
@@ -647,7 +564,7 @@ class WhbHandwheelContiunuousModeStepSize
 {
 public:
 
-    typedef enum
+    enum ButtonCodeToStepIndex
     {
         RotaryButton2percent   = 0,
         RotaryButton5percent   = 1,
@@ -656,10 +573,8 @@ public:
         RotaryButton60percent  = 4,
         RotaryButton100percent = 5,
         RotaryButtonUndefined  = 6
-    } ButtonCodeToStepIndex;
-
+    };
     uint8_t getStepSize(ButtonCodeToStepIndex buttonPosition) const;
-
     WhbHandwheelContiunuousModeStepSize();
 
 private:
@@ -690,7 +605,6 @@ class WhbStepHandler
 
 public:
     const WhbStepModeStepSize stepSize;
-
     WhbStepHandler();
 
 private:
@@ -709,62 +623,42 @@ class WhbButtonsState
 public:
 
     uint8_t getKeyCode() const;
-
     uint8_t getModifierCode() const;
-
     uint8_t getAxisRotaryButtonCode() const;
-
     uint8_t getFeedRotaryButtonCode() const;
-
     const WhbSoftwareButton& getSoftwareButton() const;
-
     //! stores the buttons state and updates the software button state and step speed state
     void updateButtonState(uint8_t keyCode, uint8_t modifierCode, uint8_t currentAxisRotaryButtonCode,
                            uint8_t currentFeedRotaryButtonCode);
-
     void updateButtonState(const WhbSoftwareButton& softwareButton);
-
     void setAxisCode(const WhbKeyCode& currentAxis);
-
     const WhbKeyCode& getAxisCode() const;
-
     void setFeedCode(const WhbKeyCode& currentFeed);
-
     const WhbKeyCode& getFeedCode() const;
-
     //! returns the step size value according to the current rotary step button state
     hal_float_t getStepSize();
-
     //! initialized lookup references are needed to resolve software button state and step speed state
     WhbButtonsState(const WhbButtonsCode& buttonCodesLookup,
                     const WhbAxisRotaryButtonCodes& axisRotaryButtonCodesLookup,
                     const WhbFeedRotaryButtonCodes& feedRotaryButtonCodesLookup,
                     const WhbHandwheelStepModeStepSize& stepSizeLookup,
                     const WhbHandwheelContiunuousModeStepSize& continuousStepSizeLookup);
-
     WhbButtonsState& operator=(const WhbButtonsState& other);
-
     void setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex stepSize);
-
     void setCurrentContinuousModeStepSize(WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex stepSize);
-
     void setCurrentModeStepMode();
-
     void setCurrentModeContinuousMode();
-
     bool isCurrentModeStepMode() const;
-
     bool isCurrentModeContinuousMode() const;
 
 private:
 
     enum StepMode
     {
-        Continuous, Step
+        Continuous,
+        Step
     };
-
     friend XhcWhb04b6::WhbContext;
-
     const WhbButtonsCode                     & mButtonCodesLookup;
     const WhbAxisRotaryButtonCodes           & mAxisRotaryButtonCodesLookup;
     const WhbFeedRotaryButtonCodes           & mFeedRotaryButtonCodesLookup;
@@ -780,7 +674,6 @@ private:
     uint8_t mCurrentFeedCode;
     const WhbKeyCode* mCurrentAxisKeyCode;
     const WhbKeyCode* mCurrentFeedKeyCode;
-
 };
 
 // ----------------------------------------------------------------------
@@ -799,11 +692,8 @@ public:
     uint8_t __padding4;
     uint8_t __padding5;
     uint8_t __padding6;
-
     WhbUsbOutPackageBlockFields();
-
     void init(const void* data);
-
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -823,7 +713,6 @@ union WhbUsbOutPackageBlock
 public:
     WhbUsbOutPackageBlockBuffer asBuffer;
     WhbUsbOutPackageBlockFields asBlock;
-
     WhbUsbOutPackageBlock();
 } __attribute__((packed));
 
@@ -837,11 +726,8 @@ public:
     WhbUsbOutPackageBlockFields block0;
     WhbUsbOutPackageBlockFields block1;
     WhbUsbOutPackageBlockFields block2;
-
     WhbUsbOutPackageBlocks();
-
     void init(const WhbUsbOutPackageData* data);
-
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -854,17 +740,14 @@ public:
     uint16_t integerValue;
     uint16_t fractionValue  :15;
     uint16_t coordinateSign :1;
-
     void setCoordinate(const float& coordinate);
-
     void clear();
-
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
 //! \see DisplayIndicatorBitFields::stepMode
-typedef enum
+enum DisplayIndicatorStepMode
 {
     //! displays "CONT <xx>%"
         CONTINUOUS             = 0x00,
@@ -872,8 +755,7 @@ typedef enum
         STEP                   = 0x01,
     //! displays "MPG <xx>%"
         MANUAL_PULSE_GENERATOR = 0x02
-
-} DisplayIndicatorStepMode;
+};
 
 // ----------------------------------------------------------------------
 
@@ -889,7 +771,6 @@ public:
     uint8_t isReset             : 1;
     //! if flag set axis names are "X1" "X1" ... "C1", "X" "Y" ... "C" otherwise
     uint8_t isMachineCoordinate : 1;
-
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -900,9 +781,7 @@ union DisplayIndicator
 public:
     uint8_t                   asByte;
     DisplayIndicatorBitFields asBitFields;
-
     DisplayIndicator();
-
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -913,28 +792,22 @@ class WhbUsbOutPackageData
 {
 public:
     //! constant: 0xfdfe
-    uint16_t header;
-    uint8_t  seed;
-
-    DisplayIndicator displayModeFlags;
-
+    uint16_t                       header;
+    uint8_t                        seed;
+    DisplayIndicator               displayModeFlags;
     WhbUsbOutPackageAxisCoordinate row1Coordinate;
     WhbUsbOutPackageAxisCoordinate row2Coordinate;
     WhbUsbOutPackageAxisCoordinate row3Coordinate;
-
     //! printed on feed+/- button pressed
-    uint16_t feedRate;
+    uint16_t                       feedRate;
     //! printed on spindle+/- button pressed
-    uint16_t spindleSpeed;
-
+    uint16_t                       spindleSpeed;
     WhbUsbOutPackageData();
-
     void clear();
 
 private:
     // TODO: investigate if this is still needed. it was needed when copying data chunks to blocks to avoid invalid read
     uint8_t padding;
-
 } __attribute__((packed));
 
 
@@ -947,9 +820,7 @@ union WhbUsbOutPackageBuffer
 public:
     WhbUsbOutPackageBlock  asBlockArray[sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlock)];
     WhbUsbOutPackageBlocks asBlocks;
-
     WhbUsbOutPackageBuffer();
-
 }__attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -968,13 +839,10 @@ public:
     const uint8_t rotaryButtonAxisKeyCode;
     const int8_t  stepCount;
     const uint8_t crc;
-
     WhbUsbInPackage();
-
     WhbUsbInPackage(const uint8_t notAvailable1, const uint8_t notAvailable2, const uint8_t buttonKeyCode1,
                     const uint8_t buttonKeyCode2, const uint8_t rotaryButtonFeedKeyCode,
                     const uint8_t rotaryButtonAxisKeyCode, const int8_t stepCount, const uint8_t crc);
-
 }__attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -986,9 +854,7 @@ union WhbUsbInPackageBuffer
 public:
     const WhbUsbInPackage asFields;
     uint8_t               asBuffer[sizeof(WhbUsbInPackage)];
-
     WhbUsbInPackageBuffer();
-
 }__attribute__((packed));
 
 
@@ -1002,13 +868,10 @@ class WhbUsbEmptyPackage :
 public:
 
     WhbUsbEmptyPackage();
-
     //! caution: it is not guaranteed that (this == \p other) == (\p other == this)
     bool operator==(const WhbUsbInPackage& other) const;
-
     //! \see operator==(const WhbUsbInPackage&)
     bool operator!=(const WhbUsbInPackage& other) const;
-
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -1020,13 +883,10 @@ class WhbUsbSleepPackage :
 {
 public:
     WhbUsbSleepPackage();
-
     //! caution: it is not guaranteed that (this == \p other) == (\p other == this)
     bool operator==(const WhbUsbInPackage& other) const;
-
     //! \see operator==(const WhbUsbInPackage&)
     bool operator!=(const WhbUsbInPackage& other) const;
-
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -1037,7 +897,6 @@ class WhbConstantUsbPackages
 public:
     const WhbUsbSleepPackage sleepPackage;
     const WhbUsbEmptyPackage emptyPackage;
-
     WhbConstantUsbPackages();
 };
 
@@ -1048,55 +907,30 @@ class WhbUsb
 {
 public:
     static const WhbConstantUsbPackages ConstantPackages;
-
     WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback, WhbHalMemory& halMemory);
-
     ~WhbUsb();
-
     uint16_t getUsbVendorId() const;
-
     uint16_t getUsbProductId() const;
-
     const bool isDeviceOpen() const;
-
     libusb_context** getContextReference();
-
     libusb_context* getContext();
-
     void setContext(libusb_context* context);
-
     libusb_device_handle* getDeviceHandle();
-
     void setDeviceHandle(libusb_device_handle* deviceHandle);
-
     bool isWaitForPendantBeforeHalEnabled() const;
-
     bool getDoReconnect() const;
-
     void setDoReconnect(bool doReconnect);
-
     void onUsbDataReceived(struct libusb_transfer* transfer);
-
     void setSimulationMode(bool isSimulationMode);
-
     void setIsRunning(bool enableRunning);
-
     void requestTermination();
-
     bool setupAsyncTransfer();
-
     void sendDisplayData();
-
     void enableVerboseTx(bool enable);
-
     void enableVerboseRx(bool enable);
-
     void enableVerboseInit(bool enable);
-
     bool init();
-
     void setWaitWithTimeout(uint8_t waitSecs);
-
     const WhbUsbOutPackageData& getOutputPackageData();
 
 private:
@@ -1122,7 +956,6 @@ private:
     std::ostream* verboseInitOut;
     const char  * mName;
     uint8_t mWaitSecs;
-
 };
 
 // ----------------------------------------------------------------------
@@ -1151,7 +984,6 @@ public:
     //! step to continuous. The button must be re-evaluated, otherwise the
     //! button state remains untouched until the next button's event.
     virtual bool onButtonPressedEvent(const WhbSoftwareButton& softwareButton) = 0;
-
     //! Called when button is released.
     //! \param softwareButton the button released
     //! \return true if a subsequent re-evaluation should be performed.
@@ -1159,17 +991,11 @@ public:
     //! step to continuous. The button must be re-evaluated, otherwise the
     //! button state remains untouched until the next button's event.
     virtual bool onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) = 0;
-
     virtual void onAxisActiveEvent(const WhbKeyCode& axis) = 0;
-
     virtual void onAxisInactiveEvent(const WhbKeyCode& axis) = 0;
-
     virtual void onFeedActiveEvent(const WhbKeyCode& axis) = 0;
-
     virtual void onFeedInactiveEvent(const WhbKeyCode& axis) = 0;
-
     virtual void jogDialEvent(int8_t delta) = 0;
-
     virtual ~WhbKeyEventListener();
 };
 
@@ -1177,7 +1003,6 @@ class UsbInputPackageInterpreted
 {
 public:
     virtual void onDataInterpreted() = 0;
-
     virtual ~UsbInputPackageInterpreted();
 };
 
@@ -1189,99 +1014,56 @@ class WhbContext :
 {
 public:
     WhbContext();
-
     virtual ~WhbContext();
-
     void process();
-
     void teardownUsb();
-
     void setUsbContext(libusb_context* context);
-
     libusb_device_handle* getUsbDeviceHandle();
-
     libusb_context* getUsbContext();
-
     //! \return the name as specified to \ref WhbContext
     const char* getName() const;
-
     //! \return the name as specified to \ref hal
     const char* getHalName() const;
-
     //! callback method received by \ref WhbUsb when a \ref libusb_transfer is received
     void onInputDataReceived(const WhbUsbInPackage& inPackage) override;
-
     size_t getSoftwareButtonIndex(uint8_t keyCode) const;
-
     void initWhb();
-
     void initHal();
-
     void teardownHal();
-
     void onUsbDataReceivedCallback(struct libusb_transfer* transfer);
-
     bool enableReceiveAsyncTransfer();
-
     void sendDisplayData();
-
     void linuxcncSimulate();
-
     void requestTermination(int signal = -42);
-
     bool isRunning() const;
-
     int run();
-
     bool isSimulationModeEnabled() const;
-
     void setSimulationMode(bool enableSimulationMode);
-
     void setEnableVerboseKeyEvents(bool enable);
-
     void enableVerboseRx(bool enable);
-
     void enableVerboseTx(bool enable);
-
     void enableVerboseHal(bool enable);
-
     void enableVerboseInit(bool enable);
-
     void enableCrcDebugging(bool enable);
-
     void setWaitWithTimeout(uint8_t waitSecs = 3);
-
     bool onButtonPressedEvent(const WhbSoftwareButton& softwareButton) override;
-
     bool onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) override;
-
     void onAxisActiveEvent(const WhbKeyCode& axis) override;
-
     void onAxisInactiveEvent(const WhbKeyCode& axis) override;
-
     void onDataInterpreted() override;
-
     void onFeedActiveEvent(const WhbKeyCode& axis) override;
-
     void onFeedInactiveEvent(const WhbKeyCode& axis) override;
-
     void jogDialEvent(int8_t delta) override;
-
     void updateAxisRotaryButton(const WhbUsbInPackage& inPackage);
-
     //! update all buttons' state to hal and detect button pressed/released event
     //! \param inPackage input package to interpret
     //! \param keyCode pressed button
     //! \param modifierCode Optional pressed modifier button. Wsually "Fn", but could be any button.
     //! \return \ref WhbKeyEventListener::onButtonPressedEvent
     bool updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode);
-
     void updateJogDial(const WhbUsbInPackage& inPackage);
-
     void updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool forceEvents = false);
-
     void printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOutPackageData& outPackageBuffer) const;
-
     size_t getHalPinNumber(const WhbSoftwareButton& button);
 
 private:
@@ -1305,33 +1087,23 @@ private:
     UsbInputPackageListener   & packageReceivedEventReceiver;
     UsbInputPackageInterpreted& packageIntepretedEventReceiver;
     bool mIsCrcDebuggingEnabled;
-
     //! prints human readable output of the push buttons state
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out);
-
     //! prints human readable output of the push buttons state to \ref verboseRxOut stream
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode);
-
     //! prints human readable output of the push buttons state to \p out
     void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode, std::ostream& out);
-
     //! prints human readable output of the rotary button text to \ref verboseRxOut stream
     void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode);
-
     //! prints human readable output of the rotary button text to \p out
     void printInputData(const WhbUsbInPackage& inPackage, std::ostream& out);
-
     //! prints human readable output of the input package to \ref verboseRxOut stream
     void printInputData(const WhbUsbInPackage& inPackage);
-
     //! prints human readable output of the input package to \p out
     void printHexdump(const WhbUsbInPackage& inPackage, std::ostream& out);
-
     //! prints a hexdump of the input package to \ref verboseRxOut stream
     void printHexdump(const WhbUsbInPackage& inPackage);
-
     bool dispatchButtonEventToHal(const WhbSoftwareButton& softwareButton, bool isButtonPressed);
-
 };
 
 // ----------------------------------------------------------------------
@@ -1344,7 +1116,6 @@ UsbInputPackageInterpreted::~UsbInputPackageInterpreted()
 
 WhbKeyEventListener::~WhbKeyEventListener()
 {
-
 }
 
 // ----------------------------------------------------------------------
@@ -1997,7 +1768,7 @@ const char* WhbContext::getHalName() const
 
 void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOutPackageData& outPackageBuffer) const
 {
-    ios init(NULL);
+    ios            init(NULL);
     init.copyfmt(*mRxCout);
     *mRxCout << setfill('0') << std::hex;
 
@@ -2156,7 +1927,6 @@ void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
     updateStepRotaryButton(inPackage, forceUpdate);
     updateJogDial(inPackage);
     onDataInterpreted();
-
 }
 
 // ----------------------------------------------------------------------
@@ -2183,7 +1953,6 @@ void WhbContext::requestTermination(int signal)
     }
     mUsb.requestTermination();
     mIsRunning = false;
-
 }
 
 // ----------------------------------------------------------------------
@@ -3315,10 +3084,10 @@ void WhbContext::updateAxisRotaryButton(const WhbUsbInPackage& inPackage)
 
 bool WhbContext::updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode)
 {
-    bool isUpdateRecommended = false;
-    int  buttonsCount        = sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton);
+    bool     isUpdateRecommended = false;
+    int      buttonsCount        = sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton);
 
-    for (int idx = 0; idx < buttonsCount; idx++)
+    for (int idx                 = 0; idx < buttonsCount; idx++)
     {
         const WhbSoftwareButton& softwareButton = mSoftwareButtons[idx];
         hal_bit_t halButtonState             = *(mHal.memory.out.button_pin[idx]);
@@ -3648,7 +3417,6 @@ void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
                         }
                         gettimeofday(&sleepState.mLastWakeupTimestamp, nullptr);
                     }
-
                 }
                 // pass structured transfer to usb data handler
                 mDataHandler.onInputDataReceived(inputPackageBuffer.asFields);
@@ -3798,7 +3566,7 @@ bool WhbUsb::init()
             return false;
         }
 
-        deviceHandle = libusb_open_device_with_vid_pid(context, usbVendorId, usbProductId);
+        deviceHandle         = libusb_open_device_with_vid_pid(context, usbVendorId, usbProductId);
         libusb_free_device_list(devicesReference, 1);
         *verboseInitOut << "." << std::flush;
         if (isDeviceOpen() == false)
@@ -4084,7 +3852,7 @@ void WhbHal::halInit(const WhbSoftwareButton* softwareButtons, size_t buttonsCou
         assert(0 == r);
     }
 
-    int r = 0;
+    int         r   = 0;
 
     r |= newFloatHalPin(HAL_IN, &(memory.in.xMachineCoordinate), mHalCompId, "%s.x.pos-absolute", mName);
     r |= newFloatHalPin(HAL_IN, &(memory.in.yMachineCoordinate), mHalCompId, "%s.y.pos-absolute", mName);
@@ -4480,7 +4248,6 @@ void WhbHal::setPin(bool enabled, size_t pinNumber, const char* pinName)
               << endl;
     *(memory.out.button_pin[pinNumber]) = enabled;
 }
-
 } // namespace
 
 // ----------------------------------------------------------------------
