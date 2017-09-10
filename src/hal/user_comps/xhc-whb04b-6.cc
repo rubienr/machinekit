@@ -541,7 +541,7 @@ public:
 class WhbHandwheelStepModeStepSize
 {
 public:
-    enum ButtonCodeToStepIndexenum
+    enum ButtonCodeToStepIndex
     {
         RotaryButton0001      = 0,
         RotaryButton0010      = 1,
