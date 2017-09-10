@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
+#include <libgen.h>
 #include <google/protobuf/stubs/common.h>
 #include "rtapi_math.h"
 #include "hal.h"
@@ -3463,7 +3464,8 @@ void WhbContext::onFeedActiveEvent(const WhbKeyCode& axis)
 {
     ios init(NULL);
     init.copyfmt(*mKeyEventCout);
-    *mKeyEventCout << "feed   active  " << setfill(' ') << setw(5) << axis.text << "(" << setw(4) << axis.altText << ")"
+    *mKeyEventCout << "event feed active  " << setfill(' ') << setw(5) << axis.text << "(" << setw(4) << axis.altText
+                   << ")"
                    << endl;
     mKeyEventCout->copyfmt(init);
 }
@@ -3474,7 +3476,8 @@ void WhbContext::onFeedInactiveEvent(const WhbKeyCode& axis)
 {
     ios init(NULL);
     init.copyfmt(*mKeyEventCout);
-    *mKeyEventCout << "feed inactive  " << setfill(' ') << setw(5) << axis.text << "(" << setw(4) << axis.altText << ")"
+    *mKeyEventCout << "event feed inactive  " << setfill(' ') << setw(5) << axis.text << "(" << setw(4) << axis.altText
+                   << ")"
                    << endl;
     mKeyEventCout->copyfmt(init);
 }
@@ -4486,25 +4489,77 @@ XhcWhb04b6::WhbContext Whb;
 
 // ----------------------------------------------------------------------
 
-static int printUsage(char* programName, bool isError = false)
+static int printUsage(const char* programName, const char* deviceName, bool isError = false)
 {
     std::ostream* os = &std::cout;
     if (isError)
     {
         os = &cerr;
     }
-    *os << programName << " version " << PACKAGE_VERSION << " 2017 by Raoul Rubien (github.com/rubienr)" << endl
-        << "Usage: " << programName << " [-h] | [-H] [-x] [[-u|-U] [-p] | [-a] | [-s]] " << endl
-        << " -h usage help text" << endl << " -H run " << Whb.getName() << "in HAL-mode instead of interactive mode"
+    *os << programName << " version " << PACKAGE_VERSION << " " << __DATE__ << " " << __TIME__ << endl
         << endl
-        << " -t wait for USB device before processing with HAL initialization" << endl
-        << " -u print received data" << endl << " -U print received and transmitted data" << endl
-        << " -p print HAL pins and related" << endl
-        << " -e print key events" << endl
-        << " -a enable all verbose facilities" << endl
-        //! this feature must be removed when checksum is implemented
-        << " -c enable checksum debugging (experimental)" << endl
-        << " -s be silent" << endl;
+        << "SYNOPSIS" << endl
+        << "    " << programName << " [-h] | [-H] [OPTIONS] " << endl
+        << endl
+        << "NAME" << endl
+        << "    " << programName << " - jog dial HAL module for the " << deviceName << " device" << endl
+        << endl
+        << "DESCRIPTION" << endl
+        << "    " << programName << " is a HAL module that receives events from the " << deviceName << " device "
+        << "and exposes them to HAL via HAL pins." << endl
+        << endl
+        << "OPTIONS" << endl
+        << " -h " << endl
+        << "    Prints the synonpsis and the most commonly used commands." << endl
+        << endl
+        << " -H " << endl
+        << "    run " << Whb.getName() << " in HAL-mode instead of interactive mode. When in HAL mode "
+        << "commands from device will be exposed to HAL's shred memory. Interactive mode is useful for "
+        << "testing device connectivity and debugging." << endl
+        << endl
+        << " -t " << endl
+        << "    Wait with timeout for USB device then proceed, exit otherwise. Without -t the timeout is "
+        << "ipmlicitely infinite." << endl
+        << endl
+        << " -u, -U " << endl
+        << "    Show received data from device. With -U received and transmitted data will be printed. "
+        << "Output is prefixed with \"usb\"." << endl
+        << endl
+        << " -p " << endl
+        << "    Show HAL pins and HAL related messages. Output is prefixed with \"hal\"." << endl
+        << endl
+        << " -e " << endl
+        << "    Show captured events such as button pressed/released, jog dial, axis rotary button, and "
+            "feed rotary button event. Output is prefixed with \"event\"."
+        << "and in case." << endl
+        << endl
+        << " -a " << endl
+        << "    Enable all logging facilities without explicitly specifying each." << endl
+        //! this feature must be removed when checksum check is implemented
+        << endl
+        << " -c " << endl
+        << "    Enable checksum output which is necessary for debugging the checksum generator function. Do not rely "
+            "on this featue since it will be removed once the generator is implemented." << endl
+        << endl
+        << " -s " << endl
+        << "    Force being silent and not printing any output except of errors. This will also inhibit messages "
+            "prefixed with \"init\"." << endl
+        << endl
+        << "EXAMPLES" << endl
+        << programName << " -ue" << endl
+        << "    Prints incoming USB data transfer and generated key pressed/released events." << endl
+        << endl
+        << programName << " -p" << endl
+        << "    Prints hal pin names and events distributed to HAL memory." << endl
+        << endl
+        << programName << " -Ha" << endl
+        << "    Start in HAL mode and avoid output, except of errors." << endl
+        << endl
+        << "AUTHORS" << endl
+        << "    This module was started by Raoul Rubien (github.com/rubienr) based on predecessor "
+            "device's module xhc-hb04.cc. https://github.com/machinekit/machinekit/graphs/contributors "
+            "gives you a more complete list of contributors."
+        << endl;
 
     if (isError)
     {
@@ -4580,10 +4635,10 @@ int main(int argc, char** argv)
             case 's':
                 break;
             case 'h':
-                return printUsage(argv[0]);
+                return printUsage(basename(argv[0]), Whb.getName());
                 break;
             default:
-                return printUsage(argv[0], true);
+                return printUsage(basename(argv[0]), Whb.getName(), true);
                 break;
         }
     }
