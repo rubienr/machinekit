@@ -57,67 +57,36 @@ static void quit(int signal);
 namespace XhcWhb04b6 {
 
 class WhbHalMemory;
-
 class WhbHal;
-
 class WhbSleepDetect;
-
 class WhbKeyCode;
-
 class WhbSoftwareButton;
-
 class WhbAxisRotaryButtonCodes;
-
 class WhbFeedRotaryButtonCodes;
-
 class WhbButtonsCode;
-
 class WhbKeyCodes;
-
 class WhbVelocityComputation;
-
 class WhbHandwheelStepModeStepSize;
-
 class WhbHandwheelContiunuousModeStepSize;
-
 class WhbStepModeStepSize;
-
 class WhbStepHandler;
-
 class WhbButtonsState;
-
 class WhbUsbOutPackageBlockFields;
-
 union WhbUsbOutPackageBlock;
-
 class WhbUsbOutPackageBlocks;
-
 class WhbUsbOutPackageAxisCoordinate;
-
 class DisplayIndicatorBitFields;
-
 union DisplayIndicator;
-
 class WhbUsbOutPackageData;
-
 union WhbUsbOutPackageBuffer;
-
 class WhbUsbInPackage;
-
 union WhbUsbInPackageBuffer;
-
 class WhbUsbEmptyPackage;
-
 class WhbUsbSleepPackage;
-
 class WhbConstantUsbPackages;
-
 class WhbUsb;
-
 class ConstantPackages;
-
 class UsbInputPackageListener;
-
 class WhbContext;
 
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate& coordinate);
@@ -134,24 +103,48 @@ public:
     class In
     {
     public:
+        //! to be connected to \ref halui.axis.N.pos-relative
         hal_float_t* xWorkpieceCoordinate;
+        //! to be connected to \ref halui.axis.N.pos-relative
         hal_float_t* yWorkpieceCoordinate;
+        //! to be connected to \ref halui.axis.N.pos-relative
         hal_float_t* zWorkpieceCoordinate;
+        //! to be connected to \ref halui.axis.N.pos-relative
         hal_float_t* aWorkpieceCoordinate;
+        //! to be connected to \ref halui.axis.N.pos-relative
         hal_float_t* bWorkpieceCoordinate;
+        //! to be connected to \ref halui.axis.N.pos-relative
         hal_float_t* cWorkpieceCoordinate;
+        //! to be connected to \ref halui.axis.N.pos-commanded
         hal_float_t* xMachineCoordinate;
+        //! to be connected to \ref halui.axis.N.pos-commanded
         hal_float_t* yMachineCoordinate;
+        //! to be connected to \ref halui.axis.N.pos-commanded
         hal_float_t* zMachineCoordinate;
+        //! to be connected to \ref halui.axis.N.pos-commanded
         hal_float_t* aMachineCoordinate;
+        //! to be connected to \ref halui.axis.N.pos-commanded
         hal_float_t* bMachineCoordinate;
+        //! to be connected to \ref halui.axis.C.pos-commanded
         hal_float_t* cMachineCoordinate;
+        //! to be connected to \ref halui.feed-override.value
         hal_float_t* feedrateOverride;
+        // TODO: where should it be connected to
         hal_float_t* feedrate;
+        //! to be connected to \ref halui.spindle-override.value
         hal_float_t* spindleOverride;
+        // TODO: where should it be connected to
         hal_float_t* spindleRps;
+        //! to be connected to \ref halui.max-velocity.value
         hal_float_t* jogMaxVelocity;
+        // TODO: where should it be connected to
         hal_bit_t  * stepsizeUp;
+        //! to be connected to \ref halui.program.is-running
+        hal_bit_t  * isProgramRunning;
+        //! to be connected to \ref halui.program.is-paused
+        hal_bit_t  * isProgramPaused;
+        //! to be connected to \ref halui.program.is-idle
+        hal_bit_t  * isProgramIdle;
 
         In() :
             xWorkpieceCoordinate(nullptr),
@@ -171,7 +164,10 @@ public:
             spindleOverride(nullptr),
             spindleRps(nullptr),
             jogMaxVelocity(nullptr),
-            stepsizeUp(nullptr)
+            stepsizeUp(nullptr),
+            isProgramRunning(nullptr),
+            isProgramPaused(nullptr),
+            isProgramIdle(nullptr)
         {
         }
     };
@@ -190,7 +186,85 @@ public:
         hal_float_t* jogScale;
         hal_s32_t  * jogCount;
         hal_s32_t  * jogCountNeg;
+
         hal_float_t* jogVelocity;
+
+        //! to be connected to \ref halui.jog.N.increment
+        hal_float_t* jogXIncrementValue;
+        //! to be connected to \ref halui.jog.N.increment-plus
+        hal_bit_t  * jogXIncrementPlus;
+        //! to be connected to \ref halui.jog.N.increment-minus
+        hal_bit_t  * jogXIncrementMinus;
+
+        //! to be connected to \ref halui.jog.N.increment
+        hal_float_t* jogYIncrementValue;
+        //! to be connected to \ref halui.jog.N.increment-plus
+        hal_bit_t  * jogYIncrementPlus;
+        //! to be connected to \ref halui.jog.N.increment-minus
+        hal_bit_t  * jogYIncrementMinus;
+
+        //! to be connected to \ref halui.jog.N.increment
+        hal_float_t* jogZIncrementValue;
+        //! to be connected to \ref halui.jog.N.increment-plus
+        hal_bit_t  * jogZIncrementPlus;
+        //! to be connected to \ref halui.jog.N.increment-minus
+        hal_bit_t  * jogZIncrementMinus;
+
+        //! to be connected to \ref halui.jog.N.increment
+        hal_float_t* jogAIncrementValue;
+        //! to be connected to \ref halui.jog.N.increment-plus
+        hal_bit_t  * jogAIncrementPlus;
+        //! to be connected to \ref halui.jog.N.increment-minus
+        hal_bit_t  * jogAIncrementMinus;
+
+        //! to be connected to \ref halui.jog.N.increment
+        hal_float_t* jogBIncrementValue;
+        //! to be connected to \ref halui.jog.N.increment-plus
+        hal_bit_t  * jogBIncrementPlus;
+        //! to be connected to \ref halui.jog.N.increment-minus
+        hal_bit_t  * jogBIncrementMinus;
+
+        //! to be connected to \ref halui.jog.N.increment
+        hal_float_t* jogCIncrementValue;
+        //! to be connected to \ref halui.jog.N.increment-plus
+        hal_bit_t  * jogCIncrementPlus;
+        //! to be connected to \ref halui.jog.N.increment-minus
+        hal_bit_t  * jogCIncrementMinus;
+
+        //! to be connected to \ref halui.jog-speed
+        hal_float_t* jogSpeedValue;
+
+        //! to be connected to \ref halui.jog.N.plus
+        hal_bit_t* jogXSpeedPlus;
+        //! to be connected to \ref halui.jog.N.minus
+        hal_bit_t* jogXSpeedMinus;
+
+        //! to be connected to \ref halui.jog.N.plus
+        hal_bit_t* jogYSpeedPlus;
+        //! to be connected to \ref halui.jog.N.minus
+        hal_bit_t* jogYSpeedMinus;
+
+        //! to be connected to \ref halui.jog.N.plus
+        hal_bit_t* jogZSpeedPlus;
+        //! to be connected to \ref halui.jog.N.minus
+        hal_bit_t* jogZSpeedMinus;
+
+        //! to be connected to \ref halui.jog.N.plus
+        hal_bit_t* jogASpeedPlus;
+        //! to be connected to \ref halui.jog.N.minus
+        hal_bit_t* jogASpeedMinus;
+
+        //! to be connected to \ref halui.jog.N.plus
+        hal_bit_t* jogBSpeedPlus;
+        //! to be connected to \ref halui.jog.N.minus
+        hal_bit_t* jogBSpeedMinus;
+
+        //! to be connected to \ref halui.jog.N.plus
+        hal_bit_t* jogCSpeedPlus;
+        //! to be connected to \ref halui.jog.N.minus
+        hal_bit_t* jogCSpeedMinus;
+
+        // TODO: begin: to be removed
         hal_float_t* jogIncrement;
         hal_bit_t  * jogPlusX;
         hal_bit_t  * jogPlusY;
@@ -204,10 +278,28 @@ public:
         hal_bit_t  * jogMinusA;
         hal_bit_t  * jogMinusB;
         hal_bit_t  * jogMinusC;
+        // TODO: end: to be removed
+
+        // TODO: where should it be connected to
         hal_s32_t  * stepsize;
-        hal_bit_t  * sleeping;
+        //! reflects the pendandt's idle state
+        hal_bit_t  * isPendantSleeping;
+        //! reflects pendant's connectivity
         hal_bit_t  * isPendantConnected;
+        // TODO: remove since this is not needed to be exposed
         hal_bit_t  * isPendantRequired;
+
+        //! to be connected to \ref halui.program.run
+        hal_bit_t* doRunProgram;
+        //! to be connected to \ref halui.program.pause
+        hal_bit_t* doPauseProgram;
+        //! to be connected to \ref halui.program.resume
+        hal_bit_t* doResumeProgram;
+        //! to be connected to \ref halui.program.stop
+        hal_bit_t* doStopProgram;
+
+        //! to be connected to \ref halui.estop.activate
+        hal_bit_t *doEmergencyStop;
 
         Out() :
             button_pin{0},
@@ -222,6 +314,37 @@ public:
             jogCount(nullptr),
             jogCountNeg(nullptr),
             jogVelocity(nullptr),
+            jogXIncrementValue(nullptr),
+            jogXIncrementPlus(nullptr),
+            jogXIncrementMinus(nullptr),
+            jogYIncrementValue(nullptr),
+            jogYIncrementPlus(nullptr),
+            jogYIncrementMinus(nullptr),
+            jogZIncrementValue(nullptr),
+            jogZIncrementPlus(nullptr),
+            jogZIncrementMinus(nullptr),
+            jogAIncrementValue(nullptr),
+            jogAIncrementPlus(nullptr),
+            jogAIncrementMinus(nullptr),
+            jogBIncrementValue(nullptr),
+            jogBIncrementPlus(nullptr),
+            jogBIncrementMinus(nullptr),
+            jogCIncrementValue(nullptr),
+            jogCIncrementPlus(nullptr),
+            jogCIncrementMinus(nullptr),
+            jogSpeedValue(nullptr),
+            jogXSpeedPlus(nullptr),
+            jogXSpeedMinus(nullptr),
+            jogYSpeedPlus(nullptr),
+            jogYSpeedMinus(nullptr),
+            jogZSpeedPlus(nullptr),
+            jogZSpeedMinus(nullptr),
+            jogASpeedPlus(nullptr),
+            jogASpeedMinus(nullptr),
+            jogBSpeedPlus(nullptr),
+            jogBSpeedMinus(nullptr),
+            jogCSpeedPlus(nullptr),
+            jogCSpeedMinus(nullptr),
             jogIncrement(nullptr),
             jogPlusX(nullptr),
             jogPlusY(nullptr),
@@ -236,9 +359,13 @@ public:
             jogMinusB(nullptr),
             jogMinusC(nullptr),
             stepsize(nullptr),
-            sleeping(nullptr),
+            isPendantSleeping(nullptr),
             isPendantConnected(nullptr),
-            isPendantRequired(nullptr)
+            isPendantRequired(nullptr),
+            doRunProgram(nullptr),
+            doPauseProgram(nullptr),
+            doResumeProgram(nullptr),
+            doStopProgram(nullptr)
         {
         }
     };
@@ -271,11 +398,12 @@ class WhbHal
 public:
     WhbHalMemory           memory;
     WhbVelocityComputation velocityComputation;
+
     WhbHal();
     ~WhbHal();
     //! initializes hal pins according to simulation mode, must not be called twice
     //! \ref setIsSimulationMode() must be set before accordingly
-    void halInit(const WhbSoftwareButton* softwareButtons, size_t buttonsCount, const WhbKeyCodes& codes);
+    void init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& codes);
     bool isSimulationModeEnabled() const;
     //! indicates the program has been invoked in hal mode or normal
     void setSimulationMode(bool isSimulationMode);
@@ -314,7 +442,9 @@ public:
     void setReset(bool enabled, size_t pinNumber);
     //! \sa setReset(bool, size_t)
     void setStop(bool enabled, size_t pinNumber);
-    //! \sa setReset(bool, size_t)
+    //! Toggles the start/pause/resume states.
+    //! \param enabled true if start/resume is requested, false otherwise
+    //! \param pinNumber \sa setReset(bool, size_t)
     void setStart(bool enabled, size_t pinNumber);
     //! \sa setReset(bool, size_t)
     void setFeedPlus(bool enabled, size_t pinNumber);
@@ -375,6 +505,7 @@ public:
     void setMacro15(bool enabled, size_t pinNumber);
     //! \sa setMacro1(bool, size_t)
     void setMacro16(bool enabled, size_t pinNumber);
+    void newJogDialDelta(uint8_t delta);
     void computeVelocity();
 
 private:
@@ -383,6 +514,7 @@ private:
     int          mHalCompId;
     std::ostream mDevNull;
     std::ostream* mHalCout;
+
     //! //! Allocates new hal_bit_t pin according to \ref mIsSimulationMode. If \ref mIsSimulationMode then
     //! mallocs memory, hal_pin_bit_new allocation otherwise.
     //! \param pin_name the pin name when registered to hal
@@ -610,7 +742,6 @@ public:
 private:
     unsigned char old_inc_step_status;
 };
-
 
 // ----------------------------------------------------------------------
 
@@ -995,7 +1126,7 @@ public:
     virtual void onAxisInactiveEvent(const WhbKeyCode& axis) = 0;
     virtual void onFeedActiveEvent(const WhbKeyCode& axis) = 0;
     virtual void onFeedInactiveEvent(const WhbKeyCode& axis) = 0;
-    virtual void jogDialEvent(int8_t delta) = 0;
+    virtual void onJogDialEvent(int8_t delta) = 0;
     virtual ~WhbKeyEventListener();
 };
 
@@ -1053,7 +1184,7 @@ public:
     void onDataInterpreted() override;
     void onFeedActiveEvent(const WhbKeyCode& axis) override;
     void onFeedInactiveEvent(const WhbKeyCode& axis) override;
-    void jogDialEvent(int8_t delta) override;
+    void onJogDialEvent(int8_t delta) override;
     void updateAxisRotaryButton(const WhbUsbInPackage& inPackage);
     //! update all buttons' state to hal and detect button pressed/released event
     //! \param inPackage input package to interpret
@@ -1210,22 +1341,22 @@ WhbFeedRotaryButtonCodes::WhbFeedRotaryButtonCodes() :
 // ----------------------------------------------------------------------
 
 WhbButtonsCode::WhbButtonsCode() :
-    reset(0x01, "RESET", "Macro-11"),
-    stop(0x02, "STOP", "Macro-12"),
-    start(0x03, "Start", "Macro-13"),
-    feed_plus(0x04, "Feed+", "Macro-1"),
-    feed_minus(0x05, "Feed-", "Macro-2"),
-    spindle_plus(0x06, "Spindle+", "Macro-3"),
-    spindle_minus(0x07, "Spindle-", "Macro-4"),
-    machine_home(0x08, "M-HOME", "Macro-5"),
-    safe_z(0x09, "Safe-Z", "Macro-6"),
-    workpiece_home(0x0a, "W-HOME", "Macro-7"),
-    spindle_on_off(0x0b, "S-ON/OFF", "Macro-8"),
-    function(0x0c, "Fn", "Fnx"),
-    probe_z(0x0d, "Probe-Z", "Macro-9"),
-    macro10(0x10, "Macro-10", "Macro-14"),
-    manual_pulse_generator(0x0e, "MPG", "Macro-15"),
-    step_continuous(0x0f, "STEP", "Continuous"),
+    reset(0x01, "reset", "macro-11"),
+    stop(0x02, "stop", "macro-12"),
+    start(0x03, "start-pause", "macro-13"),
+    feed_plus(0x04, "feed-plus", "macro-1"),
+    feed_minus(0x05, "feed-minus", "macro-2"),
+    spindle_plus(0x06, "spindle-plus", "macro-3"),
+    spindle_minus(0x07, "spindle-minus", "macro-4"),
+    machine_home(0x08, "m-home", "macro-5"),
+    safe_z(0x09, "safe-z", "macro-6"),
+    workpiece_home(0x0a, "w-home", "macro-7"),
+    spindle_on_off(0x0b, "s-on-off", "macro-8"),
+    function(0x0c, "fn", "<unused>"),
+    probe_z(0x0d, "probe-z", "macro-9"),
+    macro10(0x10, "macro-10", "macro-14"),
+    manual_pulse_generator(0x0e, "mode-continuous", "macro-15"),
+    step_continuous(0x0f, "mode-step", "macro-16"),
     undefined(0x00, "", "")
 {
 }
@@ -1472,20 +1603,28 @@ void WhbButtonsState::setFeedCode(const WhbKeyCode& currentFeed)
     mCurrentFeedKeyCode = &currentFeed;
 }
 
+// ----------------------------------------------------------------------
+
 const WhbKeyCode& WhbButtonsState::getAxisCode() const
 {
     return *mCurrentAxisKeyCode;
 }
+
+// ----------------------------------------------------------------------
 
 const WhbKeyCode& WhbButtonsState::getFeedCode() const
 {
     return *mCurrentFeedKeyCode;
 }
 
+// ----------------------------------------------------------------------
+
 void WhbButtonsState::setCurrentModeStepMode()
 {
     mCurrentStepMode = StepMode::Step;
 }
+
+// ----------------------------------------------------------------------
 
 void WhbButtonsState::setCurrentModeContinuousMode()
 {
@@ -1607,7 +1746,6 @@ libusb_context** WhbUsb::getContextReference()
 
 // ----------------------------------------------------------------------
 
-
 libusb_context* WhbUsb::getContext()
 {
     return context;
@@ -1634,7 +1772,6 @@ void WhbUsb::setDeviceHandle(libusb_device_handle* deviceHandle)
 {
     this->deviceHandle = deviceHandle;
 }
-
 
 // ----------------------------------------------------------------------
 
@@ -1740,7 +1877,7 @@ void WhbUsb::sendDisplayData()
 
 void WhbContext::initHal()
 {
-    mHal.halInit(mSoftwareButtons, sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton), mKeyCodes);
+    mHal.init(mSoftwareButtons, mKeyCodes);
 }
 
 // ----------------------------------------------------------------------
@@ -1768,7 +1905,7 @@ const char* WhbContext::getHalName() const
 
 void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOutPackageData& outPackageBuffer) const
 {
-    ios            init(NULL);
+    ios init(NULL);
     init.copyfmt(*mRxCout);
     *mRxCout << setfill('0') << std::hex;
 
@@ -1990,7 +2127,7 @@ WhbContext::WhbContext() :
                      WhbSoftwareButton(mKeyCodes.buttons.workpiece_home, mKeyCodes.buttons.function),
                      WhbSoftwareButton(mKeyCodes.buttons.spindle_on_off, mKeyCodes.buttons.undefined),
                      WhbSoftwareButton(mKeyCodes.buttons.spindle_on_off, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.undefined, mKeyCodes.buttons.function),
+                     WhbSoftwareButton(mKeyCodes.buttons.function, mKeyCodes.buttons.undefined),
                      WhbSoftwareButton(mKeyCodes.buttons.probe_z, mKeyCodes.buttons.undefined),
                      WhbSoftwareButton(mKeyCodes.buttons.probe_z, mKeyCodes.buttons.function),
                      WhbSoftwareButton(mKeyCodes.buttons.macro10, mKeyCodes.buttons.undefined),
@@ -1999,6 +2136,7 @@ WhbContext::WhbContext() :
                      WhbSoftwareButton(mKeyCodes.buttons.manual_pulse_generator, mKeyCodes.buttons.function),
                      WhbSoftwareButton(mKeyCodes.buttons.step_continuous, mKeyCodes.buttons.undefined),
                      WhbSoftwareButton(mKeyCodes.buttons.step_continuous, mKeyCodes.buttons.function),
+        //! it is expected to terminate this array with the "undefined" software button
                      WhbSoftwareButton(mKeyCodes.buttons.undefined, mKeyCodes.buttons.undefined)
     },
     mHal(),
@@ -2040,30 +2178,19 @@ void WhbContext::sendDisplayData()
     mUsb.sendDisplayData();
 }
 
-
-
 // ----------------------------------------------------------------------
 
 void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out)
 {
     ios init(NULL);
     init.copyfmt(out);
-    int indent = 10;
+    int indent = 15;
     out << setfill(' ');
 
     // no key code
     if (keyCode == mKeyCodes.buttons.undefined.code)
     {
-        // modifier specified
-        if (modifierCode == mKeyCodes.buttons.function.code)
-        {
-            out << setw(indent) << mKeyCodes.buttons.function.text;
-        }
-            // no modifier specified
-        else
-        {
-            out << setw(indent) << mKeyCodes.buttons.undefined.text;
-        }
+        out << setw(indent) << "";
         return;
     }
 
@@ -2331,7 +2458,6 @@ WhbUsbInPackage::WhbUsbInPackage(const uint8_t notAvailable1, const uint8_t notA
 
 // ----------------------------------------------------------------------
 
-
 void WhbContext::printInputData(const WhbUsbInPackage& inPackage, std::ostream& out)
 {
     ios init(NULL);
@@ -2352,6 +2478,7 @@ void WhbContext::printInputData(const WhbUsbInPackage& inPackage, std::ostream& 
 
     out.copyfmt(init);
 }
+
 
 // ----------------------------------------------------------------------
 
@@ -2378,7 +2505,7 @@ int WhbContext::run()
 
     if (mHal.isSimulationModeEnabled())
     {
-        *mInitCout << "starting in simulation mode" << endl;
+        *mInitCout << "init  starting in simulation mode" << endl;
     }
 
     bool isHalReady = false;
@@ -2738,10 +2865,14 @@ void WhbContext::printHexdump(const WhbUsbInPackage& inPackage)
     printHexdump(inPackage, *mRxCout);
 }
 
+// ----------------------------------------------------------------------
+
 void WhbContext::setWaitWithTimeout(uint8_t waitSecs)
 {
     mUsb.setWaitWithTimeout(waitSecs);
 }
+
+// ----------------------------------------------------------------------
 
 bool WhbContext::isSimulationModeEnabled() const
 {
@@ -2762,6 +2893,8 @@ size_t WhbContext::getSoftwareButtonIndex(uint8_t keyCode) const
     assert (false);
     return 0;
 }
+
+// ----------------------------------------------------------------------
 
 bool WhbContext::dispatchButtonEventToHal(const WhbSoftwareButton& softwareButton, bool isButtonPressed)
 {
@@ -2950,7 +3083,7 @@ bool WhbContext::dispatchButtonEventToHal(const WhbSoftwareButton& softwareButto
 bool WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
 {
     bool isUpdateRecommended = false;
-    *mKeyEventCout << "event pressed  ";
+    *mKeyEventCout << "event pressed ";
     printPushButtonText(softwareButton.key.code, softwareButton.modifier.code, *mKeyEventCout);
     *mKeyEventCout << endl;
 
@@ -3084,10 +3217,10 @@ void WhbContext::updateAxisRotaryButton(const WhbUsbInPackage& inPackage)
 
 bool WhbContext::updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode)
 {
-    bool     isUpdateRecommended = false;
-    int      buttonsCount        = sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton);
+    bool isUpdateRecommended = false;
 
-    for (int idx                 = 0; idx < buttonsCount; idx++)
+    for (int idx = 0; !((mKeyCodes.buttons.undefined.code == mSoftwareButtons[idx].key.code) &&
+                        (mKeyCodes.buttons.undefined.code == mSoftwareButtons[idx].modifier.code)); idx++)
     {
         const WhbSoftwareButton& softwareButton = mSoftwareButtons[idx];
         hal_bit_t halButtonState             = *(mHal.memory.out.button_pin[idx]);
@@ -3268,12 +3401,13 @@ void WhbContext::setEnableVerboseKeyEvents(bool enable)
 
 // ----------------------------------------------------------------------
 
-void WhbContext::jogDialEvent(int8_t delta)
+void WhbContext::onJogDialEvent(int8_t delta)
 {
     ios init(NULL);
     init.copyfmt(*mKeyEventCout);
     *mKeyEventCout << "event jog dial " << setfill(' ') << setw(3) << static_cast<short>(delta) << endl;
     mKeyEventCout->copyfmt(init);
+    mHal.newJogDialDelta(delta);
 }
 
 // ----------------------------------------------------------------------
@@ -3282,7 +3416,7 @@ void WhbContext::updateJogDial(const WhbUsbInPackage& inPackage)
 {
     if (inPackage.stepCount != 0)
     {
-        jogDialEvent(inPackage.stepCount);
+        onJogDialEvent(inPackage.stepCount);
     }
 }
 
@@ -3297,25 +3431,17 @@ void WhbContext::enableCrcDebugging(bool enable)
 
 size_t WhbContext::getHalPinNumber(const WhbSoftwareButton& button)
 {
-    size_t idx = 0;
-    for (; idx < (sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton)); idx++)
+    for (size_t idx = 0; !((mKeyCodes.buttons.undefined.code == mSoftwareButtons[idx].key.code) &&
+                           (mKeyCodes.buttons.undefined.code == mSoftwareButtons[idx].modifier.code)); idx++)
     {
-        uint8_t keyCode      = mSoftwareButtons[idx].key.code;
-        uint8_t modifierCode = mSoftwareButtons[idx].modifier.code;
-
-        if ((keyCode == button.key.code) && (modifierCode == button.modifier.code))
+        if ((mSoftwareButtons[idx].key.code == button.key.code) &&
+            (mSoftwareButtons[idx].modifier.code == button.modifier.code))
         {
-            break;
-        }
-
-        if ((keyCode == mKeyCodes.buttons.undefined.code) && (modifierCode == mKeyCodes.buttons.undefined.code))
-        {
-            assert(false);
-            break;
+            return idx;
         }
     }
-
-    return idx;
+    assert(false);
+    return 0;
 }
 
 // ----------------------------------------------------------------------
@@ -3392,7 +3518,7 @@ void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
                 if (WhbUsb::ConstantPackages.emptyPackage == inputPackageBuffer.asFields)
                 {
                     sleepState.mDropNextInPackage = true;
-                    *(mHalMemory.out.sleeping) = 1;
+                    *(mHalMemory.out.isPendantSleeping) = 1;
                     if (mIsSimulationMode)
                     {
                         struct timeval now;
@@ -3404,9 +3530,9 @@ void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
                     // on regular package
                 else
                 {
-                    if (*(mHalMemory.out.sleeping) == 1)
+                    if (*(mHalMemory.out.isPendantSleeping) == 1)
                     {
-                        *(mHalMemory.out.sleeping) = 0;
+                        *(mHalMemory.out.isPendantSleeping) = 0;
                         if (mIsSimulationMode)
                         {
                             struct timeval now;
@@ -3566,7 +3692,7 @@ bool WhbUsb::init()
             return false;
         }
 
-        deviceHandle         = libusb_open_device_with_vid_pid(context, usbVendorId, usbProductId);
+        deviceHandle = libusb_open_device_with_vid_pid(context, usbVendorId, usbProductId);
         libusb_free_device_list(devicesReference, 1);
         *verboseInitOut << "." << std::flush;
         if (isDeviceOpen() == false)
@@ -3658,7 +3784,6 @@ WhbHal::WhbHal() :
 
 // ----------------------------------------------------------------------
 
-
 WhbHal::~WhbHal()
 {
     if (mIsSimulationMode == false)
@@ -3700,6 +3825,37 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory.out.jogVelocity));
     freeSimulatedPin((void**)(&memory.in.jogMaxVelocity));
     freeSimulatedPin((void**)(&memory.out.jogIncrement));
+    freeSimulatedPin((void**)(&memory.out.jogXIncrementValue));
+    freeSimulatedPin((void**)(&memory.out.jogXIncrementPlus));
+    freeSimulatedPin((void**)(&memory.out.jogXIncrementMinus));
+    freeSimulatedPin((void**)(&memory.out.jogYIncrementValue));
+    freeSimulatedPin((void**)(&memory.out.jogYIncrementPlus));
+    freeSimulatedPin((void**)(&memory.out.jogYIncrementMinus));
+    freeSimulatedPin((void**)(&memory.out.jogZIncrementValue));
+    freeSimulatedPin((void**)(&memory.out.jogZIncrementPlus));
+    freeSimulatedPin((void**)(&memory.out.jogZIncrementMinus));
+    freeSimulatedPin((void**)(&memory.out.jogAIncrementValue));
+    freeSimulatedPin((void**)(&memory.out.jogAIncrementPlus));
+    freeSimulatedPin((void**)(&memory.out.jogAIncrementMinus));
+    freeSimulatedPin((void**)(&memory.out.jogBIncrementValue));
+    freeSimulatedPin((void**)(&memory.out.jogBIncrementPlus));
+    freeSimulatedPin((void**)(&memory.out.jogBIncrementMinus));
+    freeSimulatedPin((void**)(&memory.out.jogCIncrementValue));
+    freeSimulatedPin((void**)(&memory.out.jogCIncrementPlus));
+    freeSimulatedPin((void**)(&memory.out.jogCIncrementMinus));
+    freeSimulatedPin((void**)(&memory.out.jogSpeedValue));
+    freeSimulatedPin((void**)(&memory.out.jogXSpeedPlus));
+    freeSimulatedPin((void**)(&memory.out.jogXSpeedMinus));
+    freeSimulatedPin((void**)(&memory.out.jogYSpeedPlus));
+    freeSimulatedPin((void**)(&memory.out.jogYSpeedMinus));
+    freeSimulatedPin((void**)(&memory.out.jogZSpeedPlus));
+    freeSimulatedPin((void**)(&memory.out.jogZSpeedMinus));
+    freeSimulatedPin((void**)(&memory.out.jogASpeedPlus));
+    freeSimulatedPin((void**)(&memory.out.jogASpeedMinus));
+    freeSimulatedPin((void**)(&memory.out.jogBSpeedPlus));
+    freeSimulatedPin((void**)(&memory.out.jogBSpeedMinus));
+    freeSimulatedPin((void**)(&memory.out.jogCSpeedPlus));
+    freeSimulatedPin((void**)(&memory.out.jogCSpeedMinus));
     freeSimulatedPin((void**)(&memory.out.jogPlusX));
     freeSimulatedPin((void**)(&memory.out.jogPlusY));
     freeSimulatedPin((void**)(&memory.out.jogPlusZ));
@@ -3714,7 +3870,7 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory.out.jogMinusC));
     freeSimulatedPin((void**)(&memory.in.stepsizeUp));
     freeSimulatedPin((void**)(&memory.out.stepsize));
-    freeSimulatedPin((void**)(&memory.out.sleeping));
+    freeSimulatedPin((void**)(&memory.out.isPendantSleeping));
     freeSimulatedPin((void**)(&memory.out.isPendantConnected));
     freeSimulatedPin((void**)(&memory.out.isPendantRequired));
 }
@@ -3823,7 +3979,7 @@ const char* WhbHal::getHalComponentName() const
 
 // ----------------------------------------------------------------------
 
-void WhbHal::halInit(const WhbSoftwareButton* softwareButtons, size_t buttonsCount, const WhbKeyCodes& mKeyCodes)
+void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& mKeyCodes)
 {
     if (!mIsSimulationMode)
     {
@@ -3835,9 +3991,9 @@ void WhbHal::halInit(const WhbSoftwareButton* softwareButtons, size_t buttonsCou
         }
     }
 
-    // TODO: refactorme: end of array is if button and modifer == undefined, remove buttonsCount parameter
     // register all known xhc-whb04b-6 buttons
-    for (size_t idx = 0; idx < buttonsCount; idx++)
+    for (size_t idx = 0; !((softwareButtons[idx].key.code == mKeyCodes.buttons.undefined.code) &&
+                           (softwareButtons[idx].modifier.code == mKeyCodes.buttons.undefined.code)); idx++)
     {
         const char* buttonName = nullptr;
         if (&softwareButtons[idx].modifier == &mKeyCodes.buttons.undefined)
@@ -3848,69 +4004,121 @@ void WhbHal::halInit(const WhbSoftwareButton* softwareButtons, size_t buttonsCou
         {
             buttonName = softwareButtons[idx].key.altText;
         }
-        int r = newBitHalPin(HAL_OUT, &(memory.out.button_pin[idx]), mHalCompId, "%s.%s", mName, buttonName);
+        int r = newBitHalPin(HAL_OUT, &(memory.out.button_pin[idx]), mHalCompId, "%s.out.button.%s", mName, buttonName);
         assert(0 == r);
     }
 
-    int         r   = 0;
+    int r = 0;
 
-    r |= newFloatHalPin(HAL_IN, &(memory.in.xMachineCoordinate), mHalCompId, "%s.x.pos-absolute", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.yMachineCoordinate), mHalCompId, "%s.y.pos-absolute", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.zMachineCoordinate), mHalCompId, "%s.z.pos-absolute", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.aMachineCoordinate), mHalCompId, "%s.a.pos-absolute", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.bMachineCoordinate), mHalCompId, "%s.b.pos-absolute", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.cMachineCoordinate), mHalCompId, "%s.c.pos-absolute", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.isPendantSleeping), mHalCompId, "%s.out.pendant.is-sleeping", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.isPendantConnected), mHalCompId, "%s.out.pendant.is-connected", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.isPendantRequired), mHalCompId, "%s.out.pendant.is-required", mName);
 
-    r |= newFloatHalPin(HAL_IN, &(memory.in.yWorkpieceCoordinate), mHalCompId, "%s.y.pos-relative", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.xWorkpieceCoordinate), mHalCompId, "%s.x.pos-relative", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.zWorkpieceCoordinate), mHalCompId, "%s.z.pos-relative", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.aWorkpieceCoordinate), mHalCompId, "%s.a.pos-relative", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.bWorkpieceCoordinate), mHalCompId, "%s.b.pos-relative", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.cWorkpieceCoordinate), mHalCompId, "%s.c.pos-relative", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.xMachineCoordinate), mHalCompId, "%s.in.halui.axis.x.pos-commanded", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.yMachineCoordinate), mHalCompId, "%s.in.halui.axis.y.pos-commanded", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.zMachineCoordinate), mHalCompId, "%s.in.halui.axis.z.pos-commanded", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.aMachineCoordinate), mHalCompId, "%s.in.halui.axis.a.pos-commanded", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.bMachineCoordinate), mHalCompId, "%s.in.halui.axis.b.pos-commanded", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.cMachineCoordinate), mHalCompId, "%s.in.halui.axis.c.pos-commanded", mName);
 
-    r |= newFloatHalPin(HAL_IN, &(memory.in.feedrate), mHalCompId, "%s.feed-value", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.feedrateOverride), mHalCompId, "%s.feed-override", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.spindleRps), mHalCompId, "%s.spindle-rps", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.spindleOverride), mHalCompId, "%s.spindle-override", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.yWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.y.pos-relative", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.xWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.x.pos-relative", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.zWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.z.pos-relative", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.aWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.a.pos-relative", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.bWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.b.pos-relative", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.cWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.c.pos-relative", mName);
 
-    r |= newBitHalPin(HAL_OUT, &(memory.out.sleeping), mHalCompId, "%s.sleeping", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.isPendantConnected), mHalCompId, "%s.connected", mName);
-    r |= newBitHalPin(HAL_IN, &(memory.in.stepsizeUp), mHalCompId, "%s.stepsize-up", mName);
-    r |= newSigned32HalPin(HAL_OUT, &(memory.out.stepsize), mHalCompId, "%s.stepsize", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.isPendantRequired), mHalCompId, "%s.require_pendant", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.feedrate), mHalCompId, "%s.in.feed", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.feedrateOverride), mHalCompId, "%s.in.halui.feed-override.value", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.spindleRps), mHalCompId, "%s.in.spindle-rps", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.spindleOverride), mHalCompId, "%s.in.halui.spindle-override.value", mName);
 
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableOff), mHalCompId, "%s.jog.enable-off", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableX), mHalCompId, "%s.jog.enable-x", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableY), mHalCompId, "%s.jog.enable-y", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableZ), mHalCompId, "%s.jog.enable-z", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableA), mHalCompId, "%s.jog.enable-a", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableB), mHalCompId, "%s.jog.enable-b", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableC), mHalCompId, "%s.jog.enable-c", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.doEmergencyStop), mHalCompId, "%s.out.halui.estop.activate", mName);
+    r |= newBitHalPin(HAL_IN, &(memory.in.isProgramIdle), mHalCompId, "%s.in.halui.program.is-idle", mName);
+    r |= newBitHalPin(HAL_IN, &(memory.in.isProgramPaused), mHalCompId, "%s.in.halui.program.is-paused", mName);
+    r |= newBitHalPin(HAL_IN, &(memory.in.isProgramRunning), mHalCompId, "%s.in.halui.program.is-running", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.doResumeProgram), mHalCompId, "%s.out.halui.program.resume", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.doPauseProgram), mHalCompId, "%s.out.halui.program.pause", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.doRunProgram), mHalCompId, "%s.out.halui.program.run", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.doStopProgram), mHalCompId, "%s.out.halui.program.stop", mName);
 
-    //r |= _hal_pin_bit_newf(HAL_OUT, &(mHal.memory.jog_enable_feedrate), hal_comp_id, "%s.jog.enable-feed-override", modname);
-    //r |= _hal_pin_bit_newf(HAL_OUT, &(mHal.memory.jog_enable_spindle), hal_comp_id, "%s.jog.enable-spindle-override", modname);
 
-    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogScale), mHalCompId, "%s.jog.scale", mName);
-    r |= newSigned32HalPin(HAL_OUT, &(memory.out.jogCount), mHalCompId, "%s.jog.counts", mName);
-    r |= newSigned32HalPin(HAL_OUT, &(memory.out.jogCountNeg), mHalCompId, "%s.jog.counts-neg", mName);
+    r |= newSigned32HalPin(HAL_OUT, &(memory.out.stepsize), mHalCompId, "%s.out.stepsize", mName);
+    r |= newBitHalPin(HAL_IN, &(memory.in.stepsizeUp), mHalCompId, "%s.in.stepsize-up", mName);
 
-    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogVelocity), mHalCompId, "%s.jog.velocity", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.jogMaxVelocity), mHalCompId, "%s.jog.max-velocity", mName);
-    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogIncrement), mHalCompId, "%s.jog.increment", mName);
 
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusX), mHalCompId, "%s.jog.plus-x", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusY), mHalCompId, "%s.jog.plus-y", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusZ), mHalCompId, "%s.jog.plus-z", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusA), mHalCompId, "%s.jog.plus-a", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusB), mHalCompId, "%s.jog.plus-b", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusC), mHalCompId, "%s.jog.plus-c", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableOff), mHalCompId, "%s.out.jog.enable-off", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableX), mHalCompId, "%s.out.jog.enable-x", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableY), mHalCompId, "%s.out.jog.enable-y", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableZ), mHalCompId, "%s.out.jog.enable-z", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableA), mHalCompId, "%s.out.jog.enable-a", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableB), mHalCompId, "%s.out.jog.enable-b", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableC), mHalCompId, "%s.out.jog.enable-c", mName);
 
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusX), mHalCompId, "%s.jog.minus-x", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusY), mHalCompId, "%s.jog.minus-y", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusZ), mHalCompId, "%s.jog.minus-z", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusA), mHalCompId, "%s.jog.minus-a", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusB), mHalCompId, "%s.jog.minus-b", mName);
-    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusC), mHalCompId, "%s.jog.minus-c", mName);
+    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogXIncrementValue), mHalCompId, "%s.out.halui.jog.x.increment", mName);
+    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogYIncrementValue), mHalCompId, "%s.out.halui.jog.y.increment", mName);
+    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogZIncrementValue), mHalCompId, "%s.out.halui.jog.z.increment", mName);
+    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogAIncrementValue), mHalCompId, "%s.out.halui.jog.a.increment", mName);
+    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogBIncrementValue), mHalCompId, "%s.out.halui.jog.b.increment", mName);
+    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogCIncrementValue), mHalCompId, "%s.out.halui.jog.c.increment", mName);
+
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogXIncrementPlus), mHalCompId, "%s.out.halui.jog.x.increment-plus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogYIncrementPlus), mHalCompId, "%s.out.halui.jog.y.increment-plus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogZIncrementPlus), mHalCompId, "%s.out.halui.jog.z.increment-plus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogAIncrementPlus), mHalCompId, "%s.out.halui.jog.a.increment-plus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogBIncrementPlus), mHalCompId, "%s.out.halui.jog.b.increment-plus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogCIncrementPlus), mHalCompId, "%s.out.halui.jog.c.increment-plus", mName);
+
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogXIncrementMinus), mHalCompId, "%s.out.halui.jog.x.increment-minus",
+                      mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogYIncrementMinus), mHalCompId, "%s.out.halui.jog.y.increment-minus",
+                      mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogZIncrementMinus), mHalCompId, "%s.out.halui.jog.z.increment-minus",
+                      mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogAIncrementMinus), mHalCompId, "%s.out.halui.jog.a.increment-minus",
+                      mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogBIncrementMinus), mHalCompId, "%s.out.halui.jog.b.increment-minus",
+                      mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogCIncrementMinus), mHalCompId, "%s.out.halui.jog.c.increment-minus",
+                      mName);
+
+    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogSpeedValue), mHalCompId, "%s.out.halui.jog-speed", mName);
+
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogXSpeedPlus), mHalCompId, "%s.out.halui.jog.x.speed-plus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogYSpeedPlus), mHalCompId, "%s.out.halui.jog.y.speed-plus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogZSpeedPlus), mHalCompId, "%s.out.halui.jog.z.speed-plus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogASpeedPlus), mHalCompId, "%s.out.halui.jog.a.speed-plus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogBSpeedPlus), mHalCompId, "%s.out.halui.jog.b.speed-plus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogCSpeedPlus), mHalCompId, "%s.out.halui.jog.c.speed-plus", mName);
+
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogXSpeedMinus), mHalCompId, "%s.out.halui.jog.x.speed-minus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogYSpeedMinus), mHalCompId, "%s.out.halui.jog.y.speed-minus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogZSpeedMinus), mHalCompId, "%s.out.halui.jog.z.speed-minus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogASpeedMinus), mHalCompId, "%s.out.halui.jog.a.speed-minus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogBSpeedMinus), mHalCompId, "%s.out.halui.jog.b.speed-minus", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogCSpeedMinus), mHalCompId, "%s.out.halui.jog.c.speed-minus", mName);
+
+    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogScale), mHalCompId, "%s.out.jog.scale", mName);
+    r |= newSigned32HalPin(HAL_OUT, &(memory.out.jogCount), mHalCompId, "%s.out.jog.counts", mName);
+    r |= newSigned32HalPin(HAL_OUT, &(memory.out.jogCountNeg), mHalCompId, "%s.out.jog.counts-neg", mName);
+
+    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogVelocity), mHalCompId, "%s.out.jog.velocity", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.jogMaxVelocity), mHalCompId, "%s.in.halui.max-velocity.value", mName);
+    r |= newFloatHalPin(HAL_OUT, &(memory.out.jogIncrement), mHalCompId, "%s.out.jog.increment", mName);
+
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusX), mHalCompId, "%s.out.jog.plus-x", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusY), mHalCompId, "%s.out.jog.plus-y", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusZ), mHalCompId, "%s.out.jog.plus-z", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusA), mHalCompId, "%s.out.jog.plus-a", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusB), mHalCompId, "%s.out.jog.plus-b", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogPlusC), mHalCompId, "%s.out.jog.plus-c", mName);
+
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusX), mHalCompId, "%s.out.jog.minus-x", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusY), mHalCompId, "%s.out.jog.minus-y", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusZ), mHalCompId, "%s.out.jog.minus-z", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusA), mHalCompId, "%s.out.jog.minus-a", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusB), mHalCompId, "%s.out.jog.minus-b", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusC), mHalCompId, "%s.out.jog.minus-c", mName);
 
     assert (r == 0);
 }
@@ -4006,6 +4214,8 @@ void WhbHal::setAxisCActive(bool enabled)
     *memory.out.jogEnableC = enabled;
 }
 
+// ----------------------------------------------------------------------
+
 void WhbHal::setFeedRate(const hal_float_t& feedRate)
 {
     ios init(NULL);
@@ -4014,6 +4224,8 @@ void WhbHal::setFeedRate(const hal_float_t& feedRate)
     mHalCout->copyfmt(init);
     *memory.out.jogScale = feedRate;
 }
+
+// ----------------------------------------------------------------------
 
 void WhbHal::setLead()
 {
@@ -4028,7 +4240,9 @@ void WhbHal::setLead()
 
 void WhbHal::setReset(bool enabled, size_t pinNumber)
 {
+    *memory.out.doEmergencyStop = enabled;
     setPin(enabled, pinNumber, "reset");
+
 }
 
 // ----------------------------------------------------------------------
@@ -4051,6 +4265,24 @@ void WhbHal::setStop(bool enabled, size_t pinNumber)
 void WhbHal::setStart(bool enabled, size_t pinNumber)
 {
     setPin(enabled, pinNumber, "start");
+    if (memory.in.isProgramPaused)
+    {
+        *memory.out.doPauseProgram  = false;
+        *memory.out.doRunProgram    = false;
+        *memory.out.doResumeProgram = true;
+    }
+    if (memory.in.isProgramRunning)
+    {
+        *memory.out.doPauseProgram  = true;
+        *memory.out.doRunProgram    = false;
+        *memory.out.doResumeProgram = false;
+    }
+    if (memory.in.isProgramIdle)
+    {
+        *memory.out.doPauseProgram  = false;
+        *memory.out.doRunProgram    = true;
+        *memory.out.doResumeProgram = false;
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -4242,11 +4474,23 @@ void WhbHal::setMacro16(bool enabled, size_t pinNumber)
     setPin(enabled, pinNumber, "macro-16");
 }
 
+// ----------------------------------------------------------------------
+
 void WhbHal::setPin(bool enabled, size_t pinNumber, const char* pinName)
 {
     *mHalCout << "hal   " << pinName << ((enabled) ? " enabled" : " disabled") << " (pin # " << pinNumber << ")"
               << endl;
     *(memory.out.button_pin[pinNumber]) = enabled;
+}
+
+// ----------------------------------------------------------------------
+void WhbHal::newJogDialDelta(uint8_t delta)
+{
+    ios init(NULL);
+    init.copyfmt(*mHalCout);
+    *mHalCout << setfill(' ')
+              << "hal   new jog dial delta " << setw(3) << static_cast<signed short>(delta) << endl;
+    mHalCout->copyfmt(init);
 }
 } // namespace
 
