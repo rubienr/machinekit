@@ -131,8 +131,10 @@ public:
         hal_float_t* feedrateOverride;
         // TODO: where should it be connected to
         hal_float_t* feedrate;
+        //! to be connected to \ref halui.spindle.is-on
+        hal_bit_t  * spindleIsOn;
         //! to be connected to \ref halui.spindle-override.value
-        hal_float_t* spindleOverride;
+        hal_float_t* spindleOverrideValue;
         // TODO: where should it be connected to
         hal_float_t* spindleRps;
         //! to be connected to \ref halui.max-velocity.value
@@ -161,7 +163,8 @@ public:
             cMachineCoordinate(nullptr),
             feedrateOverride(nullptr),
             feedrate(nullptr),
-            spindleOverride(nullptr),
+            spindleIsOn(nullptr),
+            spindleOverrideValue(nullptr),
             spindleRps(nullptr),
             jogMaxVelocity(nullptr),
             stepsizeUp(nullptr),
@@ -188,6 +191,21 @@ public:
         hal_s32_t  * jogCountNeg;
 
         hal_float_t* jogVelocity;
+
+        //! to be connected to \ref halui.feed-override.decrease
+        hal_bit_t* feedOverrideDecrease;
+        //! to be connected to \ref halui.feed-override.increase
+        hal_bit_t* feedOverrideIncrease;
+
+        //! to be connected to \ref halui.spindle.start
+        hal_bit_t* spindleStart;
+        //! to be connected to \ref halui.spindle.stop
+        hal_bit_t* spindleStop;
+
+        //! to be connected to halui.spindle.decrease
+        hal_bit_t* spindleOverrideDecrease;
+        //! to be connected to halui.spindle.increase
+        hal_bit_t* spindleOverrideIncrease;
 
         //! to be connected to \ref halui.jog.N.increment
         hal_float_t* jogXIncrementValue;
@@ -264,6 +282,9 @@ public:
         //! to be connected to \ref halui.jog.N.minus
         hal_bit_t* jogCSpeedMinus;
 
+        //! to be connected to \ref halui.home-all
+        hal_bit_t* homeAll;
+
         // TODO: begin: to be removed
         hal_float_t* jogIncrement;
         hal_bit_t  * jogPlusX;
@@ -281,13 +302,13 @@ public:
         // TODO: end: to be removed
 
         // TODO: where should it be connected to
-        hal_s32_t  * stepsize;
+        hal_s32_t* stepsize;
         //! reflects the pendandt's idle state
-        hal_bit_t  * isPendantSleeping;
+        hal_bit_t* isPendantSleeping;
         //! reflects pendant's connectivity
-        hal_bit_t  * isPendantConnected;
+        hal_bit_t* isPendantConnected;
         // TODO: remove since this is not needed to be exposed
-        hal_bit_t  * isPendantRequired;
+        hal_bit_t* isPendantRequired;
 
         //! to be connected to \ref halui.program.run
         hal_bit_t* doRunProgram;
@@ -299,7 +320,7 @@ public:
         hal_bit_t* doStopProgram;
 
         //! to be connected to \ref halui.estop.activate
-        hal_bit_t *doEmergencyStop;
+        hal_bit_t* doEmergencyStop;
 
         Out() :
             button_pin{0},
@@ -314,6 +335,10 @@ public:
             jogCount(nullptr),
             jogCountNeg(nullptr),
             jogVelocity(nullptr),
+            feedOverrideDecrease(nullptr),
+            feedOverrideIncrease(nullptr),
+            spindleOverrideDecrease(nullptr),
+            spindleOverrideIncrease(nullptr),
             jogXIncrementValue(nullptr),
             jogXIncrementPlus(nullptr),
             jogXIncrementMinus(nullptr),
@@ -345,6 +370,7 @@ public:
             jogBSpeedMinus(nullptr),
             jogCSpeedPlus(nullptr),
             jogCSpeedMinus(nullptr),
+            homeAll(nullptr),
             jogIncrement(nullptr),
             jogPlusX(nullptr),
             jogPlusY(nullptr),
@@ -392,6 +418,18 @@ public:
 
 // ----------------------------------------------------------------------
 
+class JogWheelStepMode
+{
+public:
+    enum StepMode
+    {
+        CONTINUOUS,
+        STEP
+    };
+};
+
+// ----------------------------------------------------------------------
+
 //! HAL and related parameters
 class WhbHal
 {
@@ -429,16 +467,21 @@ public:
     void setAxisBActive(bool enabled);
     //! \sa setAxisXActive(bool)
     void setAxisCActive(bool enabled);
+
+    //! Set the new jog wheel step mode. The mode affects the pins chosen to generate jog movements.
+    void setJogWheelStepMode(JogWheelStepMode::StepMode stepMode);
+
     //! Sets the new feed rate. The step mode must be set accordingly.
     //! \param feedRate the new feed rate independent of step mode
     void setFeedRate(const hal_float_t& feedRate);
     //! If lead is active.
     void setLead();
     //! Sets the hal state of the reset pin. Usually called in case the reset
-    //! button is pressed or released.
+    //! button is pressed or released. The pin should be connected to \ref halui.estop.activate.
     //! \param enabled the new pin value, (true if the button was pressed, false otherwise)
     //! \param pinNumber The pin number in \ref WhbHalMemory as registered in
     //! \ref WhbHal::halInit(const WhbSoftwareButton* , size_t , const WhbKeyCodes&)
+    //! \sa doEmergencyStop
     void setReset(bool enabled, size_t pinNumber);
     //! \sa setReset(bool, size_t)
     void setStop(bool enabled, size_t pinNumber);
@@ -508,12 +551,17 @@ public:
     void newJogDialDelta(uint8_t delta);
     void computeVelocity();
 
+    void process();
+
 private:
     bool mIsSimulationMode;
     const char* mName;
     int          mHalCompId;
     std::ostream mDevNull;
     std::ostream* mHalCout;
+    JogWheelStepMode::StepMode mStepMode;
+    int16_t                    mPendingStepsContinuousMode;
+    int16_t                    mPendingStepsStepMode;
 
     //! //! Allocates new hal_bit_t pin according to \ref mIsSimulationMode. If \ref mIsSimulationMode then
     //! mallocs memory, hal_pin_bit_new allocation otherwise.
@@ -784,11 +832,6 @@ public:
 
 private:
 
-    enum StepMode
-    {
-        Continuous,
-        Step
-    };
     friend XhcWhb04b6::WhbContext;
     const WhbButtonsCode                     & mButtonCodesLookup;
     const WhbAxisRotaryButtonCodes           & mAxisRotaryButtonCodesLookup;
@@ -797,7 +840,7 @@ private:
     const WhbHandwheelContiunuousModeStepSize& mContinuousModeStepSizeLookup;
     WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex mCurrentContinuousModeSize;
     WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex        mCurrentStepModeSize;
-    StepMode                                                   mCurrentStepMode;
+    JogWheelStepMode::StepMode                                 mCurrentStepMode;
     uint8_t                                                    mCurrentButton1Code;
     uint8_t                                                    mCurrentButton2Code;
     const WhbSoftwareButton* mSoftwareButton;
@@ -877,15 +920,19 @@ public:
 
 // ----------------------------------------------------------------------
 
-//! \see DisplayIndicatorBitFields::stepMode
-enum DisplayIndicatorStepMode
+class DisplayIndicatorStepMode
 {
-    //! displays "CONT <xx>%"
-        CONTINUOUS             = 0x00,
-    //! displays "STP: <x.xxxx>"
-        STEP                   = 0x01,
-    //! displays "MPG <xx>%"
-        MANUAL_PULSE_GENERATOR = 0x02
+public:
+    //! \see DisplayIndicatorBitFields::stepMode
+    enum StepMode
+    {
+        //! displays "CONT <xx>%"
+            CONTINUOUS             = 0x00,
+        //! displays "STP: <x.xxxx>"
+            STEP                   = 0x01,
+        //! displays "MPG <xx>%"
+            MANUAL_PULSE_GENERATOR = 0x02
+    };
 };
 
 // ----------------------------------------------------------------------
@@ -1444,21 +1491,21 @@ WhbStepHandler::WhbStepHandler() :
 
 bool WhbButtonsState::isCurrentModeStepMode() const
 {
-    return mCurrentStepMode == StepMode::Step;
+    return mCurrentStepMode == JogWheelStepMode::STEP;
 }
 
 // ----------------------------------------------------------------------
 
 bool WhbButtonsState::isCurrentModeContinuousMode() const
 {
-    return mCurrentStepMode == StepMode::Continuous;
+    return mCurrentStepMode == JogWheelStepMode::CONTINUOUS;
 }
 
 // ----------------------------------------------------------------------
 
 void WhbButtonsState::setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex stepSize)
 {
-    mCurrentStepMode     = StepMode::Step;
+    mCurrentStepMode     = JogWheelStepMode::STEP;
     mCurrentStepModeSize = stepSize;
 }
 
@@ -1467,7 +1514,7 @@ void WhbButtonsState::setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::B
 void
 WhbButtonsState::setCurrentContinuousModeStepSize(WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex stepSize)
 {
-    mCurrentStepMode           = StepMode::Continuous;
+    mCurrentStepMode           = JogWheelStepMode::CONTINUOUS;
     mCurrentContinuousModeSize = stepSize;
 }
 
@@ -1526,11 +1573,11 @@ void WhbButtonsState::updateButtonState(uint8_t keyCode, uint8_t modifierCode, u
 
 hal_float_t WhbButtonsState::getStepSize()
 {
-    if (mCurrentStepMode == StepMode::Continuous)
+    if (mCurrentStepMode == JogWheelStepMode::CONTINUOUS)
     {
         return mContinuousModeStepSizeLookup.getStepSize(mCurrentContinuousModeSize);
     }
-    else if (mCurrentStepMode == StepMode::Step)
+    else if (mCurrentStepMode == JogWheelStepMode::STEP)
     {
         return mStepModeStepSizeLookup.getStepSize(mCurrentStepModeSize);
     }
@@ -1554,7 +1601,7 @@ WhbButtonsState::WhbButtonsState(const WhbButtonsCode& buttonCodesLookup,
     mContinuousModeStepSizeLookup(continuousStepSizeLookup),
     mCurrentContinuousModeSize(WhbHandwheelContiunuousModeStepSize::ButtonCodeToStepIndex::RotaryButtonUndefined),
     mCurrentStepModeSize(WhbHandwheelStepModeStepSize::ButtonCodeToStepIndex::RotaryButtonUndefined),
-    mCurrentStepMode(Continuous),
+    mCurrentStepMode(JogWheelStepMode::CONTINUOUS),
     mCurrentButton1Code(buttonCodesLookup.undefined.code),
     mCurrentButton2Code(buttonCodesLookup.undefined.code),
     mCurrentAxisCode(axisRotaryButtonCodesLookup.undefined.code),
@@ -1621,14 +1668,14 @@ const WhbKeyCode& WhbButtonsState::getFeedCode() const
 
 void WhbButtonsState::setCurrentModeStepMode()
 {
-    mCurrentStepMode = StepMode::Step;
+    mCurrentStepMode = JogWheelStepMode::STEP;
 }
 
 // ----------------------------------------------------------------------
 
 void WhbButtonsState::setCurrentModeContinuousMode()
 {
-    mCurrentStepMode = StepMode::Continuous;
+    mCurrentStepMode = JogWheelStepMode::CONTINUOUS;
 }
 
 // ----------------------------------------------------------------------
@@ -2546,6 +2593,7 @@ int WhbContext::run()
                 return EXIT_FAILURE;
             }
             *mInitCout << " ok" << endl;
+            mHal.process();
             //Whb.sendDisplayData();
         }
 
@@ -3778,7 +3826,10 @@ WhbHal::WhbHal() :
     mName("xhc-whb04b-6"),
     mHalCompId(-1),
     mDevNull(nullptr),
-    mHalCout(&mDevNull)
+    mHalCout(&mDevNull),
+    mStepMode(JogWheelStepMode::STEP),
+    mPendingStepsContinuousMode(0),
+    mPendingStepsStepMode(0)
 {
 }
 
@@ -3806,7 +3857,8 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory.in.cMachineCoordinate));
     freeSimulatedPin((void**)(&memory.in.feedrateOverride));
     freeSimulatedPin((void**)(&memory.in.feedrate));
-    freeSimulatedPin((void**)(&memory.in.spindleOverride));
+    freeSimulatedPin((void**)(&memory.in.spindleIsOn));
+    freeSimulatedPin((void**)(&memory.in.spindleOverrideValue));
     freeSimulatedPin((void**)(&memory.in.spindleRps));
     for (size_t idx = 0; idx < (sizeof(memory.out.button_pin) / sizeof(hal_bit_t * )); idx++)
     {
@@ -3823,6 +3875,12 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory.out.jogCount));
     freeSimulatedPin((void**)(&memory.out.jogCountNeg));
     freeSimulatedPin((void**)(&memory.out.jogVelocity));
+    freeSimulatedPin((void**)(&memory.out.feedOverrideDecrease));
+    freeSimulatedPin((void**)(&memory.out.feedOverrideIncrease));
+    freeSimulatedPin((void**)(&memory.out.spindleStart));
+    freeSimulatedPin((void**)(&memory.out.spindleStop));
+    freeSimulatedPin((void**)(&memory.out.spindleOverrideDecrease));
+    freeSimulatedPin((void**)(&memory.out.spindleOverrideIncrease));
     freeSimulatedPin((void**)(&memory.in.jogMaxVelocity));
     freeSimulatedPin((void**)(&memory.out.jogIncrement));
     freeSimulatedPin((void**)(&memory.out.jogXIncrementValue));
@@ -3856,6 +3914,7 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory.out.jogBSpeedMinus));
     freeSimulatedPin((void**)(&memory.out.jogCSpeedPlus));
     freeSimulatedPin((void**)(&memory.out.jogCSpeedMinus));
+    freeSimulatedPin((void**)(&memory.out.homeAll));
     freeSimulatedPin((void**)(&memory.out.jogPlusX));
     freeSimulatedPin((void**)(&memory.out.jogPlusY));
     freeSimulatedPin((void**)(&memory.out.jogPlusZ));
@@ -3873,6 +3932,11 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory.out.isPendantSleeping));
     freeSimulatedPin((void**)(&memory.out.isPendantConnected));
     freeSimulatedPin((void**)(&memory.out.isPendantRequired));
+    freeSimulatedPin((void**)(&memory.out.doRunProgram));
+    freeSimulatedPin((void**)(&memory.out.doPauseProgram));
+    freeSimulatedPin((void**)(&memory.out.doResumeProgram));
+    freeSimulatedPin((void**)(&memory.out.doStopProgram));
+    freeSimulatedPin((void**)(&memory.out.doEmergencyStop));
 }
 
 // ----------------------------------------------------------------------
@@ -4021,17 +4085,32 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     r |= newFloatHalPin(HAL_IN, &(memory.in.bMachineCoordinate), mHalCompId, "%s.in.halui.axis.b.pos-commanded", mName);
     r |= newFloatHalPin(HAL_IN, &(memory.in.cMachineCoordinate), mHalCompId, "%s.in.halui.axis.c.pos-commanded", mName);
 
-    r |= newFloatHalPin(HAL_IN, &(memory.in.yWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.y.pos-relative", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.xWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.x.pos-relative", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.zWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.z.pos-relative", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.aWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.a.pos-relative", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.bWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.b.pos-relative", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.cWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.c.pos-relative", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.yWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.y.pos-relative",
+                        mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.xWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.x.pos-relative",
+                        mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.zWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.z.pos-relative",
+                        mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.aWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.a.pos-relative",
+                        mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.bWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.b.pos-relative",
+                        mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.cWorkpieceCoordinate), mHalCompId, "%s.in.halui.axis.c.pos-relative",
+                        mName);
 
     r |= newFloatHalPin(HAL_IN, &(memory.in.feedrate), mHalCompId, "%s.in.feed", mName);
     r |= newFloatHalPin(HAL_IN, &(memory.in.feedrateOverride), mHalCompId, "%s.in.halui.feed-override.value", mName);
     r |= newFloatHalPin(HAL_IN, &(memory.in.spindleRps), mHalCompId, "%s.in.spindle-rps", mName);
-    r |= newFloatHalPin(HAL_IN, &(memory.in.spindleOverride), mHalCompId, "%s.in.halui.spindle-override.value", mName);
+    r |= newBitHalPin(HAL_IN, &(memory.in.spindleIsOn), mHalCompId, "%s.in.halui.spindle.is-on", mName);
+    r |= newFloatHalPin(HAL_IN, &(memory.in.spindleOverrideValue), mHalCompId, "%s.in.halui.spindle-override.value",
+                        mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.spindleOverrideIncrease), mHalCompId, "%s.out.halui.spindle.increase",
+                      mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.spindleOverrideDecrease), mHalCompId, "%s.out.halui.spindle.decrease",
+                      mName);
+
+    r |= newBitHalPin(HAL_OUT, &(memory.out.spindleStart), mHalCompId, "%s.out.halui.spindle.start", mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.spindleStop), mHalCompId, "%s.out.halui.spindle.stop", mName);
 
     r |= newBitHalPin(HAL_OUT, &(memory.out.doEmergencyStop), mHalCompId, "%s.out.halui.estop.activate", mName);
     r |= newBitHalPin(HAL_IN, &(memory.in.isProgramIdle), mHalCompId, "%s.in.halui.program.is-idle", mName);
@@ -4042,10 +4121,8 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     r |= newBitHalPin(HAL_OUT, &(memory.out.doRunProgram), mHalCompId, "%s.out.halui.program.run", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.doStopProgram), mHalCompId, "%s.out.halui.program.stop", mName);
 
-
     r |= newSigned32HalPin(HAL_OUT, &(memory.out.stepsize), mHalCompId, "%s.out.stepsize", mName);
     r |= newBitHalPin(HAL_IN, &(memory.in.stepsizeUp), mHalCompId, "%s.in.stepsize-up", mName);
-
 
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableOff), mHalCompId, "%s.out.jog.enable-off", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableX), mHalCompId, "%s.out.jog.enable-x", mName);
@@ -4054,6 +4131,11 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableA), mHalCompId, "%s.out.jog.enable-a", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableB), mHalCompId, "%s.out.jog.enable-b", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogEnableC), mHalCompId, "%s.out.jog.enable-c", mName);
+
+    r |= newBitHalPin(HAL_OUT, &(memory.out.feedOverrideIncrease), mHalCompId, "%s.out.halui.feed-override.increase",
+                      mName);
+    r |= newBitHalPin(HAL_OUT, &(memory.out.feedOverrideDecrease), mHalCompId, "%s.out.halui.feed-override.decrease",
+                      mName);
 
     r |= newFloatHalPin(HAL_OUT, &(memory.out.jogXIncrementValue), mHalCompId, "%s.out.halui.jog.x.increment", mName);
     r |= newFloatHalPin(HAL_OUT, &(memory.out.jogYIncrementValue), mHalCompId, "%s.out.halui.jog.y.increment", mName);
@@ -4119,6 +4201,8 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusA), mHalCompId, "%s.out.jog.minus-a", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusB), mHalCompId, "%s.out.jog.minus-b", mName);
     r |= newBitHalPin(HAL_OUT, &(memory.out.jogMinusC), mHalCompId, "%s.out.jog.minus-c", mName);
+
+    r |= newBitHalPin(HAL_OUT, &(memory.out.homeAll), mHalCompId, "%s.out.halui.home-all", mName);
 
     assert (r == 0);
 }
@@ -4242,7 +4326,6 @@ void WhbHal::setReset(bool enabled, size_t pinNumber)
 {
     *memory.out.doEmergencyStop = enabled;
     setPin(enabled, pinNumber, "reset");
-
 }
 
 // ----------------------------------------------------------------------
@@ -4257,6 +4340,7 @@ hal_bit_t* WhbHal::getButtonHalBit(size_t pinNumber)
 
 void WhbHal::setStop(bool enabled, size_t pinNumber)
 {
+    *memory.out.doStopProgram = enabled;
     setPin(enabled, pinNumber, "stop");
 }
 
@@ -4264,7 +4348,6 @@ void WhbHal::setStop(bool enabled, size_t pinNumber)
 
 void WhbHal::setStart(bool enabled, size_t pinNumber)
 {
-    setPin(enabled, pinNumber, "start");
     if (memory.in.isProgramPaused)
     {
         *memory.out.doPauseProgram  = false;
@@ -4283,12 +4366,14 @@ void WhbHal::setStart(bool enabled, size_t pinNumber)
         *memory.out.doRunProgram    = true;
         *memory.out.doResumeProgram = false;
     }
+    setPin(enabled, pinNumber, "start/stop");
 }
 
 // ----------------------------------------------------------------------
 
 void WhbHal::setFeedPlus(bool enabled, size_t pinNumber)
 {
+    *memory.out.feedOverrideIncrease = enabled;
     setPin(enabled, pinNumber, "feed-plus");
 }
 
@@ -4296,6 +4381,7 @@ void WhbHal::setFeedPlus(bool enabled, size_t pinNumber)
 
 void WhbHal::setFeedMinus(bool enabled, size_t pinNumber)
 {
+    *memory.out.feedOverrideDecrease = enabled;
     setPin(enabled, pinNumber, "feed-minus");
 }
 
@@ -4303,6 +4389,7 @@ void WhbHal::setFeedMinus(bool enabled, size_t pinNumber)
 
 void WhbHal::setSpindlePlus(bool enabled, size_t pinNumber)
 {
+    *memory.out.spindleOverrideIncrease = enabled;
     setPin(enabled, pinNumber, "spindle-plus");
 }
 
@@ -4310,6 +4397,7 @@ void WhbHal::setSpindlePlus(bool enabled, size_t pinNumber)
 
 void WhbHal::setSpindleMinus(bool enabled, size_t pinNumber)
 {
+    *memory.out.spindleOverrideDecrease = enabled;
     setPin(enabled, pinNumber, "spindle-minus");
 }
 
@@ -4338,7 +4426,27 @@ void WhbHal::setWorkpieceHome(bool enabled, size_t pinNumber)
 
 void WhbHal::setSpindleOn(bool enabled, size_t pinNumber)
 {
-    setPin(enabled, pinNumber, "spindle-on");
+    // on button pressed
+    if (enabled)
+    {
+        // generate rising edge on respective pins
+        if (*memory.in.spindleIsOn)
+        {
+            *memory.out.spindleStop = enabled;
+        }
+        else
+        {
+            *memory.out.spindleStart = enabled;
+        }
+    }
+        // on button released
+    else
+    {
+        // pull pins to low
+        *memory.out.spindleStop  = false;
+        *memory.out.spindleStart = false;
+    }
+    setPin(enabled, pinNumber, "spindle-on/off");
 }
 
 // ----------------------------------------------------------------------
@@ -4484,13 +4592,56 @@ void WhbHal::setPin(bool enabled, size_t pinNumber, const char* pinName)
 }
 
 // ----------------------------------------------------------------------
+
 void WhbHal::newJogDialDelta(uint8_t delta)
 {
+    if (mStepMode == JogWheelStepMode::STEP)
+    {
+        mPendingStepsStepMode += delta;
+    }
+    else
+    {
+        mPendingStepsContinuousMode += delta;
+    }
+
     ios init(NULL);
     init.copyfmt(*mHalCout);
     *mHalCout << setfill(' ')
               << "hal   new jog dial delta " << setw(3) << static_cast<signed short>(delta) << endl;
     mHalCout->copyfmt(init);
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setJogWheelStepMode(JogWheelStepMode::StepMode stepMode)
+{
+    mStepMode = stepMode;
+
+    if (stepMode == JogWheelStepMode::STEP)
+    {
+        mPendingStepsContinuousMode = 0;
+    }
+    else
+    {
+        mPendingStepsStepMode = 0;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::process()
+{
+    if (mStepMode == JogWheelStepMode::STEP) {
+        // consume pending steps
+        if ( mPendingStepsStepMode != 0) {
+            // TODO: have some thoughts on options we have for returning signal to zero after rising edge
+        }
+    } else {
+        // consume pending steps
+        if ( mPendingStepsContinuousMode != 0) {
+            // TODO: have some thoughts on options we have for returning signal to zero after rising edge
+        }
+    }
 }
 } // namespace
 
