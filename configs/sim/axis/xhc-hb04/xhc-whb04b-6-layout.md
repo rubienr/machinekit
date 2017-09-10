@@ -85,7 +85,7 @@ OPTIONS
     Enable checksum output which is necessary for debugging the checksum generator function. Do not rely on this featue since it will be removed once the generator is implemented.
     
  -s 
-    Force being silent and not printing any output except of errors.
+    Force being silent and not printing any output except of errors. This will also inhibit messages prefixed with "init".
 
 EXAMPLES
 xhc-whb04b-6 -ue
