@@ -17,6 +17,7 @@ Macro-16. The keypad layout is as follows:
 | MPG (Macro-15)              |                  |                        |                    | Step (Macro-16)            |
 |                             |                  | &lt;Jog Dial&gt;       |                    |                            |
 
+* Caution: The buttons' naming and user manual are sohewhat unluckily translated. The **MPG** button puts the device into **continuous**, whereas the **Step/Continuous** button into **step mode**. Continuous mode means n jog dial events are translated to "move joint n times with speed x" whereas step mode to "move joint n steps" with a predefined speed.
 
 # XHC WHB04B-6 button naming
 
