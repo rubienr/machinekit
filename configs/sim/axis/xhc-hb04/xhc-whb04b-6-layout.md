@@ -21,21 +21,43 @@ Macro-16. The keypad layout is as follows:
 
 # XHC WHB04B-6 button naming
 
-The HAL pin names are derived from the case sensitive text as written on
-the respecitve button. For example:
+The HAL pin names are derived from text written on the respecitve button. For example:
 
 ```
-xhc-whb04b-6.RESET
-xhc-whb04b-6.Macro-11
-xhc-whb04b-6.STOP
-xhc-whb04b-6.Macro-12
-xhc-whb04b-6.Start
-xhc-whb04b-6.Pause
-xhc-whb04b-6.Feed+
-xhc-whb04b-6.Macro-1
-xhc-whb04b-6.Feed-
-xhc-whb04b-6.Macro-2
-xhc-whb04b-6.Spindle+
+$ xhc-whb04b-6 -p
+init  starting in simulation mode
+hal   new pin xhc-whb04b-6.out.button.reset
+hal   new pin xhc-whb04b-6.out.button.macro-11
+hal   new pin xhc-whb04b-6.out.button.stop
+hal   new pin xhc-whb04b-6.out.button.macro-12
+hal   new pin xhc-whb04b-6.out.button.start-pause
+hal   new pin xhc-whb04b-6.out.button.macro-13
+hal   new pin xhc-whb04b-6.out.button.feed-plus
+hal   new pin xhc-whb04b-6.out.button.macro-1
+hal   new pin xhc-whb04b-6.out.button.feed-minus
+hal   new pin xhc-whb04b-6.out.button.macro-2
+hal   new pin xhc-whb04b-6.out.button.spindle-plus
+hal   new pin xhc-whb04b-6.out.button.macro-3
+hal   new pin xhc-whb04b-6.out.button.spindle-minus
+hal   new pin xhc-whb04b-6.out.button.macro-4
+hal   new pin xhc-whb04b-6.out.button.m-home
+hal   new pin xhc-whb04b-6.out.button.macro-5
+hal   new pin xhc-whb04b-6.out.button.safe-z
+hal   new pin xhc-whb04b-6.out.button.macro-6
+hal   new pin xhc-whb04b-6.out.button.w-home
+hal   new pin xhc-whb04b-6.out.button.macro-7
+hal   new pin xhc-whb04b-6.out.button.s-on-off
+hal   new pin xhc-whb04b-6.out.button.macro-8
+hal   new pin xhc-whb04b-6.out.button.fn
+hal   new pin xhc-whb04b-6.out.button.probe-z
+hal   new pin xhc-whb04b-6.out.button.macro-9
+hal   new pin xhc-whb04b-6.out.button.macro-10
+hal   new pin xhc-whb04b-6.out.button.macro-14
+hal   new pin xhc-whb04b-6.out.button.mode-continuous
+hal   new pin xhc-whb04b-6.out.button.macro-15
+hal   new pin xhc-whb04b-6.out.button.mode-step
+hal   new pin xhc-whb04b-6.out.button.macro-16
+
 ...
 ```
 
