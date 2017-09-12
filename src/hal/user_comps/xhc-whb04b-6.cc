@@ -27,6 +27,7 @@
 #include <iostream>
 #include <bitset>
 #include <iomanip>
+#include <sstream>
 #include <assert.h>
 #include <signal.h>
 #include <libusb.h>
@@ -93,6 +94,60 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate&
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data);
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlockFields& block);
 std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlocks& blocks);
+
+// ----------------------------------------------------------------------
+
+class MachineConfiguration
+{
+public:
+    MachineConfiguration(float scale = 80, float maxVelocity = 800);
+    float getScale() const;
+    void setScale(float scale);
+    void setMaxVelocity(float maxVelocity);
+    float getMaxVelocity() const;
+
+    MachineConfiguration& operator=(const MachineConfiguration other);
+
+private:
+    //! Specifies the number of pulses that corresponds to a move of one unit [mm] or [inch].
+    float mScale;
+    //! The maximum velocity for any axis in machine units per second (same unit as \ref mScale).
+    float mMaxVelocity;
+};
+
+float MachineConfiguration::getScale() const
+{
+    return mScale;
+}
+
+float MachineConfiguration::getMaxVelocity() const
+{
+    return mMaxVelocity;
+}
+
+MachineConfiguration::MachineConfiguration(float scale, float maxVelocity) :
+    mScale(scale),
+    mMaxVelocity(maxVelocity)
+{
+}
+
+void MachineConfiguration::setScale(float scale)
+{
+    mScale = scale;
+}
+
+void MachineConfiguration::setMaxVelocity(float maxVelocity)
+{
+    mMaxVelocity = maxVelocity;
+}
+
+MachineConfiguration& MachineConfiguration::operator=(const MachineConfiguration other)
+{
+    mScale       = other.mScale;
+    mMaxVelocity = other.mMaxVelocity;
+    return *this;
+}
+
 
 // ----------------------------------------------------------------------
 
@@ -1297,18 +1352,20 @@ public:
     size_t getHalPinNumber(const WhbSoftwareButton& button);
     void offerHalMemory();
 
+    void setMachineConfig(const MachineConfiguration& machineConfig);
+
 private:
     const char* mName;
-    WhbHal                                 mHal;
-    const WhbKeyCodes                      mKeyCodes;
-    const WhbStepHandler                   mStepHandler;
-    const WhbSoftwareButton                mSoftwareButtons[32];
-    WhbUsb                                 mUsb;
-    bool                                   mIsRunning;
-    bool                                   mIsSimulationMode;
-    WhbButtonsState                        mPreviousButtonCodes;
-    WhbButtonsState                        mCurrentButtonCodes;
-    std::ostream                           mDevNull;
+    WhbHal                  mHal;
+    const WhbKeyCodes       mKeyCodes;
+    const WhbStepHandler    mStepHandler;
+    const WhbSoftwareButton mSoftwareButtons[32];
+    WhbUsb                  mUsb;
+    bool                    mIsRunning;
+    bool                    mIsSimulationMode;
+    WhbButtonsState         mPreviousButtonCodes;
+    WhbButtonsState         mCurrentButtonCodes;
+    std::ostream            mDevNull;
     std::ostream              * mTxCout;
     std::ostream              * mRxCout;
     std::ostream              * mKeyEventCout;
@@ -1317,7 +1374,9 @@ private:
     WhbKeyEventListener       & keyEventReceiver;
     UsbInputPackageListener   & packageReceivedEventReceiver;
     UsbInputPackageInterpreted& packageIntepretedEventReceiver;
-    bool mIsCrcDebuggingEnabled;
+    bool                 mIsCrcDebuggingEnabled;
+    MachineConfiguration mMachineConfig;
+
     //! prints human readable output of the push buttons state
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out);
     //! prints human readable output of the push buttons state to \ref verboseRxOut stream
@@ -2281,7 +2340,8 @@ WhbContext::WhbContext() :
     keyEventReceiver(*this),
     packageReceivedEventReceiver(*this),
     packageIntepretedEventReceiver(*this),
-    mIsCrcDebuggingEnabled(false)
+    mIsCrcDebuggingEnabled(false),
+    mMachineConfig()
 {
     setSimulationMode(true);
     enableVerboseRx(false);
@@ -3611,6 +3671,14 @@ void WhbContext::dispatchAxisEventToHal(const WhbKeyCode& axis, bool isActive)
     }
 }
 
+void WhbContext::setMachineConfig(const MachineConfiguration& machineConfig)
+{
+    *mInitCout << "init  setting machine configuration to scale="
+               << machineConfig.getScale() << " "
+               << "max_velocity=" << machineConfig.getMaxVelocity() << endl;
+    mMachineConfig = machineConfig;
+}
+
 // ----------------------------------------------------------------------
 
 void WhbUsb::setSimulationMode(bool isSimulationMode)
@@ -4207,7 +4275,7 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     }
     else
     {
-        *mHalCout << "hal   initialize HAL memory " << " ... ";
+        *mHalCout << "hal   initialize simulated HAL memory " << " ... ";
         memory = new WhbHalMemory();
     }
 
@@ -4805,6 +4873,7 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
     {
         os = &cerr;
     }
+    XhcWhb04b6::MachineConfiguration m;
     *os << programName << " version " << PACKAGE_VERSION << " " << __DATE__ << " " << __TIME__ << endl
         << endl
         << "SYNOPSIS" << endl
@@ -4850,9 +4919,17 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
         << "    Enable checksum output which is necessary for debugging the checksum generator function. Do not rely "
             "on this featue since it will be removed once the generator is implemented." << endl
         << endl
-        << " -s " << endl
+        << " -n " << endl
         << "    Force being silent and not printing any output except of errors. This will also inhibit messages "
             "prefixed with \"init\"." << endl
+        << endl
+        << " -s <scale>" << endl
+        << "    Specifies the number of pulses that corresponds to a move of one machine unit in [mm] or [inch]. "
+            "Default is " << m.getScale() << "." << endl
+        << endl
+        << " -v <max_velocity>" << endl
+        << "    The maximum velocity for any axis in machine units per second (same unit as -s). "
+            "Default is " << m.getMaxVelocity() << "." << endl
         << endl
         << "EXAMPLES" << endl
         << programName << " -ue" << endl
@@ -4902,11 +4979,27 @@ void usbInputResponseCallback(struct libusb_transfer* transfer)
 
 // ----------------------------------------------------------------------
 
+bool parseFloat(const char* str, float& out)
+{
+    std::istringstream iss(str);
+    if (!(iss >> out))
+    {
+        std::cerr << "no valid value specified: " << str << endl;
+        return false;
+    }
+    return true;
+}
+
+// ----------------------------------------------------------------------
+
 int main(int argc, char** argv)
 {
-    const char* optargs = "phaseHuctU";
+    XhcWhb04b6::MachineConfiguration machineConfig(80, 10 * 80);
+    const char* optargs = "phaeHuctnUs:v:";
     for (int opt = getopt(argc, argv, optargs); opt != -1; opt = getopt(argc, argv, optargs))
     {
+        float scale, maxVelocity;
+
         switch (opt)
         {
             case 'H':
@@ -4941,7 +5034,21 @@ int main(int argc, char** argv)
             case 'c':
                 Whb.enableCrcDebugging(true);
                 break;
+            case 'n':
+                break;
             case 's':
+                if (!parseFloat(optarg, scale))
+                {
+                    return EXIT_FAILURE;
+                }
+                machineConfig.setScale(scale);
+                break;
+            case 'v':
+                if (!parseFloat(optarg, maxVelocity))
+                {
+                    return EXIT_FAILURE;
+                }
+                machineConfig.setMaxVelocity(maxVelocity);
                 break;
             case 'h':
                 return printUsage(basename(argv[0]), Whb.getName());
@@ -4954,6 +5061,7 @@ int main(int argc, char** argv)
 
     registerSignalHandler();
 
+    Whb.setMachineConfig(machineConfig);
     Whb.run();
 
     //! hotfix for https://github.com/machinekit/machinekit/issues/1266
