@@ -344,7 +344,8 @@ if [info exists ::XHC_WHB04B_6_CONFIG(sequence)] {
   set dashs ""
 }
 
-set cmd "loadusr -W xhc-whb04b-6 $dashx $dashs -I $cfg -H"
+# set cmd "loadusr -W xhc-whb04b-6 $dashx $dashs -I $cfg -H"
+set cmd "loadusr -W xhc-whb04b-6 -Ha"
 if [catch {eval $cmd} msg] {
   set msg "\n$::progname: loadusr xhc-whb04b-6:\n<$msg>\n\n"
   set msg "$msg Is it plugged in?\n\n"
@@ -398,11 +399,11 @@ if [info exists ::XHC_WHB04B_6_CONFIG(coords)] {
 if ![info exists ::XHC_WHB04B_6_CONFIG(threadname)] {
   set ::XHC_WHB04B_6_CONFIG(threadname) "servo-thread" ;# default
 }
-loadrt xhc_whb04b_6_util names=pendant_util
-addf   pendant_util $::XHC_WHB04B_6_CONFIG(threadname)
+#loadrt xhc_whb04b_6_util names=pendant_util
+#addf   pendant_util $::XHC_WHB04B_6_CONFIG(threadname)
 
-connect_pins    ;# per ini file items: [XHC_WHB04B_6_BUTTONS]buttonname=pin
-wheel_setup  $::XHC_WHB04B_6_CONFIG(jogmode)
+# connect_pins    ;# per ini file items: [XHC_WHB04B_6_BUTTONS]buttonname=pin
+#wheel_setup  $::XHC_WHB04B_6_CONFIG(jogmode)
                  # jog wheel per ini file items:
                  #     [XHC_WHB04B_6_CONFIG]coords,coefs,scales
 #parray ::XHC_WHB04B_6_CONFIG
