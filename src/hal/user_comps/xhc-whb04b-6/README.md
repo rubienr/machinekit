@@ -1,3 +1,19 @@
+   * [XHC WHB04B-6 pendant HAL module](#xhc-whb04b-6-pendant-hal-module)
+      * [Pendant layout](#pendant-layout)
+         * [Pendant button naming](#pendant-button-naming)
+            * [An extensive list of HAL pins](#an-extensive-list-of-hal-pins)
+            * [Even more details](#even-more-details)
+      * [Protocol description](#protocol-description)
+         * [Findings](#findings)
+            * [Received data structure](#received-data-structure)
+               * [Checksum investigation](#checksum-investigation)
+            * [Transmission data structure](#transmission-data-structure)
+         * [What we did so far](#what-we-did-so-far)
+         * [What we didn't](#what-we-didnt)
+         * [Issues](#issues)
+         * [Key codes in detail](#key-codes-in-detail)
+
+
 # XHC WHB04B-6 pendant HAL module
 
 ## Pendant layout
@@ -63,13 +79,13 @@ hal   new pin xhc-whb04b-6.out.button.macro-16
 ...
 ```
 
-#### For an extensive list of HAL pins consider running:
+#### An extensive list of HAL pins
 
 ```
 xhc-whb04b-6 -p
 ```
 
-#### For even more details:
+#### Even more details
 
 ```
 $ ./xhc-whb04b-6 -h
