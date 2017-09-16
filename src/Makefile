@@ -142,7 +142,7 @@ ifeq ($(HAVE_KERNEL_THREADS),yes)
     @test -f ../libexec/linuxcnc_module_helper -a \
     	\( `stat -c %u ../libexec/linuxcnc_module_helper` -ne 0 -o \
 	    ! -u ../libexec/linuxcnc_module_helper \) \
-        && need_setuid=1; 
+        && need_setuid=1;
 endif
 
 ifeq ($(RUN_IN_PLACE)+$(BUILD_DRIVERS),yes+yes)
@@ -238,6 +238,7 @@ SUBDIRS := \
 	hal/user_comps/vfs11_vfd \
 	hal/user_comps/vfdb_vfd \
 	hal/user_comps/huanyang-vfd \
+	hal/user_comps/xhc-whb04b-6 \
 	hal/classicladder \
 	hal/utils \
 	hal \
@@ -406,7 +407,7 @@ BASE_CXXFLAGS:= $(INCLUDE) $(CXXFLAGS) \
 		$(ARCH_CFLAGS)
 
 CXXFLAGS :=   $(BASE_CXXFLAGS) -DULAPI
-RT_CXXFLAGS :=   $(BASE_CXXFLAGS) 
+RT_CXXFLAGS :=   $(BASE_CXXFLAGS)
 
 ifeq ($(RUN_IN_PLACE),yes)
 LDFLAGS += -L$(LIB_DIR) -Wl,-rpath,$(LIB_DIR)
@@ -672,7 +673,7 @@ HEADERS := \
     rtapi/shmdrv/shmdrv.h
 
 
-    
+
 ## the "headers" target installs all the header files in ../include
 .PHONY: headers
 HEADERS := $(patsubst %,../include/%,$(foreach h,$(HEADERS),$(notdir $h)))

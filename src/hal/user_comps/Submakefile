@@ -64,14 +64,6 @@ $(call TOOBJSDEPS, $(XHC_HB04_SRC)) : EXTRAFLAGS += $(LIBUSB10_CFLAGS)
 	$(Q)$(CC) $(LDFLAGS) -o $@ $^ -lstdc++ $(LIBUSB10_LIBS)
 TARGETS += ../bin/xhc-hb04
 
-XHC_WHB04B6_SRC = hal/user_comps/xhc-whb04b-6.cc
-USERSRCS += $(XHC_WHB04B6_SRC)
-$(call TOOBJSDEPS, $(XHC_WHB04B6_SRC)) : EXTRAFLAGS += $(LIBUSB10_CFLAGS)
-../bin/xhc-whb04b-6: $(call TOOBJS, $(XHC_WHB04B6_SRC)) ../lib/libmtalk.so ../lib/libmachinetalk-pb2++.so  ../lib/liblinuxcnchal.so.0 ../lib/liblinuxcncini.so.0 ../lib/librtapi_math.so.0
-	$(ECHO) Linking $(notdir $@)
-	$(Q)$(CC) $(LDFLAGS) $(PROTOBUF_LIBS) -g -Wall -pedantic -o $@ $^ -lstdc++ $(LIBUSB10_LIBS)
-TARGETS += ../bin/xhc-whb04b-6
-
 endif # HAVE_LIBUSB10
 
 ../include/%.h: ./hal/user_comps/%.h
