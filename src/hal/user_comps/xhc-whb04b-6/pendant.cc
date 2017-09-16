@@ -34,6 +34,13 @@ namespace XhcWhb04b6 {
 
 // ----------------------------------------------------------------------
 
+const WhbButtonsCode           KeyCodes::Buttons;
+const MetaButtonsCodes         KeyCodes::Meta(Buttons);
+const WhbAxisRotaryButtonCodes KeyCodes::Axis;
+const WhbFeedRotaryButtonCodes KeyCodes::Feed;
+
+// ----------------------------------------------------------------------
+
 WhbKeyCode::WhbKeyCode(uint8_t code, const char* text, const char* altText) :
     code(code),
     text(text),
@@ -167,7 +174,7 @@ float WhbHandwheelStepModeStepSize::getStepSize(PositionNameIndex buttonPosition
 // ----------------------------------------------------------------------
 
 WhbHandwheelStepModeStepSize::WhbHandwheelStepModeStepSize() :
-    mSequence{0.001, 0.01, 0.1, 1.0, 0.0}
+    mSequence{0.001, 0.01, 0.1, 1.0, 0, 0, 0, 0}
 {
 }
 
@@ -181,7 +188,7 @@ uint8_t WhbHandwheelContinuousModeStepSize::getStepSize(PositionNameIndex button
 // ----------------------------------------------------------------------
 
 WhbHandwheelContinuousModeStepSize::WhbHandwheelContinuousModeStepSize() :
-    mSequence{2, 5, 10, 30, 60, 100, 0}
+    mSequence{2, 5, 10, 30, 60, 100, 0, 0}
 {
 }
 
@@ -414,5 +421,457 @@ void WhbButtonsState::setCurrentModeStepMode()
 void WhbButtonsState::setCurrentModeContinuousMode()
 {
     mCurrentStepMode = JogWheelStepMode::CONTINUOUS;
+}
+
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+
+// ----------------------------------------------------------------------
+
+HandwheelStepModeStepSize::HandwheelStepModeStepSize() :
+    mSequence{0.001, 0.01, 0.1, 1, 0, 0, 0}
+{
+}
+
+// ----------------------------------------------------------------------
+
+HandwheelStepModeStepSize::~HandwheelStepModeStepSize()
+{
+}
+
+// ----------------------------------------------------------------------
+
+float HandwheelStepModeStepSize::getStepSize(PositionNameIndex buttonPosition) const
+{
+    return mSequence[static_cast<uint8_t>(buttonPosition)];
+}
+
+// ----------------------------------------------------------------------
+
+bool HandwheelStepModeStepSize::isPermitted(PositionNameIndex buttonPosition) const
+{
+    return (getStepSize(buttonPosition) > 0);
+}
+
+// ----------------------------------------------------------------------
+
+HandwheelContinuousModeStepSize::HandwheelContinuousModeStepSize() :
+    mSequence{2, 5, 10, 30, 60, 100, 0}
+{
+}
+
+// ----------------------------------------------------------------------
+
+HandwheelContinuousModeStepSize::~HandwheelContinuousModeStepSize()
+{
+}
+
+// ----------------------------------------------------------------------
+
+float HandwheelContinuousModeStepSize::getStepSize(PositionNameIndex buttonPosition) const
+{
+    return mSequence[static_cast<uint8_t>(buttonPosition)];
+}
+
+// ----------------------------------------------------------------------
+
+bool HandwheelContinuousModeStepSize::isPermitted(PositionNameIndex buttonPosition) const
+{
+    return (getStepSize(buttonPosition) > 0);
+}
+
+// ----------------------------------------------------------------------
+
+HandwheelLeadModeStepSize::HandwheelLeadModeStepSize() :
+    mSequence{0, 0, 0, 0, 0, 0, 1, 0}
+{
+}
+
+// ----------------------------------------------------------------------
+
+HandwheelLeadModeStepSize::~HandwheelLeadModeStepSize()
+{
+}
+
+// ----------------------------------------------------------------------
+
+float HandwheelLeadModeStepSize::getStepSize(PositionNameIndex buttonPosition) const
+{
+    return mSequence[static_cast<uint8_t>(buttonPosition)];
+}
+
+// ----------------------------------------------------------------------
+
+bool HandwheelLeadModeStepSize::isPermitted(PositionNameIndex buttonPosition) const
+{
+    return (getStepSize(buttonPosition) > 0);
+}
+
+// ----------------------------------------------------------------------
+
+MetaButton::MetaButton(const WhbKeyCode& key, const WhbKeyCode& modifier) :
+    key(key),
+    modifier(modifier)
+{
+}
+
+// ----------------------------------------------------------------------
+
+MetaButton::~MetaButton()
+{
+}
+
+// ----------------------------------------------------------------------
+
+bool MetaButton::containsKeys(const WhbKeyCode& key, const WhbKeyCode& modifier) const
+{
+    return (this->key.code == key.code) && (this->modifier.code == modifier.code);
+}
+
+// ----------------------------------------------------------------------
+
+MetaButtonsCodes::MetaButtonsCodes(const WhbButtonsCode& buttons) :
+    buttons{
+        {new MetaButton(buttons.reset, buttons.undefined)},
+        {new MetaButton(buttons.reset, buttons.function)},
+        {new MetaButton(buttons.stop, buttons.undefined)},
+        {new MetaButton(buttons.stop, buttons.function)},
+        {new MetaButton(buttons.start, buttons.undefined)},
+        {new MetaButton(buttons.start, buttons.function)},
+        {new MetaButton(buttons.feed_plus, buttons.undefined)},
+        {new MetaButton(buttons.feed_plus, buttons.function)},
+        {new MetaButton(buttons.feed_minus, buttons.undefined)},
+        {new MetaButton(buttons.feed_minus, buttons.function)},
+        {new MetaButton(buttons.spindle_plus, buttons.undefined)},
+        {new MetaButton(buttons.spindle_plus, buttons.function)},
+        {new MetaButton(buttons.spindle_minus, buttons.undefined)},
+        {new MetaButton(buttons.spindle_minus, buttons.function)},
+        {new MetaButton(buttons.machine_home, buttons.undefined)},
+        {new MetaButton(buttons.machine_home, buttons.function)},
+        {new MetaButton(buttons.safe_z, buttons.undefined)},
+        {new MetaButton(buttons.safe_z, buttons.function)},
+        {new MetaButton(buttons.workpiece_home, buttons.undefined)},
+        {new MetaButton(buttons.workpiece_home, buttons.function)},
+        {new MetaButton(buttons.spindle_on_off, buttons.undefined)},
+        {new MetaButton(buttons.spindle_on_off, buttons.function)},
+        {new MetaButton(buttons.function, buttons.undefined)},
+        {new MetaButton(buttons.probe_z, buttons.undefined)},
+        {new MetaButton(buttons.probe_z, buttons.function)},
+        {new MetaButton(buttons.macro10, buttons.undefined)},
+        {new MetaButton(buttons.macro10, buttons.function)},
+        {new MetaButton(buttons.manual_pulse_generator, buttons.undefined)},
+        {new MetaButton(buttons.manual_pulse_generator, buttons.function)},
+        {new MetaButton(buttons.step_continuous, buttons.undefined)},
+        {new MetaButton(buttons.step_continuous, buttons.function)},
+        {new MetaButton(buttons.undefined, buttons.undefined)}
+    }
+{
+}
+
+// ----------------------------------------------------------------------
+
+MetaButtonsCodes::~MetaButtonsCodes()
+{
+    for (const MetaButton* b : buttons)
+    {
+        delete b;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+Button::Button(const WhbKeyCode& key) :
+    mKey(&key)
+{
+}
+
+// ----------------------------------------------------------------------
+
+Button::~Button()
+{
+}
+
+// ----------------------------------------------------------------------
+
+const WhbKeyCode& Button::keyCode() const
+{
+    return *mKey;
+}
+
+// ----------------------------------------------------------------------
+
+void Button::setKeyCode(WhbKeyCode& keyCode)
+{
+    mKey = &keyCode;
+}
+
+// ----------------------------------------------------------------------
+
+ToggleButton::ToggleButton(const WhbKeyCode& key, const WhbKeyCode& modifier) :
+    Button(key),
+    mModifier(&modifier)
+{
+}
+
+// ----------------------------------------------------------------------
+
+ToggleButton::~ToggleButton()
+{
+}
+
+// ----------------------------------------------------------------------
+
+const WhbKeyCode& ToggleButton::modifierCode() const
+{
+    return *mModifier;
+}
+
+// ----------------------------------------------------------------------
+
+void ToggleButton::setModifierCode(WhbKeyCode& modifierCode)
+{
+    mModifier = &modifierCode;
+}
+
+// ----------------------------------------------------------------------
+
+bool ToggleButton::containsKeys(const WhbKeyCode& key, const WhbKeyCode& modifier) const
+{
+    return ((key.code == mKey->code) && (modifier.code == mModifier->code));
+}
+
+// ----------------------------------------------------------------------
+
+RotaryButton::RotaryButton(const WhbKeyCode& keyCode) :
+    Button(keyCode)
+{
+}
+
+// ----------------------------------------------------------------------
+
+RotaryButton::~RotaryButton()
+{
+}
+
+// ----------------------------------------------------------------------
+
+FeedRotaryButton::FeedRotaryButton(const WhbKeyCode& keyCode,
+                                   HandwheelStepmodes::Mode stepMode) :
+    RotaryButton(keyCode),
+    mStepMode(stepMode),
+    mStepStepSizeMapper(),
+    mContinuousSizeMapper(),
+    mLeadStepSizeMapper(),
+    mStepKeycodeLut{
+        {&KeyCodes::Feed.speed_0_001, HandwheelStepModeStepSize::PositionNameIndex::RotaryButton0001},
+        {&KeyCodes::Feed.speed_0_01,  HandwheelStepModeStepSize::PositionNameIndex::RotaryButton0010},
+        {&KeyCodes::Feed.speed_0_1,   HandwheelStepModeStepSize::PositionNameIndex::RotaryButton0100},
+        {&KeyCodes::Feed.speed_1,     HandwheelStepModeStepSize::PositionNameIndex::RotaryButtonUndefined},
+        {&KeyCodes::Feed.percent_60,  HandwheelStepModeStepSize::PositionNameIndex::RotaryButtonUndefined},
+        {&KeyCodes::Feed.percent_100, HandwheelStepModeStepSize::PositionNameIndex::RotaryButtonUndefined},
+        {&KeyCodes::Feed.lead,        HandwheelStepModeStepSize::PositionNameIndex::RotaryButtonUndefined}
+    },
+    mContinuousKeycodeLut{
+        {&KeyCodes::Feed.speed_0_001, HandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton2percent},
+        {&KeyCodes::Feed.speed_0_01,  HandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton5percent},
+        {&KeyCodes::Feed.speed_0_1,   HandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton10percent},
+        {&KeyCodes::Feed.speed_1,     HandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton30percent},
+        {&KeyCodes::Feed.percent_60,  HandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton60percent},
+        {&KeyCodes::Feed.percent_100, HandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton100percent},
+        {&KeyCodes::Feed.lead,        HandwheelContinuousModeStepSize::PositionNameIndex::RotaryButtonUndefined}
+    },
+    mLeadKeycodeLut{
+        {&KeyCodes::Feed.speed_0_001, HandwheelLeadModeStepSize::PositionNameIndex::UNDEFINED},
+        {&KeyCodes::Feed.speed_0_01,  HandwheelLeadModeStepSize::PositionNameIndex::UNDEFINED},
+        {&KeyCodes::Feed.speed_0_1,   HandwheelLeadModeStepSize::PositionNameIndex::UNDEFINED},
+        {&KeyCodes::Feed.speed_1,     HandwheelLeadModeStepSize::PositionNameIndex::UNDEFINED},
+        {&KeyCodes::Feed.percent_60,  HandwheelLeadModeStepSize::PositionNameIndex::UNDEFINED},
+        {&KeyCodes::Feed.percent_100, HandwheelLeadModeStepSize::PositionNameIndex::UNDEFINED},
+        {&KeyCodes::Feed.lead,        HandwheelLeadModeStepSize::PositionNameIndex::LEAD}
+    }
+{
+}
+
+// ----------------------------------------------------------------------
+
+FeedRotaryButton::~FeedRotaryButton()
+{
+}
+
+// ----------------------------------------------------------------------
+
+void FeedRotaryButton::setStepMode(HandwheelStepmodes::Mode stepMode)
+{
+    mStepMode = stepMode;
+}
+
+// ----------------------------------------------------------------------
+
+HandwheelStepmodes::Mode FeedRotaryButton::stepMode() const
+{
+    return mStepMode;
+}
+
+// ----------------------------------------------------------------------
+
+float FeedRotaryButton::stepSize() const
+{
+    if (mStepMode == HandwheelStepmodes::Mode::CONTINUOUS)
+    {
+        auto enumValue = mContinuousKeycodeLut.find(mKey);
+        assert(enumValue != mContinuousKeycodeLut.end());
+        return mContinuousSizeMapper.getStepSize(enumValue->second);
+    }
+    else if (mStepMode == HandwheelStepmodes::Mode::STEP)
+    {
+        auto enumValue = mStepKeycodeLut.find(mKey);
+        assert(enumValue != mStepKeycodeLut.end());
+        return mStepStepSizeMapper.getStepSize(enumValue->second);
+    }
+    else if (mStepMode == HandwheelStepmodes::Mode::LEAD)
+    {
+        auto enumValue = mLeadKeycodeLut.find(mKey);
+        assert(enumValue != mLeadKeycodeLut.end());
+        return mLeadStepSizeMapper.getStepSize(enumValue->second);
+    }
+    else
+    {
+        assert(false);
+    }
+}
+
+// ----------------------------------------------------------------------
+
+bool FeedRotaryButton::isPermitted() const
+{
+    if (mStepMode == HandwheelStepmodes::Mode::CONTINUOUS)
+    {
+        auto enumValue = mContinuousKeycodeLut.find(mKey);
+        assert(enumValue != mContinuousKeycodeLut.end());
+        return mContinuousSizeMapper.isPermitted(enumValue->second);
+    }
+    else if (mStepMode == HandwheelStepmodes::Mode::STEP)
+    {
+        auto enumValue = mStepKeycodeLut.find(mKey);
+        assert(enumValue != mStepKeycodeLut.end());
+        return mStepStepSizeMapper.isPermitted(enumValue->second);
+    }
+    else if (mStepMode == HandwheelStepmodes::Mode::LEAD)
+    {
+        auto enumValue = mLeadKeycodeLut.find(mKey);
+        assert(enumValue != mLeadKeycodeLut.end());
+        return mLeadStepSizeMapper.isPermitted(enumValue->second);
+    }
+    else
+    {
+        assert(false);
+    }
+}
+
+// ----------------------------------------------------------------------
+
+AxisRotaryButton::AxisRotaryButton(const WhbKeyCode& keyCode) :
+    RotaryButton(keyCode)
+{
+}
+
+// ----------------------------------------------------------------------
+
+AxisRotaryButton::~AxisRotaryButton()
+{
+}
+
+// ----------------------------------------------------------------------
+
+bool AxisRotaryButton::isPermitted() const
+{
+    return (mKey != &KeyCodes::Axis.undefined);
+}
+
+// ----------------------------------------------------------------------
+
+Handwheel::Handwheel(const FeedRotaryButton& feedButton) :
+    mCounts(0),
+    mFeedButton(feedButton)
+{
+}
+
+// ----------------------------------------------------------------------
+
+Handwheel::~Handwheel()
+{
+}
+
+// ----------------------------------------------------------------------
+
+int32_t Handwheel::consumeScaledCounts()
+{
+    int32_t tmp = mCounts;
+    mCounts = 0;
+
+    if (mFeedButton.stepMode() == HandwheelStepmodes::Mode::STEP)
+    {
+        if (mFeedButton.isPermitted())
+        {
+            return tmp * mFeedButton.stepSize();
+        }
+        return 0;
+    }
+    return tmp;
+}
+
+// ----------------------------------------------------------------------
+
+void Handwheel::produceCount(int8_t counts)
+{
+    mCounts += counts;
+}
+
+// ----------------------------------------------------------------------
+
+ButtonsState::ButtonsState() :
+    mPressedButtons(),
+    mCurrentMetaButton(KeyCodes::Meta.buttons.back()),
+    mAxisButton(),
+    mFeedButton()
+{
+}
+
+// ----------------------------------------------------------------------
+
+ButtonsState::~ButtonsState()
+{
+}
+
+// ----------------------------------------------------------------------
+
+FeedRotaryButton& ButtonsState::feedRotaryButton()
+{
+    return mFeedButton;
+}
+
+// ----------------------------------------------------------------------
+
+Pendant::Pendant() :
+    mCurrentButtonsState(),
+    mPreviousButtonsState(),
+    mHandWheel(mCurrentButtonsState.feedRotaryButton())
+{
+}
+
+// ----------------------------------------------------------------------
+
+Pendant::~Pendant()
+{
 }
 }

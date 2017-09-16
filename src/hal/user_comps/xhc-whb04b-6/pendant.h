@@ -21,6 +21,8 @@
 
 // system includes
 #include <stdint.h>
+#include <list>
+#include <map>
 
 // 3rd party includes
 
@@ -28,6 +30,7 @@
 #include <hal_types.h>
 
 // forward declarations
+
 
 namespace XhcWhb04b6 {
 
@@ -175,7 +178,11 @@ public:
         RotaryButton0010      = 1,
         RotaryButton0100      = 2,
         RotaryButton100       = 3,
-        RotaryButtonUndefined = 4
+        NA0                   = 4,
+        NA1                   = 5,
+        NA2                   = 6,
+        RotaryButtonUndefined = 7,
+        POSITIONS_COUNT       = 8
     };
 
     //! Translates the button position to step metric units.
@@ -185,7 +192,7 @@ public:
     WhbHandwheelStepModeStepSize();
 
 private:
-    const float mSequence[5];
+    const float mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
 };
 
 // ----------------------------------------------------------------------
@@ -204,17 +211,20 @@ public:
         RotaryButton30percent  = 3,
         RotaryButton60percent  = 4,
         RotaryButton100percent = 5,
-        RotaryButtonUndefined  = 6
+        NA0                    = 6,
+        RotaryButtonUndefined  = 7,
+        POSITIONS_COUNT        = 8
     };
 
     //! Translates the button position to step size in %.
     //! \param buttonPosition
     //! \return the step size in percent ∈ [0, 100]
     uint8_t getStepSize(PositionNameIndex buttonPosition) const;
+
     WhbHandwheelContinuousModeStepSize();
 
 private:
-    const uint8_t mSequence[7];
+    const uint8_t mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
 };
 
 // ----------------------------------------------------------------------
@@ -306,5 +316,327 @@ private:
     uint8_t mCurrentFeedCode;
     const WhbKeyCode* mCurrentAxisKeyCode;
     const WhbKeyCode* mCurrentFeedKeyCode;
+};
+
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
+
+
+// ----------------------------------------------------------------------
+
+class HandwheelStepmodes
+{
+public:
+    enum class Mode : uint8_t
+    {
+        CONTINUOUS  = 0,
+        STEP        = 1,
+        LEAD        = 2,
+        MODES_COUNT = 3
+    };
+};
+
+// ----------------------------------------------------------------------
+
+//! If hand wheel is in step mode (toggled by Step/Continuous" button) this speed setting is applied.
+//! In step mode the step is in machine units distance.
+class HandwheelStepModeStepSize
+{
+public:
+    enum class PositionNameIndex : uint8_t
+    {
+        RotaryButton0001      = 0,
+        RotaryButton0010      = 1,
+        RotaryButton0100      = 2,
+        RotaryButton100       = 3,
+        NA0                   = 4,
+        NA1                   = 5,
+        NA2                   = 6,
+        RotaryButtonUndefined = 7,
+        POSITIONS_COUNT       = 8,
+    };
+
+    HandwheelStepModeStepSize();
+    ~HandwheelStepModeStepSize();
+
+    //! Translates the button position to step metric units.
+    //! \param buttonPosition
+    //! \return the step size in units ℝ ∈ {0.001, 0.01, 0.1, 1.0, -1}
+    float getStepSize(PositionNameIndex buttonPosition) const;
+    virtual bool isPermitted(PositionNameIndex buttonPosition) const;
+
+private:
+    const float mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
+};
+
+// ----------------------------------------------------------------------
+
+//! If hand wheel is in continuous mode (toggled by Step/Continuous" button) this speed setting is applied.
+//! In continuous mode the step speed is in percent of max-velocity.
+class HandwheelContinuousModeStepSize
+{
+public:
+    enum class PositionNameIndex : uint8_t
+    {
+        RotaryButton2percent   = 0,
+        RotaryButton5percent   = 1,
+        RotaryButton10percent  = 2,
+        RotaryButton30percent  = 3,
+        RotaryButton60percent  = 4,
+        RotaryButton100percent = 5,
+        NA0                    = 6,
+        RotaryButtonUndefined  = 7,
+        POSITIONS_COUNT        = 8
+    };
+
+    HandwheelContinuousModeStepSize();
+    ~HandwheelContinuousModeStepSize();
+
+    //! Translates the button position to step size in %.
+    //! \param buttonPosition
+    //! \return the step size in percent ℕ ∈ {[0, 100], -1}
+    float getStepSize(PositionNameIndex buttonPosition) const;
+    virtual bool isPermitted(PositionNameIndex buttonPosition) const;
+
+private:
+    const int8_t mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
+};
+
+// ----------------------------------------------------------------------
+
+//! If hand wheel is in Lead mode (activated by the feed rotary button) this speed setting is applied.
+class HandwheelLeadModeStepSize
+{
+public:
+    enum class PositionNameIndex : uint8_t
+    {
+        NA0             = 0,
+        NA1             = 1,
+        NA2             = 2,
+        NA3             = 3,
+        NA4             = 4,
+        NA5             = 5,
+        LEAD            = 6,
+        UNDEFINED       = 7,
+        POSITIONS_COUNT = 8
+    };
+
+    HandwheelLeadModeStepSize();
+    ~HandwheelLeadModeStepSize();
+
+    //! Translates the button position to step size.
+    //! \param buttonPosition
+    //! \return the step size ℕ ∈ {1.0, -1.0}
+    float getStepSize(PositionNameIndex buttonPosition) const;
+    virtual bool isPermitted(PositionNameIndex buttonPosition) const;
+
+private:
+    const int8_t mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
+};
+
+// ----------------------------------------------------------------------
+/*
+class HandwheelAxisIsPermittedValidator : public HandwheelModeStepSize
+{
+public:
+    enum class PositionNameIndex : uint8_t
+    {
+        OFF             = 0,
+        X               = 1,
+        Y               = 2,
+        Z               = 3,
+        A               = 4,
+        B               = 5,
+        C               = 6,
+        UNDEFINED       = 7,
+        POSITIONS_COUNT = 8
+    };
+
+    HandwheelAxisIsPermittedValidator() :
+        mSequence{false, true, true, true, true, true, true, false}
+    {
+    }
+
+    virtual ~HandwheelAxisIsPermittedValidator()
+    {
+    }
+
+    bool isPermitted(PositionNameIndex buttonPosition) const
+    {
+        return mSequence[static_cast<uint8_t>(buttonPosition)];
+    }
+
+private:
+    const bool mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
+};
+*/
+
+// ----------------------------------------------------------------------
+
+//! meta-button state which is dependent on the "Fn" modifier button's state
+class MetaButton
+{
+public:
+    const WhbKeyCode& key;
+    const WhbKeyCode& modifier;
+
+    MetaButton(const WhbKeyCode& key, const WhbKeyCode& modifier);
+    virtual ~MetaButton();
+    bool containsKeys(const WhbKeyCode& key, const WhbKeyCode& modifier) const;
+};
+
+// ----------------------------------------------------------------------
+
+class MetaButtonsCodes
+{
+public:
+    const std::list<const MetaButton*> buttons;
+    MetaButtonsCodes(const WhbButtonsCode& buttons);
+    ~MetaButtonsCodes();
+};
+
+// ----------------------------------------------------------------------
+
+class KeyCodes
+{
+public:
+    static const WhbButtonsCode           Buttons;
+    static const MetaButtonsCodes         Meta;
+    static const WhbAxisRotaryButtonCodes Axis;
+    static const WhbFeedRotaryButtonCodes Feed;
+};
+
+// ----------------------------------------------------------------------
+
+class Button
+{
+public:
+    Button(const WhbKeyCode& key);
+    virtual ~Button();
+    virtual const WhbKeyCode& keyCode() const;
+    virtual void setKeyCode(WhbKeyCode& keyCode);
+
+protected:
+    const WhbKeyCode* mKey;
+};
+
+// ----------------------------------------------------------------------
+
+//! meta-button state which is dependent on the "Fn" modifier button's state
+class ToggleButton : public Button
+{
+public:
+    ToggleButton(const WhbKeyCode& key, const WhbKeyCode& modifier);
+    virtual ~ToggleButton();
+    virtual const WhbKeyCode& modifierCode() const;
+    virtual void setModifierCode(WhbKeyCode& modifierCode);
+    bool containsKeys(const WhbKeyCode& key, const WhbKeyCode& modifier) const;
+
+private:
+    const WhbKeyCode* mModifier;
+};
+
+// ----------------------------------------------------------------------
+
+class RotaryButton : public Button
+{
+public:
+    RotaryButton(const WhbKeyCode& keyCode);
+    virtual ~RotaryButton();
+    virtual bool isPermitted() const = 0;
+};
+
+// ----------------------------------------------------------------------
+
+class FeedRotaryButton : public RotaryButton
+{
+public:
+    FeedRotaryButton(const WhbKeyCode& keyCode = KeyCodes::Feed.undefined,
+                     HandwheelStepmodes::Mode stepMode = HandwheelStepmodes::Mode::CONTINUOUS);
+    ~FeedRotaryButton();
+    void setStepMode(HandwheelStepmodes::Mode stepMode);
+    HandwheelStepmodes::Mode stepMode() const;
+    float stepSize() const;
+    bool isPermitted() const override;
+
+private:
+    HandwheelStepmodes::Mode              mStepMode;
+    const HandwheelStepModeStepSize       mStepStepSizeMapper;
+    const HandwheelContinuousModeStepSize mContinuousSizeMapper;
+    const HandwheelLeadModeStepSize       mLeadStepSizeMapper;
+
+    const std::map<const WhbKeyCode*, HandwheelStepModeStepSize::PositionNameIndex>       mStepKeycodeLut;
+    const std::map<const WhbKeyCode*, HandwheelContinuousModeStepSize::PositionNameIndex> mContinuousKeycodeLut;
+    const std::map<const WhbKeyCode*, HandwheelLeadModeStepSize::PositionNameIndex>       mLeadKeycodeLut;
+};
+
+// ----------------------------------------------------------------------
+
+class AxisRotaryButton : public RotaryButton
+{
+public:
+    AxisRotaryButton(const WhbKeyCode& keyCode = KeyCodes::Axis.undefined);
+    virtual ~AxisRotaryButton();
+    bool isPermitted() const override;
+
+private:
+};
+
+// ----------------------------------------------------------------------
+
+class Handwheel
+{
+public:
+    Handwheel(const FeedRotaryButton& feedButton);
+    ~Handwheel();
+    int32_t consumeScaledCounts();
+    void produceCount(int8_t counts);
+
+private:
+    int32_t mCounts;
+    const FeedRotaryButton& mFeedButton;
+};
+
+// ----------------------------------------------------------------------
+
+class ButtonsState
+{
+public:
+    ButtonsState();
+    ~ButtonsState();
+    FeedRotaryButton& feedRotaryButton();
+
+private:
+    std::list<const WhbKeyCode*> mPressedButtons;
+    const MetaButton* mCurrentMetaButton;
+    AxisRotaryButton mAxisButton;
+    FeedRotaryButton mFeedButton;
+};
+
+// ----------------------------------------------------------------------
+
+class Pendant
+{
+public:
+    Pendant();
+    ~Pendant();
+
+private:
+    ButtonsState mCurrentButtonsState;
+    ButtonsState mPreviousButtonsState;
+    Handwheel    mHandWheel;
+
+    float mScale;
+    float mMaxVelocity;
 };
 }
