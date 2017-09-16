@@ -97,10 +97,10 @@ SYNOPSIS
     xhc-whb04b-6 [-h] | [-H] [OPTIONS] 
 
 NAME
-    xhc-whb04b-6 - jog dial HAL module for the XHC-WHB04B-6 device
+    xhc-whb04b-6 - jog dial HAL component for the XHC-WHB04B-6 device
 
 DESCRIPTION
-    xhc-whb04b-6 is a HAL module that receives events from the XHC-WHB04B-6 device and exposes them to HAL via HAL pins.
+    xhc-whb04b-6 is a HAL component that receives events from the XHC-WHB04B-6 device and exposes them to HAL via HAL pins.
 
 OPTIONS
  -h 
@@ -147,7 +147,7 @@ xhc-whb04b-6 -Ha
     Start in HAL mode and avoid output, except of errors.
 
 AUTHORS
-    This module was started by Raoul Rubien (github.com/rubienr) based on predecessor device's module xhc-hb04.cc. https://github.com/machinekit/machinekit/graphs/contributors gives you a more complete list of contributors.
+    This component was started by Raoul Rubien (github.com/rubienr) based on predecessor device's component xhc-hb04.cc. https://github.com/machinekit/machinekit/graphs/contributors gives you a more complete list of contributors.
  ```
 
 ## Protocol description
