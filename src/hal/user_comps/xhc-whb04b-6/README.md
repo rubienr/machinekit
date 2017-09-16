@@ -73,7 +73,7 @@ xhc-whb04b-6 -p
 
 ```
 $ ./xhc-whb04b-6 -h
-xhc-whb04b-6 version 0.1 Sep 10 2017 08:57:04
+xhc-whb04b-6 version 0.1 Sep 16 2017 14:41:32
 
 SYNOPSIS
     xhc-whb04b-6 [-h] | [-H] [OPTIONS] 
@@ -89,7 +89,7 @@ OPTIONS
     Prints the synonpsis and the most commonly used commands.
 
  -H 
-    run XHC-WHB04B-6 in HAL-mode instead of interactive mode. When in HAL mode commands from device will be exposed to HAL's shred memory. Interactive mode is useful for testing device connectivity and debugging.
+    run xhc-whb04b-6 in HAL-mode instead of interactive mode. When in HAL mode commands from device will be exposed to HAL's shred memory. Interactive mode is useful for testing device connectivity and debugging.
 
  -t 
     Wait with timeout for USB device then proceed, exit otherwise. Without -t the timeout is ipmlicitely infinite.
@@ -108,9 +108,15 @@ OPTIONS
 
  -c 
     Enable checksum output which is necessary for debugging the checksum generator function. Do not rely on this featue since it will be removed once the generator is implemented.
-    
- -s 
+
+ -n 
     Force being silent and not printing any output except of errors. This will also inhibit messages prefixed with "init".
+
+ -s <scale>
+    Specifies the number of pulses that corresponds to a move of one machine unit in [mm] or [inch]. Default is 80.
+
+ -v <max_velocity>
+    The maximum velocity for any axis in machine units per second (same unit as -s). Default is 800.
 
 EXAMPLES
 xhc-whb04b-6 -ue
@@ -124,7 +130,6 @@ xhc-whb04b-6 -Ha
 
 AUTHORS
     This module was started by Raoul Rubien (github.com/rubienr) based on predecessor device's module xhc-hb04.cc. https://github.com/machinekit/machinekit/graphs/contributors gives you a more complete list of contributors.
-
  ```
 
 ## Protocol description
