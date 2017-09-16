@@ -38,20 +38,6 @@ namespace XhcWhb04b6 {
 
 // ----------------------------------------------------------------------
 
-XhcWhb04b6::WhbContext Whb;
-
-
-// ----------------------------------------------------------------------
-
-void usbInputResponseCallback(struct libusb_transfer* transfer)
-{
-    // pass transfer to usb data parser
-    Whb.onUsbDataReceivedCallback(transfer);
-}
-
-
-// ----------------------------------------------------------------------
-
 UsbInputPackageInterpreted::~UsbInputPackageInterpreted()
 {
 }
@@ -333,7 +319,7 @@ WhbContext::WhbContext() :
         //! it is expected to terminate this array with the "undefined" software button
                      WhbSoftwareButton(mKeyCodes.buttons.undefined, mKeyCodes.buttons.undefined)
     },
-    mUsb(mName, *this, usbInputResponseCallback),
+    mUsb(mName, *this),
     mIsRunning(false),
     mIsSimulationMode(false),
     mPreviousButtonCodes(mKeyCodes.buttons, mKeyCodes.axis, mKeyCodes.feed, mStepHandler.stepSize.step,
@@ -609,14 +595,6 @@ void WhbContext::linuxcncSimulate()
 bool WhbContext::enableReceiveAsyncTransfer()
 {
     return mUsb.setupAsyncTransfer();
-}
-
-// ----------------------------------------------------------------------
-
-void WhbContext::onUsbDataReceivedCallback(struct libusb_transfer* transfer)
-{
-    // pass transfer to raw input data listener
-    mUsb.onUsbDataReceived(transfer);
 }
 
 // ----------------------------------------------------------------------

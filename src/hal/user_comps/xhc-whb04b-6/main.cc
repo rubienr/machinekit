@@ -39,7 +39,8 @@ using std::endl;
 // forward declarations
 
 // globals
-extern XhcWhb04b6::WhbContext XhcWhb04b6::Whb;
+//! object link for signal handler
+XhcWhb04b6::WhbContext *Whb = nullptr;
 
 // ----------------------------------------------------------------------
 
@@ -68,7 +69,7 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
         << "    Prints the synonpsis and the most commonly used commands." << endl
         << endl
         << " -H " << endl
-        << "    run " << XhcWhb04b6::Whb.getName() << " in HAL-mode instead of interactive mode. When in HAL mode "
+        << "    run " << programName << " in HAL-mode instead of interactive mode. When in HAL mode "
         << "commands from device will be exposed to HAL's shred memory. Interactive mode is useful for "
         << "testing device connectivity and debugging." << endl
         << endl
@@ -135,7 +136,9 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
 //! called on program termination requested
 static void quit(int signal)
 {
-    XhcWhb04b6::Whb.requestTermination(signal);
+    if (Whb != nullptr) {
+        Whb->requestTermination(signal);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -164,6 +167,9 @@ bool parseFloat(const char* str, float& out)
 
 int main(int argc, char** argv)
 {
+    XhcWhb04b6::WhbContext whb;
+    Whb = &whb;
+
     XhcWhb04b6::MachineConfiguration machineConfig(80, 10 * 80);
     const char* optargs = "phaeHuctnUs:v:";
     for (int opt = getopt(argc, argv, optargs); opt != -1; opt = getopt(argc, argv, optargs))
@@ -173,36 +179,36 @@ int main(int argc, char** argv)
         switch (opt)
         {
             case 'H':
-                XhcWhb04b6::Whb.setSimulationMode(false);
+                whb.setSimulationMode(false);
                 break;
             case 't':
-                XhcWhb04b6::Whb.setWaitWithTimeout(3);
+                whb.setWaitWithTimeout(3);
                 break;
             case 'e':
-                XhcWhb04b6::Whb.setEnableVerboseKeyEvents(true);
+                whb.setEnableVerboseKeyEvents(true);
                 break;
             case 'u':
-                XhcWhb04b6::Whb.enableVerboseInit(true);
-                XhcWhb04b6::Whb.enableVerboseRx(true);
+                whb.enableVerboseInit(true);
+                whb.enableVerboseRx(true);
                 break;
             case 'U':
-                XhcWhb04b6::Whb.enableVerboseInit(true);
-                XhcWhb04b6::Whb.enableVerboseRx(true);
-                XhcWhb04b6::Whb.enableVerboseTx(true);
+                whb.enableVerboseInit(true);
+                whb.enableVerboseRx(true);
+                whb.enableVerboseTx(true);
                 break;
             case 'p':
-                XhcWhb04b6::Whb.enableVerboseInit(true);
-                XhcWhb04b6::Whb.enableVerboseHal(true);
+                whb.enableVerboseInit(true);
+                whb.enableVerboseHal(true);
                 break;
             case 'a':
-                XhcWhb04b6::Whb.enableVerboseInit(true);
-                XhcWhb04b6::Whb.setEnableVerboseKeyEvents(true);
-                XhcWhb04b6::Whb.enableVerboseRx(true);
-                XhcWhb04b6::Whb.enableVerboseTx(true);
-                XhcWhb04b6::Whb.enableVerboseHal(true);
+                whb.enableVerboseInit(true);
+                whb.setEnableVerboseKeyEvents(true);
+                whb.enableVerboseRx(true);
+                whb.enableVerboseTx(true);
+                whb.enableVerboseHal(true);
                 break;
             case 'c':
-                XhcWhb04b6::Whb.enableCrcDebugging(true);
+                whb.enableCrcDebugging(true);
                 break;
             case 'n':
                 break;
@@ -221,21 +227,21 @@ int main(int argc, char** argv)
                 machineConfig.setMaxVelocity(maxVelocity);
                 break;
             case 'h':
-                return printUsage(basename(argv[0]), XhcWhb04b6::Whb.getName());
+                return printUsage(basename(argv[0]), whb.getName());
                 break;
             default:
-                return printUsage(basename(argv[0]), XhcWhb04b6::Whb.getName(), true);
+                return printUsage(basename(argv[0]), whb.getName(), true);
                 break;
         }
     }
 
     registerSignalHandler();
 
-    XhcWhb04b6::Whb.setMachineConfig(machineConfig);
-    XhcWhb04b6::Whb.run();
+    whb.setMachineConfig(machineConfig);
+    whb.run();
 
     //! hotfix for https://github.com/machinekit/machinekit/issues/1266
-    if (XhcWhb04b6::Whb.isSimulationModeEnabled())
+    if (whb.isSimulationModeEnabled())
     {
         google::protobuf::ShutdownProtobufLibrary();
     }

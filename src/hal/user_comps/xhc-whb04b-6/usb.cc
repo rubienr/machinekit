@@ -39,6 +39,18 @@ using std::endl;
 
 namespace XhcWhb04b6 {
 
+
+// ----------------------------------------------------------------------
+
+//! This callback function passes received libusb transfer to the object
+//! interested in the data.
+void usbInputResponseCallback(struct libusb_transfer* transfer)
+{
+    assert(transfer->user_data != nullptr);
+    UsbRawInputListener *receiver = reinterpret_cast<UsbRawInputListener *>(transfer->user_data);
+    receiver->onUsbDataReceived(transfer);
+}
+
 // ----------------------------------------------------------------------
 
 const WhbConstantUsbPackages WhbUsb::ConstantPackages;
@@ -220,7 +232,7 @@ void WhbUsb::setDoReconnect(bool doReconnect)
 
 // ----------------------------------------------------------------------
 
-WhbUsb::WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback, libusb_transfer_cb_fn rawDataCallback)
+WhbUsb::WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback)
     :
 // usbVendorId(0x10ce), // xhc-whb04-4
 // usbProductId(0xeb70),// xhc-whb04-4
@@ -236,7 +248,7 @@ WhbUsb::WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback
     inputPackageBuffer(),
     outputPackageBuffer(),
     mDataHandler(onDataReceivedCallback),
-    mRawDataCallback(rawDataCallback),
+    mRawDataCallback(usbInputResponseCallback),
     mHalMemory(nullptr),
     inTransfer(libusb_alloc_transfer(0)),
     outTransfer(libusb_alloc_transfer(0)),
@@ -550,8 +562,8 @@ bool WhbUsb::setupAsyncTransfer()
         //! TODO: LIBUSB_ENDPOINT_IN
                               (0x1 | LIBUSB_ENDPOINT_IN), inputPackageBuffer.asBuffer,
                               sizeof(inputPackageBuffer.asBuffer), mRawDataCallback,
-        //! no callback data
-                              nullptr,
+        //! pass this object as callback data
+                              static_cast<void *>(this),
         //! timeout[ms]
                               750);
     int r = libusb_submit_transfer(inTransfer);

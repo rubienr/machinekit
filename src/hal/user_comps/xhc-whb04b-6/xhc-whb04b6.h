@@ -35,11 +35,6 @@ namespace XhcWhb04b6 {
 
 // forward declarations
 
-// globals
-//! the instance to work with
-//! \sa usbInputResponseCallback(struct libusb_transfer*)
-extern XhcWhb04b6::WhbContext Whb;
-
 // ----------------------------------------------------------------------
 
 class WhbKeyEventListener
@@ -121,7 +116,6 @@ public:
     void initWhb();
     void initHal();
     void teardownHal();
-    void onUsbDataReceivedCallback(struct libusb_transfer* transfer);
     bool enableReceiveAsyncTransfer();
     void sendDisplayData();
     void linuxcncSimulate();

@@ -316,8 +316,7 @@ public:
     static const WhbConstantUsbPackages ConstantPackages;
     //! \param name device string used for printing messages
     //! \param onDataReceivedCallback called when received data is ready
-    WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback,
-           void (* rawDataCallback)(struct libusb_transfer* transfer));
+    WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback);
     ~WhbUsb();
     uint16_t getUsbVendorId() const;
     uint16_t getUsbProductId() const;
@@ -360,7 +359,7 @@ private:
     WhbUsbOutPackageBuffer outputPackageBuffer;
     WhbUsbOutPackageData   outputPackageData;
     UsbInputPackageListener& mDataHandler;
-    void (* mRawDataCallback)(struct libusb_transfer*);
+    void (* const mRawDataCallback)(struct libusb_transfer*);
     WhbHalMemory          * mHalMemory;
     struct libusb_transfer* inTransfer;
     struct libusb_transfer* outTransfer;
