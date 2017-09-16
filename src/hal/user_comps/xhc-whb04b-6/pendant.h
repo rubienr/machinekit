@@ -78,10 +78,10 @@ public:
 class WhbAxisRotaryButtonCodes
 {
 public:
-    //typedef enum
+    //enum class AxisIndexName : uint8_t
     //{
     //    Off = 0, X = 1, Y = 2, Z = 3, A = 4, B = 5, C = 6
-    //} AxisIndexName;
+    //};
 
     const WhbKeyCode off;
     const WhbKeyCode x;
@@ -151,22 +151,25 @@ public:
 };
 
 // ----------------------------------------------------------------------
+
 //! If hand wheel is in Lead mode (activated by the feed rotary button) this speed setting is applied.
 class WhbHandwheelLeadModeStepSize
 {
 public:
-    enum PositionNameIndex
+    enum class PositionNameIndex : uint8_t
     {
         RotaryButtonLeed = 6
     };
 };
+
 // ----------------------------------------------------------------------
+
 //! If hand wheel is in step mode (toggled by Step/Continuous" button) this speed setting is applied.
 //! In step mode the step is in machine units distance.
 class WhbHandwheelStepModeStepSize
 {
 public:
-    enum PositionNameIndex
+    enum class PositionNameIndex : uint8_t
     {
         RotaryButton0001      = 0,
         RotaryButton0010      = 1,
@@ -193,7 +196,7 @@ class WhbHandwheelContinuousModeStepSize
 {
 public:
 
-    enum PositionNameIndex
+    enum class PositionNameIndex : uint8_t
     {
         RotaryButton2percent   = 0,
         RotaryButton5percent   = 1,

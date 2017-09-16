@@ -161,7 +161,7 @@ WhbKeyCodes::WhbKeyCodes() :
 
 float WhbHandwheelStepModeStepSize::getStepSize(PositionNameIndex buttonPosition) const
 {
-    return mSequence[buttonPosition];
+    return mSequence[static_cast<int8_t>(buttonPosition)];
 }
 
 // ----------------------------------------------------------------------
@@ -175,7 +175,7 @@ WhbHandwheelStepModeStepSize::WhbHandwheelStepModeStepSize() :
 
 uint8_t WhbHandwheelContinuousModeStepSize::getStepSize(PositionNameIndex buttonPosition) const
 {
-    return mSequence[buttonPosition];
+    return mSequence[static_cast<int8_t>(buttonPosition)];
 }
 
 // ----------------------------------------------------------------------

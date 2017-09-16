@@ -61,7 +61,7 @@ class DisplayIndicatorStepMode
 {
 public:
     //! \see DisplayIndicatorBitFields::stepMode
-    enum StepMode
+    enum class StepMode : uint8_t
     {
         //! displays "CONT <xx>%"
             CONTINUOUS             = 0x00,

@@ -491,7 +491,7 @@ int WhbContext::run()
         *(mHal.memory->out.isPendantRequired)  = mUsb.isWaitForPendantBeforeHalEnabled();
 
         initWhb();
-        if (false == mUsb.init())
+        if (!mUsb.init())
         {
             return EXIT_FAILURE;
         }
@@ -1125,7 +1125,7 @@ bool WhbContext::updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyC
         uint8_t   softwareButtonKeyCode      = softwareButton.key.code;
         uint8_t   softwareButtonModifierCode = softwareButton.modifier.code;
 
-        if ((halButtonState == true) && // on last button state was pressed
+        if ((halButtonState) && // on last button state was pressed
             !((softwareButtonKeyCode == keyCode) && // and current state is not pressed
               (softwareButtonModifierCode == modifierCode)))
         {
@@ -1133,7 +1133,7 @@ bool WhbContext::updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyC
             *(mHal.memory->out.button_pin[idx]) = false;
             keyEventReceiver.onButtonReleasedEvent(softwareButton);
         }
-        else if ((halButtonState == false) &&  // on last button state was unpressed
+        else if ((!halButtonState) &&  // on last button state was unpressed
                  ((softwareButtonKeyCode == keyCode) && // and current state is pressed
                   (softwareButtonModifierCode == modifierCode)))
         {
@@ -1163,12 +1163,13 @@ void WhbContext::updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool f
         {
             if (mCurrentButtonCodes.isCurrentModeStepMode())
             {
-                mCurrentButtonCodes.setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::RotaryButton0001);
+                mCurrentButtonCodes.setCurrentStepModeStepSize(
+                    WhbHandwheelStepModeStepSize::PositionNameIndex::RotaryButton0001);
             }
             else
             {
                 mCurrentButtonCodes.setCurrentContinuousModeStepSize(
-                    WhbHandwheelContinuousModeStepSize::RotaryButton2percent);
+                    WhbHandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton2percent);
             }
             newFeedCode = &mKeyCodes.feed.speed_0_001;
         }
@@ -1176,12 +1177,13 @@ void WhbContext::updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool f
         {
             if (mCurrentButtonCodes.isCurrentModeStepMode())
             {
-                mCurrentButtonCodes.setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::RotaryButton0010);
+                mCurrentButtonCodes.setCurrentStepModeStepSize(
+                    WhbHandwheelStepModeStepSize::PositionNameIndex::RotaryButton0010);
             }
             else
             {
                 mCurrentButtonCodes.setCurrentContinuousModeStepSize(
-                    WhbHandwheelContinuousModeStepSize::RotaryButton5percent);
+                    WhbHandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton5percent);
             }
             newFeedCode = &mKeyCodes.feed.speed_0_01;
         }
@@ -1189,12 +1191,13 @@ void WhbContext::updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool f
         {
             if (mCurrentButtonCodes.isCurrentModeStepMode())
             {
-                mCurrentButtonCodes.setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::RotaryButton0100);
+                mCurrentButtonCodes.setCurrentStepModeStepSize(
+                    WhbHandwheelStepModeStepSize::PositionNameIndex::RotaryButton0100);
             }
             else
             {
                 mCurrentButtonCodes.setCurrentContinuousModeStepSize(
-                    WhbHandwheelContinuousModeStepSize::RotaryButton10percent);
+                    WhbHandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton10percent);
             }
             newFeedCode = &mKeyCodes.feed.speed_0_1;
         }
@@ -1202,12 +1205,13 @@ void WhbContext::updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool f
         {
             if (mCurrentButtonCodes.isCurrentModeStepMode())
             {
-                mCurrentButtonCodes.setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::RotaryButton100);
+                mCurrentButtonCodes.setCurrentStepModeStepSize(
+                    WhbHandwheelStepModeStepSize::PositionNameIndex::RotaryButton100);
             }
             else
             {
                 mCurrentButtonCodes.setCurrentContinuousModeStepSize(
-                    WhbHandwheelContinuousModeStepSize::RotaryButton30percent);
+                    WhbHandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton30percent);
             }
             newFeedCode = &mKeyCodes.feed.speed_1;
         }
@@ -1216,7 +1220,7 @@ void WhbContext::updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool f
             if (mCurrentButtonCodes.isCurrentModeContinuousMode())
             {
                 mCurrentButtonCodes.setCurrentContinuousModeStepSize(
-                    WhbHandwheelContinuousModeStepSize::RotaryButton60percent);
+                    WhbHandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton60percent);
                 newFeedCode = &mKeyCodes.feed.percent_60;
             }
         }
@@ -1225,7 +1229,7 @@ void WhbContext::updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool f
             if (mCurrentButtonCodes.isCurrentModeContinuousMode())
             {
                 mCurrentButtonCodes.setCurrentContinuousModeStepSize(
-                    WhbHandwheelContinuousModeStepSize::RotaryButton100percent);
+                    WhbHandwheelContinuousModeStepSize::PositionNameIndex::RotaryButton100percent);
                 newFeedCode = &mKeyCodes.feed.percent_100;
             }
         }
