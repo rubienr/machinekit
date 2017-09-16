@@ -12,7 +12,9 @@
          * [What we didn't](#what-we-didnt)
          * [Issues](#issues)
          * [Key codes in detail](#key-codes-in-detail)
-
+      * [Examples](#examples)
+         * [USB and key press events](#usb-and-key-press-events)
+         * [HAL pins](#hal-pins)
 
 # XHC WHB04B-6 pendant HAL module
 
@@ -84,6 +86,7 @@ hal   new pin xhc-whb04b-6.out.button.macro-16
 ```
 xhc-whb04b-6 -p
 ```
+Also rever to section [HAL pins](#hal-pins).
 
 #### Even more details
 
