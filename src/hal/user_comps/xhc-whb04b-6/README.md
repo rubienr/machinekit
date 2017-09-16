@@ -278,3 +278,83 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | b                           | 0x15     | B           | &lt;NA&gt;              |
 | c                           | 0x16     | C           | &lt;NA&gt;              |
 | &lt;no button pressed&gt;   | 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
+
+## Examples
+
+### USB and key press events
+Start and show incoming USB data as bytes and interpreted, and show detected key press/released events.
+```
+$ ../bin/xhc-whb04b-6 -ue
+init  setting machine configuration to scale=80 max_velocity=800
+init  starting in simulation mode
+init  usb context ... ok
+init  not waiting for device XHC-WHB04B-6 vendorId=0x10ce productId=0xeb93, will continue in 0s .... ok
+init  XHC-WHB04B-6 device found
+init  detaching active kernel driver ... already detached
+init  claiming interface ... ok
+init  enabling reception ... ok
+in    0x04 ba 00 00 0e 11 00 ba delta 14 => | 04 | ba |                 |                 |  0.01(  5%) |     X(    ) |   0 | ba
+event axis inactive       (    )
+event axis active       X (    )
+event feed inactive       (    )
+event feed active   0.01(  5%)
+event data interpreted, display data ready
+in    0x04 d3 00 00 0e 12 00 d2 delta 14 => | 04 | d3 |                 |                 |  0.01(  5%) |     Y(    ) |   0 | d2
+event axis inactive     X (    )
+event axis active       Y (    )
+event data interpreted, display data ready
+in    0x04 82 01 00 0e 12 00 81 delta 14 => | 04 | 82 |           reset |                 |  0.01(  5%) |     Y(    ) |   0 | 81
+          reset
+event pressed event data interpreted, display data ready
+in    0x04 bd 00 00 0e 12 00 bc delta 14 => | 04 | bd |                 |                 |  0.01(  5%) |     Y(    ) |   0 | bc
+event released           reset
+event data interpreted, display data ready
+in    0x04 9d 00 00 0e 12 01 9c delta 14 => | 04 | 9d |                 |                 |  0.01(  5%) |     Y(    ) |   1 | 9c
+event jog dial   1
+event data interpreted, display data ready
+in    0x04 de 00 00 0e 12 00 de delta 14 => | 04 | de |                 |                 |  0.01(  5%) |     Y(    ) |   0 | de
+event data interpreted, display data ready
+^Ctermination requested upon signal number 2 ...
+connection lost, cleaning up
+```
+
+### HAL pins
+
+Print HAL pins and HAL related status messages. 
+Hal pins' data types and direction are printed in the very first columns.
+For readability reasons all provided HAL pin names contain the pin direction in thir name.
+Furthermore pin names also explain where a respective pin should be connected to, i.e.:
+* the output pin `xhc-whb04b-6.out.jog.counts-neg` should be connected to `jog.counts-neg` input pin, whereas
+* the input pin `xhc-whb04b-6.in.halui.max-velocity.value` should be connected to `halui.max-velocity.value` output pin.
+
+```
+$ ../bin/xhc-whb04b-6 -p
+init  setting machine configuration to scale=80 max_velocity=800
+init  starting in simulation mode
+hal   initialize simulated HAL memory  ... ok
+hal   bit   out xhc-whb04b-6.out.button.reset
+hal   bit   out xhc-whb04b-6.out.button.macro-11
+hal   bit   out xhc-whb04b-6.out.button.stop
+hal   bit   out xhc-whb04b-6.out.button.macro-12
+hal   bit   out xhc-whb04b-6.out.button.start-pause
+hal   bit   out xhc-whb04b-6.out.button.macro-13
+hal   bit   out xhc-whb04b-6.out.button.feed-plus
+hal   bit   out xhc-whb04b-6.out.button.macro-1
+[...] //! < skipped several lines
+hal   bit   out xhc-whb04b-6.out.halui.jog.c.speed-minus
+hal   s32   out xhc-whb04b-6.out.jog.counts
+hal   s32   out xhc-whb04b-6.out.jog.counts-neg
+hal   float out xhc-whb04b-6.out.jog.velocity
+hal   float in  xhc-whb04b-6.in.halui.max-velocity.value
+hal   float out xhc-whb04b-6.out.jog.increment
+hal   bit   out xhc-whb04b-6.out.halui.home-all
+init  usb context ... ok
+init  not waiting for device XHC-WHB04B-6 vendorId=0x10ce productId=0xeb93, will continue in 0s .... ok
+init  XHC-WHB04B-6 device found
+init  detaching active kernel driver ... already detached
+init  claiming interface ... ok
+init  enabling reception ... ok
+^Ctermination requested upon signal number 2 ...
+connection lost, cleaning up
+
+```
