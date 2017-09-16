@@ -1,13 +1,142 @@
-# XHC WHB04B-6 Protocol description
+# XHC WHB04B-6 pendant HAL module
+
+## Pendant layout
+
+The device provides 16 buttons. One button - "Fn" - is used as key
+modifier. Any button pressed in combination with the modifier button
+generates an alternative event - Macro-n (with n being the macro
+number). This holds for any button, even if Macro-n is not written
+on the button. We have extended the macros beyond Macro-10 until
+Macro-16. The keypad layout is as follows:
+
+|                             |                  |                        |                    |                            |
+|:---------------------------:|:----------------:|:----------------------:|:------------------:|:--------------------------:|
+| RESET (Macro-11)            | Stop  (Macro-12) | Start/Pause (Macro-13) |                    | &lt;On/Off Sw.&gt;         |
+| Feed + (Macro-1)            | Feed-  (Macro-2) | Spindle+ (Macro-3)     | Spindle- (Macro-4) |                            |
+| M-HOME (Macro-5)            | Safe-Z (Macro-6) | W-HOME   (Macro-7)     | S-ON/OFF (Macro-8) | Fn                         |
+|                             |                  | Probe-Z (Macro-9)      |                    |                            |
+| &lt;Axis Rotary Button&gt;  |                  | Macro-10 (Macro-14)    |                    | &lt;Feed Rotary Button&gt; |
+| MPG (Macro-15)              |                  |                        |                    | Step (Macro-16)            |
+|                             |                  | &lt;Jog Dial&gt;       |                    |                            |
+
+* Caution: The buttons' naming and user manual are sohewhat unluckily translated. The **MPG** button puts the device into **continuous**, whereas the **Step/Continuous** button into **step mode**. Continuous mode means n jog dial events are translated to "move joint n times with speed x" whereas step mode to "move joint n steps" with a predefined speed.
+
+### Pendant button naming
+
+The HAL pin names are derived from text written on the respecitve button. For example:
+
+```
+$ xhc-whb04b-6 -p
+init  starting in simulation mode
+hal   new pin xhc-whb04b-6.out.button.reset
+hal   new pin xhc-whb04b-6.out.button.macro-11
+hal   new pin xhc-whb04b-6.out.button.stop
+hal   new pin xhc-whb04b-6.out.button.macro-12
+hal   new pin xhc-whb04b-6.out.button.start-pause
+hal   new pin xhc-whb04b-6.out.button.macro-13
+hal   new pin xhc-whb04b-6.out.button.feed-plus
+hal   new pin xhc-whb04b-6.out.button.macro-1
+hal   new pin xhc-whb04b-6.out.button.feed-minus
+hal   new pin xhc-whb04b-6.out.button.macro-2
+hal   new pin xhc-whb04b-6.out.button.spindle-plus
+hal   new pin xhc-whb04b-6.out.button.macro-3
+hal   new pin xhc-whb04b-6.out.button.spindle-minus
+hal   new pin xhc-whb04b-6.out.button.macro-4
+hal   new pin xhc-whb04b-6.out.button.m-home
+hal   new pin xhc-whb04b-6.out.button.macro-5
+hal   new pin xhc-whb04b-6.out.button.safe-z
+hal   new pin xhc-whb04b-6.out.button.macro-6
+hal   new pin xhc-whb04b-6.out.button.w-home
+hal   new pin xhc-whb04b-6.out.button.macro-7
+hal   new pin xhc-whb04b-6.out.button.s-on-off
+hal   new pin xhc-whb04b-6.out.button.macro-8
+hal   new pin xhc-whb04b-6.out.button.fn
+hal   new pin xhc-whb04b-6.out.button.probe-z
+hal   new pin xhc-whb04b-6.out.button.macro-9
+hal   new pin xhc-whb04b-6.out.button.macro-10
+hal   new pin xhc-whb04b-6.out.button.macro-14
+hal   new pin xhc-whb04b-6.out.button.mode-continuous
+hal   new pin xhc-whb04b-6.out.button.macro-15
+hal   new pin xhc-whb04b-6.out.button.mode-step
+hal   new pin xhc-whb04b-6.out.button.macro-16
+
+...
+```
+
+#### For an extensive list of HAL pins consider running:
+
+```
+xhc-whb04b-6 -p
+```
+
+#### For even more details:
+
+```
+$ ./xhc-whb04b-6 -h
+xhc-whb04b-6 version 0.1 Sep 10 2017 08:57:04
+
+SYNOPSIS
+    xhc-whb04b-6 [-h] | [-H] [OPTIONS] 
+
+NAME
+    xhc-whb04b-6 - jog dial HAL module for the XHC-WHB04B-6 device
+
+DESCRIPTION
+    xhc-whb04b-6 is a HAL module that receives events from the XHC-WHB04B-6 device and exposes them to HAL via HAL pins.
+
+OPTIONS
+ -h 
+    Prints the synonpsis and the most commonly used commands.
+
+ -H 
+    run XHC-WHB04B-6 in HAL-mode instead of interactive mode. When in HAL mode commands from device will be exposed to HAL's shred memory. Interactive mode is useful for testing device connectivity and debugging.
+
+ -t 
+    Wait with timeout for USB device then proceed, exit otherwise. Without -t the timeout is ipmlicitely infinite.
+
+ -u, -U 
+    Show received data from device. With -U received and transmitted data will be printed. Output is prefixed with "usb".
+
+ -p 
+    Show HAL pins and HAL related messages. Output is prefixed with "hal".
+
+ -e 
+    Show captured events such as button pressed/released, jog dial, axis rotary button, and feed rotary button event. Output is prefixed with "event".and in case.
+
+ -a 
+    Enable all logging facilities without explicitly specifying each.
+
+ -c 
+    Enable checksum output which is necessary for debugging the checksum generator function. Do not rely on this featue since it will be removed once the generator is implemented.
+    
+ -s 
+    Force being silent and not printing any output except of errors. This will also inhibit messages prefixed with "init".
+
+EXAMPLES
+xhc-whb04b-6 -ue
+    Prints incoming USB data transfer and generated key pressed/released events.
+
+xhc-whb04b-6 -p
+    Prints hal pin names and events distributed to HAL memory.
+
+xhc-whb04b-6 -Ha
+    Start in HAL mode and avoid output, except of errors.
+
+AUTHORS
+    This module was started by Raoul Rubien (github.com/rubienr) based on predecessor device's module xhc-hb04.cc. https://github.com/machinekit/machinekit/graphs/contributors gives you a more complete list of contributors.
+
+ ```
+
+## Protocol description
 Since the manufacturer's ([Chengdu Xinhecheng Technology Co.,Ltd.](http://cdxhctech.com/)) developers refuse to release any protocol information, we had to reverse engineer the protocol.
 After lots of begging we received at least some sort of source code for PHB04 - it was hard to believe that this was serious productive code in terms of programming capability. 
 However here we list findings and thoughts on the USB communication protocol.
 
 **Any discussion regarding this topic is welcome!**
 
-## Findings
+### Findings
 
-### Received data structure
+#### Received data structure
 
 | Byte# | Width | Data                        | Value                    | Clarification Needed | 
 |:------|:------|:----------------------------|:-------------------------|:-:|
@@ -20,7 +149,7 @@ However here we list findings and thoughts on the USB communication protocol.
 | 0x06  | [0:7] | jog dial delta              | int8_t                   |   | 
 | 0x07  | [0:7] | checksum                    |                          | * |
 
-#### Checksum investigation
+##### Checksum investigation
 
 * On jog dial, 
 * on rotary button or 
@@ -36,7 +165,7 @@ checksum == random & seed
 checksum == random - (keyCode ^ (~seed & random)) 
 ```
 
-### Transmission data structure
+#### Transmission data structure
 ```
 USB vendor  ID = 0x10ce
 USB product ID = 0xeb93
@@ -68,24 +197,24 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | 0x20  | [0:x]   | unclear if the device interprets subsequent bytes                    |                     | * |
 | 0xn   | [0:x]   | the **maximum length** is also **unclear**                           |                     | * |
 
-## What we did so far
+### What we did so far
 * Searched the web and found not 100% related but interesting information on this [site](http://forum.planet-cnc.com/viewtopic.php?f=12&t=1125), and
 * this [site](http://wiki.linuxcnc.org/cgi-bin/wiki.pl?Using_A_XHC-HB04_Wireless_MPG_Pendant).
 * Politely contacted the manufacturer and requested an interface controld document or equivalent information (without success).
 
-## What we didn't
+### What we didn't
 * Did not install the driver and Mach3 on Windows guest VM and sniff the USB protocol using SOTA tools such as
     * Wireshark
     * usbmon
     
 **Any help in that regard is appreciated.**
 
-## Issues
+### Issues
 * if de device is powered on it does not (always) send data on its own to disclose the current rotary buttons' state
     * does send most likely if the rotary buttons' state has changed during power-off, but not always
 * if the axis rotary button is in "OFF" state, the device does not refresh coordinates on display
 
-## Key codes in detail
+### Key codes in detail
 
 |Button Name              | Key Code | Button Text | Button Alternative Text |
 |:------------------------|:---------|:------------|:------------------------|
