@@ -143,7 +143,7 @@ public:
     //! update all buttons' state to hal and detect button pressed/released event
     //! \param inPackage input package to interpret
     //! \param keyCode pressed button
-    //! \param modifierCode Optional pressed modifier button. Wsually "Fn", but could be any button.
+    //! \param modifierCode Optional pressed modifier button. Usually "Fn", but could be any button.
     //! \return \ref WhbKeyEventListener::onButtonPressedEvent
     bool updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode);
     void updateJogDial(const WhbUsbInPackage& inPackage);
@@ -173,7 +173,7 @@ private:
     std::ostream              * mInitCout;
     WhbKeyEventListener       & keyEventReceiver;
     UsbInputPackageListener   & packageReceivedEventReceiver;
-    UsbInputPackageInterpreted& packageIntepretedEventReceiver;
+    UsbInputPackageInterpreted& packageInterpretedEventReceiver;
     bool                 mIsCrcDebuggingEnabled;
     MachineConfiguration mMachineConfig;
 

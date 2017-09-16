@@ -334,7 +334,7 @@ WhbContext::WhbContext() :
     mInitCout(&mDevNull),
     keyEventReceiver(*this),
     packageReceivedEventReceiver(*this),
-    packageIntepretedEventReceiver(*this),
+    packageInterpretedEventReceiver(*this),
     mIsCrcDebuggingEnabled(false),
     mMachineConfig()
 {

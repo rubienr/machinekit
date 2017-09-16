@@ -154,7 +154,8 @@ WhbHalMemory::Out::Out() :
     doRunProgram(nullptr),
     doPauseProgram(nullptr),
     doResumeProgram(nullptr),
-    doStopProgram(nullptr)
+    doStopProgram(nullptr),
+    doEmergencyStop(nullptr)
 {
 }
 
@@ -309,7 +310,6 @@ int WhbHal::newSimulatedHalPin(char* pin_name, void** ptr, int s)
     *ptr = calloc(s, 1);
     assert(*ptr != nullptr);
     memset(*ptr, 0, s);
-    *mHalCout << "hal   new pin " << pin_name << endl;
     return 0;
 }
 
@@ -323,13 +323,25 @@ int WhbHal::newHalFloat(hal_pin_dir_t direction, hal_float_t** ptr, int componen
     vsprintf(pin_name, fmt, args);
     va_end(args);
 
+    assert(ptr != nullptr);
+    assert(*ptr == nullptr);
+    *mHalCout << "hal   float ";
+    if (direction == HAL_OUT)
+    {
+        *mHalCout << "out ";
+    }
+    else
+    {
+        *mHalCout << "in  ";
+    }
+    *mHalCout << pin_name << endl;
+
     if (mIsSimulationMode)
     {
         return newSimulatedHalPin(pin_name, (void**)ptr, sizeof(hal_float_t));
     }
     else
     {
-        *mHalCout << "hal   new pin " << pin_name << endl;
         int r = hal_pin_float_new(pin_name, direction, ptr, componentId);
         assert(r == 0);
         return r;
@@ -346,13 +358,25 @@ int WhbHal::newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int compone
     vsprintf(pin_name, fmt, args);
     va_end(args);
 
+    assert(ptr != nullptr);
+    assert(*ptr == nullptr);
+    *mHalCout << "hal   s32   ";
+    if (direction == HAL_OUT)
+    {
+        *mHalCout << "out ";
+    }
+    else
+    {
+        *mHalCout << "in  ";
+    }
+    *mHalCout << pin_name << endl;
     if (mIsSimulationMode)
     {
         return newSimulatedHalPin(pin_name, (void**)ptr, sizeof(hal_s32_t));
     }
     else
     {
-        *mHalCout << "hal   new pin " << pin_name << endl;
+        *mHalCout << " pin" << endl;
         int r = hal_pin_s32_new(pin_name, direction, ptr, componentId);
         assert(r == 0);
         return r;
@@ -369,15 +393,25 @@ int WhbHal::newHalBit(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId,
     vsprintf(pin_name, fmt, args);
     va_end(args);
 
+    assert(ptr != nullptr);
+    assert(*ptr == nullptr);
+    *mHalCout << "hal   bit   ";
+    if (direction == HAL_OUT)
+    {
+        *mHalCout << "out ";
+    }
+    else
+    {
+        *mHalCout << "in  ";
+    }
+    *mHalCout << pin_name << endl;
+
     if (mIsSimulationMode)
     {
         return newSimulatedHalPin(pin_name, (void**)ptr, sizeof(hal_bit_t));
     }
     else
     {
-        assert(ptr != nullptr);
-        assert(*ptr == nullptr);
-        *mHalCout << "hal   new pin " << pin_name << endl;
         int r = hal_pin_bit_new(pin_name, direction, ptr, componentId);
         assert(r == 0);
         return r;

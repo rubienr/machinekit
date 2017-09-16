@@ -58,15 +58,15 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
         << "    " << programName << " [-h] | [-H] [OPTIONS] " << endl
         << endl
         << "NAME" << endl
-        << "    " << programName << " - jog dial HAL module for the " << deviceName << " device" << endl
+        << "    " << programName << " - jog dial HAL component for the " << deviceName << " device" << endl
         << endl
         << "DESCRIPTION" << endl
-        << "    " << programName << " is a HAL module that receives events from the " << deviceName << " device "
+        << "    " << programName << " is a HAL component that receives events from the " << deviceName << " device "
         << "and exposes them to HAL via HAL pins." << endl
         << endl
         << "OPTIONS" << endl
         << " -h " << endl
-        << "    Prints the synonpsis and the most commonly used commands." << endl
+        << "    Prints the synopsis and the most commonly used commands." << endl
         << endl
         << " -H " << endl
         << "    run " << programName << " in HAL-mode instead of interactive mode. When in HAL mode "
@@ -75,7 +75,7 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
         << endl
         << " -t " << endl
         << "    Wait with timeout for USB device then proceed, exit otherwise. Without -t the timeout is "
-        << "ipmlicitely infinite." << endl
+        << "implicitly infinite." << endl
         << endl
         << " -u, -U " << endl
         << "    Show received data from device. With -U received and transmitted data will be printed. "
@@ -120,8 +120,8 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
         << "    Start in HAL mode and avoid output, except of errors." << endl
         << endl
         << "AUTHORS" << endl
-        << "    This module was started by Raoul Rubien (github.com/rubienr) based on predecessor "
-            "device's module xhc-hb04.cc. https://github.com/machinekit/machinekit/graphs/contributors "
+        << "    This component was started by Raoul Rubien (github.com/rubienr) based on predecessor "
+            "device's component xhc-hb04.cc. https://github.com/machinekit/machinekit/graphs/contributors "
             "gives you a more complete list of contributors."
         << endl;
 

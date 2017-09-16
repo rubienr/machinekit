@@ -421,7 +421,7 @@ public:
     void setMacro15(bool enabled, size_t pinNumber);
     //! \sa setMacro1(bool, size_t)
     void setMacro16(bool enabled, size_t pinNumber);
-    //! This method cummulates new jog dial delta. In other words it produces counts
+    //! This method cumulates new jog dial delta. In other words it produces counts
     //! to be consumed by an icomp component.
     //! \param delta new jog dial delta
     void newJogDialDelta(int8_t delta);
@@ -452,7 +452,7 @@ private:
     //! \param ptr will point to the allocated memory
     //! \param componentId hal id
     //! \param fmt the pin name when registered to hal
-    //! \param ... va agrgs
+    //! \param ... va args
     //! \return != 0 on error, 0 otherwise
     int newHalBit(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId, const char* fmt, ...);
     //! allocates new hal pin according to \ref mIsSimulationMode

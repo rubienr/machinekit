@@ -37,11 +37,11 @@ Macro-16. The keypad layout is as follows:
 | MPG (Macro-15)              |                  |                        |                    | Step (Macro-16)            |
 |                             |                  | &lt;Jog Dial&gt;       |                    |                            |
 
-* Caution: The buttons' naming and user manual are sohewhat unluckily translated. The **MPG** button puts the device into **continuous**, whereas the **Step/Continuous** button into **step mode**. Continuous mode means n jog dial events are translated to "move joint n times with speed x" whereas step mode to "move joint n steps" with a predefined speed.
+* Caution: The buttons' naming and user manual are somewhat unluckily translated. The **MPG** button puts the device into **continuous**, whereas the **Step/Continuous** button into **step mode**. Continuous mode means n jog dial events are translated to "move joint n times with speed x" whereas step mode to "move joint n steps" with a predefined speed.
 
 ### Pendant button naming
 
-The HAL pin names are derived from text written on the respecitve button. For example:
+The HAL pin names are derived from text written on the respective button. For example:
 
 ```
 $ xhc-whb04b-6 -p
@@ -85,7 +85,7 @@ hal   bit   out xhc-whb04b-6.out.button.macro-16
 ```
 xhc-whb04b-6 -p
 ```
-Also rever to section [HAL pins](#hal-pins).
+Also refer to section [HAL pins](#hal-pins).
 
 #### Even more details
 
@@ -94,7 +94,7 @@ $ ./xhc-whb04b-6 -h
 xhc-whb04b-6 version 0.1 Sep 16 2017 14:41:32
 
 SYNOPSIS
-    xhc-whb04b-6 [-h] | [-H] [OPTIONS] 
+    xhc-whb04b-6 [-h] | [-H] [OPTIONS]
 
 NAME
     xhc-whb04b-6 - jog dial HAL component for the XHC-WHB04B-6 device
@@ -103,31 +103,31 @@ DESCRIPTION
     xhc-whb04b-6 is a HAL component that receives events from the XHC-WHB04B-6 device and exposes them to HAL via HAL pins.
 
 OPTIONS
- -h 
-    Prints the synonpsis and the most commonly used commands.
+ -h
+    Prints the synopsis and the most commonly used commands.
 
- -H 
+ -H
     run xhc-whb04b-6 in HAL-mode instead of interactive mode. When in HAL mode commands from device will be exposed to HAL's shred memory. Interactive mode is useful for testing device connectivity and debugging.
 
- -t 
-    Wait with timeout for USB device then proceed, exit otherwise. Without -t the timeout is ipmlicitely infinite.
+ -t
+    Wait with timeout for USB device then proceed, exit otherwise. Without -t the timeout is implicitly infinite.
 
- -u, -U 
+ -u, -U
     Show received data from device. With -U received and transmitted data will be printed. Output is prefixed with "usb".
 
- -p 
+ -p
     Show HAL pins and HAL related messages. Output is prefixed with "hal".
 
- -e 
+ -e
     Show captured events such as button pressed/released, jog dial, axis rotary button, and feed rotary button event. Output is prefixed with "event".and in case.
 
- -a 
+ -a
     Enable all logging facilities without explicitly specifying each.
 
- -c 
-    Enable checksum output which is necessary for debugging the checksum generator function. Do not rely on this featue since it will be removed once the generator is implemented.
+ -c
+    Enable checksum output which is necessary for debugging the checksum generator function. Do not rely on this feature since it will be removed once the generator is implemented.
 
- -n 
+ -n
     Force being silent and not printing any output except of errors. This will also inhibit messages prefixed with "init".
 
  -s <scale>
@@ -152,7 +152,7 @@ AUTHORS
 
 ## Protocol description
 Since the manufacturer's ([Chengdu Xinhecheng Technology Co.,Ltd.](http://cdxhctech.com/)) developers refuse to release any protocol information, we had to reverse engineer the protocol.
-After lots of begging we received at least some sort of source code for PHB04 - it was hard to believe that this was serious productive code in terms of programming capability. 
+After lots of begging we received at least some sort of source code for PHB04 - it was hard to believe that this was serious productive code in terms of programming capability.
 However here we list findings and thoughts on the USB communication protocol.
 
 **Any discussion regarding this topic is welcome!**
@@ -161,21 +161,21 @@ However here we list findings and thoughts on the USB communication protocol.
 
 #### Received data structure
 
-| Byte# | Width | Data                        | Value                    | Clarification Needed | 
+| Byte# | Width | Data                        | Value                    | Clarification Needed |
 |:------|:------|:----------------------------|:-------------------------|:-:|
-| 0x00  | [0:7] | retport ID                  | constant 0x04            |   |
-| 0x01  | [0:7] | random                      |                          |   | 
+| 0x00  | [0:7] | report ID                   | constant 0x04            |   |
+| 0x01  | [0:7] | random                      |                          |   |
 | 0x02  | [0:7] | button 1 key code           | 0x00-0x10                |   |
 | 0x03  | [0:7] | button 2 key code           | 0x00-0x10                |   |
-| 0x04  | [0:7] | feed rotary button key code | 0x0d-0x10, 0x1a-0x1c     |   | 
-| 0x05  | [0:7] | axis rotary button key code, **if axis in state OFF, display cannot be updated** | 0x11-0x16, 0x06          | * | 
-| 0x06  | [0:7] | jog dial delta              | int8_t                   |   | 
+| 0x04  | [0:7] | feed rotary button key code | 0x0d-0x10, 0x1a-0x1c     |   |
+| 0x05  | [0:7] | axis rotary button key code, **if axis in state OFF, display cannot be updated** | 0x11-0x16, 0x06          | * |
+| 0x06  | [0:7] | jog dial delta              | int8_t                   |   |
 | 0x07  | [0:7] | checksum                    |                          | * |
 
 ##### Checksum investigation
 
-* On jog dial, 
-* on rotary button or 
+* On jog dial,
+* on rotary button or
 * on button released event:
 ```
 checksum == random & seed
@@ -185,7 +185,7 @@ checksum == random & seed
 ```
 //! Works if seed is 0xfe, 0xff, otherwise not reliable. Some equation part must be missing.
 //! Not sure whether crc or hand-crafted algorithm is applied.
-checksum == random - (keyCode ^ (~seed & random)) 
+checksum == random - (keyCode ^ (~seed & random))
 ```
 
 #### Transmission data structure
@@ -197,7 +197,7 @@ USB product ID = 0xeb93
 Data transmitted is packed as 7 bytes plus a constant leading byte 0x06
 which is the report ID. The data **exclusive report ID** reads as follows:
 
-| Byte# | Width   | Data                                                                 | Value               | Clarification Needed | 
+| Byte# | Width   | Data                                                                 | Value               | Clarification Needed |
 |:------|:--------|:---------------------------------------------------------------------|:--------------------|:-:|
 | 0x00  | [0:15]  | header, **unclear if different headers (commands) can be sent**      | constant 0xfdfe     | * |
 | 0x02  | [0:7]   | seed                                                                 |                     | * |
@@ -223,13 +223,13 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 ### What we did so far
 * Searched the web and found not 100% related but interesting information on this [site](http://forum.planet-cnc.com/viewtopic.php?f=12&t=1125), and
 * this [site](http://wiki.linuxcnc.org/cgi-bin/wiki.pl?Using_A_XHC-HB04_Wireless_MPG_Pendant).
-* Politely contacted the manufacturer and requested an interface controld document or equivalent information (without success).
+* Politely contacted the manufacturer and requested an interface control document or equivalent information (without success).
 
 ### What we didn't
 * Did not install the driver and Mach3 on Windows guest VM and sniff the USB protocol using SOTA tools such as
     * Wireshark
     * usbmon
-    
+
 **Any help in that regard is appreciated.**
 
 ### Issues
@@ -256,7 +256,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 |probe_z                  | 0x0d     | Probe-Z     | Macro-9                 |
 |macro10                  | 0x10     | Macro-10    | *Macro-13*              |
 |manual_pulse_generator   | 0x0e     | MPG         | *Macro-14*              |
-|step_continuous          | 0x0f     | STEP        | Continuous              | 
+|step_continuous          | 0x0f     | STEP        | Continuous              |
 |&lt;no button pressed&gt;| 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
 
 |  Feed Rotary Button Name    | Key Code | Button Text | Button Alternative Text |
@@ -285,7 +285,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 
 ### USB and key press events
 Start and show incoming USB data as bytes and interpreted, and show detected events such as:
-* on key released/pressed 
+* on key released/pressed
 * on rotary button axis in-/active
 * on rotary button feed in-/active
 * on jog dial event
@@ -328,9 +328,9 @@ connection lost, cleaning up
 
 ### HAL pins
 
-Print HAL pins and HAL related status messages. 
+Print HAL pins and HAL related status messages.
 Hal pins' data types and direction are printed in the very first columns.
-For readability reasons all provided HAL pin names contain the pin direction in thir name.
+For readability reasons all provided HAL pin names contain the pin direction in their name.
 Furthermore pin names also explain where a respective pin should be connected to, i.e.:
 * the output pin `xhc-whb04b-6.out.jog.counts-neg` should be connected to `jog.counts-neg` input pin, whereas
 * the input pin `xhc-whb04b-6.in.halui.max-velocity.value` should be connected to `halui.max-velocity.value` output pin.

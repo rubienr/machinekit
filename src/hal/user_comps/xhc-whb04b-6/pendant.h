@@ -158,7 +158,7 @@ class WhbHandwheelLeadModeStepSize
 public:
     enum class PositionNameIndex : uint8_t
     {
-        RotaryButtonLeed = 6
+        RotaryButtonLead = 6
     };
 };
 

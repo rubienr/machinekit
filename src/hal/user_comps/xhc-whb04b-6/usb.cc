@@ -575,7 +575,7 @@ bool WhbUsb::setupAsyncTransfer()
 
 void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
 {
-    int      expectedPckageSize = static_cast<int>(sizeof(WhbUsbInPackage));
+    int      expectedPackageSize = static_cast<int>(sizeof(WhbUsbInPackage));
     std::ios init(NULL);
     init.copyfmt(*verboseTxOut);
     switch (transfer->status)
@@ -598,7 +598,7 @@ void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
                 goto ___TRUNCATE_PACKAGE;
             }
 
-            if (transfer->actual_length == expectedPckageSize)
+            if (transfer->actual_length == expectedPackageSize)
             {
                 //! detect pendant going to sleep:
                 //! when powering off pedant sends two packages
@@ -639,7 +639,7 @@ void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
             else
             {
                 std::cerr << "received unexpected package size: expected=" << (transfer->actual_length) << ", current="
-                          << expectedPckageSize << endl;
+                          << expectedPackageSize << endl;
             }
 
             if (mIsRunning)
@@ -728,7 +728,7 @@ void WhbUsb::enableVerboseInit(bool enable)
 
 bool WhbUsb::init()
 {
-    if (getDoReconnect() == true)
+    if (getDoReconnect())
     {
         int pauseSecs = 3;
         *verboseInitOut << "init  pausing " << pauseSecs << "s, waiting for device to be gone ...";
@@ -784,7 +784,7 @@ bool WhbUsb::init()
         deviceHandle = libusb_open_device_with_vid_pid(context, usbVendorId, usbProductId);
         libusb_free_device_list(devicesReference, 1);
         *verboseInitOut << "." << std::flush;
-        if (isDeviceOpen() == false)
+        if (!isDeviceOpen())
         {
             *verboseInitOut << "." << std::flush;
             if (isWaitWithTimeout)
@@ -798,7 +798,7 @@ bool WhbUsb::init()
             }
             sleep(1);
         }
-    } while ((isDeviceOpen() == false) && mIsRunning);
+    } while (!isDeviceOpen() && mIsRunning);
     *verboseInitOut << " ok" << endl
                     << "init  " << mName << " device found" << endl;
 
