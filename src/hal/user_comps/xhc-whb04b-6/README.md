@@ -284,7 +284,13 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 ## Examples
 
 ### USB and key press events
-Start and show incoming USB data as bytes and interpreted, and show detected key press/released events.
+Start and show incoming USB data as bytes and interpreted, and show detected events such as:
+* on key released/pressed 
+* on rotary button axis in-/active
+* on rotary button feed in-/active
+* on jog dial event
+* on data interpreted
+
 ```
 $ ../bin/xhc-whb04b-6 -ue
 init  setting machine configuration to scale=80 max_velocity=800
