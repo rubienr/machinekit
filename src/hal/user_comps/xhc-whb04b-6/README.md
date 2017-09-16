@@ -45,40 +45,39 @@ The HAL pin names are derived from text written on the respecitve button. For ex
 
 ```
 $ xhc-whb04b-6 -p
-init  starting in simulation mode
-hal   new pin xhc-whb04b-6.out.button.reset
-hal   new pin xhc-whb04b-6.out.button.macro-11
-hal   new pin xhc-whb04b-6.out.button.stop
-hal   new pin xhc-whb04b-6.out.button.macro-12
-hal   new pin xhc-whb04b-6.out.button.start-pause
-hal   new pin xhc-whb04b-6.out.button.macro-13
-hal   new pin xhc-whb04b-6.out.button.feed-plus
-hal   new pin xhc-whb04b-6.out.button.macro-1
-hal   new pin xhc-whb04b-6.out.button.feed-minus
-hal   new pin xhc-whb04b-6.out.button.macro-2
-hal   new pin xhc-whb04b-6.out.button.spindle-plus
-hal   new pin xhc-whb04b-6.out.button.macro-3
-hal   new pin xhc-whb04b-6.out.button.spindle-minus
-hal   new pin xhc-whb04b-6.out.button.macro-4
-hal   new pin xhc-whb04b-6.out.button.m-home
-hal   new pin xhc-whb04b-6.out.button.macro-5
-hal   new pin xhc-whb04b-6.out.button.safe-z
-hal   new pin xhc-whb04b-6.out.button.macro-6
-hal   new pin xhc-whb04b-6.out.button.w-home
-hal   new pin xhc-whb04b-6.out.button.macro-7
-hal   new pin xhc-whb04b-6.out.button.s-on-off
-hal   new pin xhc-whb04b-6.out.button.macro-8
-hal   new pin xhc-whb04b-6.out.button.fn
-hal   new pin xhc-whb04b-6.out.button.probe-z
-hal   new pin xhc-whb04b-6.out.button.macro-9
-hal   new pin xhc-whb04b-6.out.button.macro-10
-hal   new pin xhc-whb04b-6.out.button.macro-14
-hal   new pin xhc-whb04b-6.out.button.mode-continuous
-hal   new pin xhc-whb04b-6.out.button.macro-15
-hal   new pin xhc-whb04b-6.out.button.mode-step
-hal   new pin xhc-whb04b-6.out.button.macro-16
-
-...
+[...] //! < skipped several lines
+hal   bit   out xhc-whb04b-6.out.button.reset
+hal   bit   out xhc-whb04b-6.out.button.macro-11
+hal   bit   out xhc-whb04b-6.out.button.stop
+hal   bit   out xhc-whb04b-6.out.button.macro-12
+hal   bit   out xhc-whb04b-6.out.button.start-pause
+hal   bit   out xhc-whb04b-6.out.button.macro-13
+hal   bit   out xhc-whb04b-6.out.button.feed-plus
+hal   bit   out xhc-whb04b-6.out.button.macro-1
+hal   bit   out xhc-whb04b-6.out.button.feed-minus
+hal   bit   out xhc-whb04b-6.out.button.macro-2
+hal   bit   out xhc-whb04b-6.out.button.spindle-plus
+hal   bit   out xhc-whb04b-6.out.button.macro-3
+hal   bit   out xhc-whb04b-6.out.button.spindle-minus
+hal   bit   out xhc-whb04b-6.out.button.macro-4
+hal   bit   out xhc-whb04b-6.out.button.m-home
+hal   bit   out xhc-whb04b-6.out.button.macro-5
+hal   bit   out xhc-whb04b-6.out.button.safe-z
+hal   bit   out xhc-whb04b-6.out.button.macro-6
+hal   bit   out xhc-whb04b-6.out.button.w-home
+hal   bit   out xhc-whb04b-6.out.button.macro-7
+hal   bit   out xhc-whb04b-6.out.button.s-on-off
+hal   bit   out xhc-whb04b-6.out.button.macro-8
+hal   bit   out xhc-whb04b-6.out.button.fn
+hal   bit   out xhc-whb04b-6.out.button.probe-z
+hal   bit   out xhc-whb04b-6.out.button.macro-9
+hal   bit   out xhc-whb04b-6.out.button.macro-10
+hal   bit   out xhc-whb04b-6.out.button.macro-14
+hal   bit   out xhc-whb04b-6.out.button.mode-continuous
+hal   bit   out xhc-whb04b-6.out.button.macro-15
+hal   bit   out xhc-whb04b-6.out.button.mode-step
+hal   bit   out xhc-whb04b-6.out.button.macro-16
+[...] //! < skipped several lines
 ```
 
 #### An extensive list of HAL pins
