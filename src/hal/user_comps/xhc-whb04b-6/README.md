@@ -1,4 +1,4 @@
-   * [XHC WHB04B-6 pendant HAL module](#xhc-whb04b-6-pendant-hal-module)
+   * [XHC WHB04B-6 pendant HAL component](#xhc-whb04b-6-pendant-hal-component)
       * [Pendant layout](#pendant-layout)
          * [Pendant button naming](#pendant-button-naming)
             * [An extensive list of HAL pins](#an-extensive-list-of-hal-pins)
@@ -16,7 +16,7 @@
          * [USB and key press events](#usb-and-key-press-events)
          * [HAL pins](#hal-pins)
 
-# XHC WHB04B-6 pendant HAL module
+# XHC WHB04B-6 pendant HAL component
 
 ## Pendant layout
 
