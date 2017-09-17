@@ -68,7 +68,12 @@
   . | . |A1:|+1234|.4561
   .      |.|B1:|-1470|.9632
   .      |<&star> |C1:|+0|.0000   
-}
+} {
+<&signal> ... signal strength | X1,Y1-C1 ... machine coord.
+<&star> ... selected axis     | X,Y-C ... workpiece coord.
+<&battery-empty> ... battery level
+<&media-stop> ... tx indicator
+} |* |
 }
 @endsalt
 @enduml
