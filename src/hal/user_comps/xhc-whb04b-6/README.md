@@ -18,6 +18,12 @@
 
 # XHC WHB04B-6 pendant HAL component
 
+## Introduction 
+
+This component provides an interface to the WHB04B-6 pendant. In productive mode the interface is placed in shared memory, where other components can interact with. The component may be alternatively started in simulation mode, which does not require shared memory at all, but allows a user to inspect the device connectivity.
+
+![Component started in HAL mode.](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/rubienr/machinekit/feature-xhc-whb04b-6/src/hal/user_comps/xhc-whb04b-6/component-diagram.txt)
+
 ## Pendant layout
 
 The device provides 16 buttons. One button - "Fn" - is used as key
