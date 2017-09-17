@@ -381,7 +381,7 @@ connection lost, cleaning up
 $ halrun
 msgd:0 stopped
 rtapi:0 stopped
-halcmd: loadusr ../machinekit/bin/xhc-whb04b-6 -Hup
+halcmd: loadusr ../bin/xhc-whb04b-6 -Hup
 halcmd: init  setting machine configuration to scale=80 max_velocity=800
 hal   initialize HAL component in HAL mode xhc-whb04b-6 ... ok
 hal   initialize shared HAL memory for component id  80 ... ok
