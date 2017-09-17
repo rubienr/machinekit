@@ -17,6 +17,7 @@
 * [Examples](#examples)
    * [USB and key press events](#usb-and-key-press-events)
    * [HAL pins](#hal-pins)
+   * [Run in HAL mode (halrun)](run-in-hal-mode-(halrun))
 
 ## Introduction 
 
@@ -373,4 +374,35 @@ init  enabling reception ... ok
 ^Ctermination requested upon signal number 2 ...
 connection lost, cleaning up
 
+```
+
+### Run in HAL mode (halrun)
+```
+$ halrun
+msgd:0 stopped
+rtapi:0 stopped
+halcmd: loadusr ../machinekit/bin/xhc-whb04b-6 -Hup
+halcmd: init  setting machine configuration to scale=80 max_velocity=800
+hal   initialize HAL component in HAL mode xhc-whb04b-6 ... ok
+hal   initialize shared HAL memory for component id  80 ... ok
+hal   bit   out xhc-whb04b-6.out.button.reset
+[...] //! < skipped several lines
+init  usb context ... ok
+init  not waiting for device XHC-WHB04B-6 vendorId=0x10ce productId=0xeb93, will continue in 0s .... ok
+init  XHC-WHB04B-6 device found
+init  detaching active kernel driver ... already detached
+init  claiming interface ... ok
+init  enabling reception ... ok
+in    0x04 47 03 00 10 12 00 45 delta 16 => | 04 | 47 |     start-pause |                 |     1( 30%) |     Y(    ) |   0 | 45
+hal   start/stop enabled (pin # 4)
+hal   OFF no axis active
+hal   Y axis active
+hal   step mode is continuous
+hal   step size 12
+in    0x04 cb 00 00 10 12 00 ca delta 16 => | 04 | cb |                 |                 |     1( 30%) |     Y(    ) |   0 | ca
+hal   start/stop disabled (pin # 4)
+^Ctermination requested upon signal number 2 ...
+connection lost, cleaning up
+
+halcmd: 
 ```
