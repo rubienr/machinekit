@@ -20,4 +20,7 @@ frame HAL_Components {
  Component1 <--> SHM : r/w
  WHB04B_6 <-->WhbComponent: USB i/o
 }
+
+caption Fig1: components diagram
+
 @enduml
