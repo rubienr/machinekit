@@ -231,7 +231,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | 0xn   | [0:x]   | the **maximum length** is also **unclear**                           |                     | * |
 
 ##### Display examples
-![LCD display examples.](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/rubienr/machinekit/feature-xhc-whb04b-6/src/hal/user_comps/xhc-whb04b-6/display-layout-diagram.txt)
+![LCD display examples.](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/rubienr/machinekit/feature-xhc-whb04b-6/src/hal/user_comps/xhc-whb04b-6/display-layout-diagram-nochache.txt)
 
 ### What we did so far
 * Searched the web and found not 100% related but interesting information on this [site](http://forum.planet-cnc.com/viewtopic.php?f=12&t=1125), and
