@@ -17,7 +17,7 @@
 * [Examples](#examples)
    * [USB and key press events](#usb-and-key-press-events)
    * [HAL pins](#hal-pins)
-   * [Run in HAL mode (halrun)](run-in-hal-mode-halrun)
+   * [Run in HAL mode (halrun)](#run-in-hal-mode-halrun)
 
 ## Introduction 
 
