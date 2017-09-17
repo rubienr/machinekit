@@ -189,7 +189,7 @@ void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
     //{
     *mRxCout << "in    ";
     printHexdump(inPackage);
-    if (inPackage.rotaryButtonFeedKeyCode != 0)
+    if (inPackage.rotaryButtonFeedKeyCode != KeyCodes::Feed.undefined.code)
     {
         std::ios init(NULL);
         init.copyfmt(*mRxCout);
@@ -207,36 +207,52 @@ void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
     *mRxCout << endl;
     //}
 
-    uint8_t modifierCode = mKeyCodes.buttons.undefined.code;
-    uint8_t keyCode      = mKeyCodes.buttons.undefined.code;
+    uint8_t keyCode      = inPackage.buttonKeyCode1;
+    uint8_t modifierCode = inPackage.buttonKeyCode2;
 
-    //! found modifier at key one, key two is the key
-    if (inPackage.buttonKeyCode1 == mKeyCodes.buttons.function.code)
+    // in case key code == undefined
+    if (keyCode == KeyCodes::Buttons.undefined.code)
     {
-        modifierCode = mKeyCodes.buttons.function.code;
-        keyCode      = inPackage.buttonKeyCode2;
-    }
-        //! found modifier at key two, key one is the key
-    else if (inPackage.buttonKeyCode2 == mKeyCodes.buttons.function.code)
-    {
-        modifierCode = mKeyCodes.buttons.function.code;
-        keyCode      = inPackage.buttonKeyCode1;
-    }
-        //! no modifier, key one and key two are defined, fallback to key two which is the lastly one pressed
-    else if (inPackage.buttonKeyCode2 != mKeyCodes.buttons.undefined.code)
-    {
-        keyCode = inPackage.buttonKeyCode2;
-    }
-        //! fallback to whatever key one is
-    else
-    {
-        keyCode = inPackage.buttonKeyCode1;
+        // swap codes
+        keyCode      = modifierCode;
+        modifierCode = KeyCodes::Buttons.undefined.code;
     }
 
-    mPendant.shiftButtonState();
+    // in case key code == "fn" and modifier == defined
+    if ((keyCode == KeyCodes::Buttons.function.code) &&
+        (modifierCode != KeyCodes::Buttons.undefined.code))
+    {
+        // swap codes
+        keyCode      = modifierCode;
+        modifierCode = KeyCodes::Buttons.function.code;
+    }
 
-    mPendant.update(keyCode, modifierCode, inPackage.rotaryButtonAxisKeyCode, inPackage.rotaryButtonFeedKeyCode,
+    // in case of key code == defined and key code != "fn" and modifier == defined and modifier != "fn"
+    if ((keyCode != KeyCodes::Buttons.undefined.code) &&
+        (modifierCode != KeyCodes::Buttons.undefined.code) &&
+        (modifierCode != KeyCodes::Buttons.function.code))
+    {
+        // last key press overrules last but one key press
+        keyCode      = modifierCode;
+        modifierCode = KeyCodes::Buttons.undefined.code;
+    }
+
+    if (keyCode == KeyCodes::Buttons.undefined.code)
+    {
+        assert(modifierCode == KeyCodes::Buttons.undefined.code);
+    }
+
+    if (keyCode == KeyCodes::Buttons.function.code)
+    {
+        assert(modifierCode == KeyCodes::Buttons.undefined.code);
+    }
+
+    mPendant.update(keyCode, modifierCode,
+                    inPackage.rotaryButtonAxisKeyCode,
+                    inPackage.rotaryButtonFeedKeyCode,
                     inPackage.stepCount);
+
+    /* deprecated
     //! update previous and current button state
     mPreviousButtonCodes = mCurrentButtonCodes;
     mCurrentButtonCodes.updateButtonState(keyCode, modifierCode, inPackage.rotaryButtonAxisKeyCode,
@@ -246,7 +262,7 @@ void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
     updateAxisRotaryButton(inPackage);
     updateStepRotaryButton(inPackage, forceUpdate);
     updateJogDial(inPackage);
-    onDataInterpreted();
+    onDataInterpreted();*/
 }
 
 // ----------------------------------------------------------------------

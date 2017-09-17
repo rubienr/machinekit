@@ -344,8 +344,7 @@ public:
     {
         CONTINUOUS  = 0,
         STEP        = 1,
-        LEAD        = 2,
-        MODES_COUNT = 3
+        MODES_COUNT = 2
     };
 };
 
@@ -477,6 +476,8 @@ public:
     const KeyCode& key;
     const KeyCode& modifier;
 
+    bool operator==(const MetaButtonCodes& other) const;
+    bool operator!=(const MetaButtonCodes& other) const;
     MetaButtonCodes(const KeyCode& key, const KeyCode& modifier);
     virtual ~MetaButtonCodes();
     bool containsKeys(const KeyCode& key, const KeyCode& modifier) const;
@@ -585,9 +586,45 @@ std::ostream& operator<<(std::ostream& os, const MetaButtonCodes& data);
 class MetaButtonsCodes
 {
 public:
+    const MetaButtonCodes reset;
+    const MetaButtonCodes macro11;
+    const MetaButtonCodes stop;
+    const MetaButtonCodes macro12;
+    const MetaButtonCodes start;
+    const MetaButtonCodes macro13;
+    const MetaButtonCodes feed_plus;
+    const MetaButtonCodes macro1;
+    const MetaButtonCodes feed_minus;
+    const MetaButtonCodes macro2;
+    const MetaButtonCodes spindle_plus;
+    const MetaButtonCodes macro3;
+    const MetaButtonCodes spindle_minus;
+    const MetaButtonCodes macro4;
+    const MetaButtonCodes machine_home;
+    const MetaButtonCodes macro5;
+    const MetaButtonCodes safe_z;
+    const MetaButtonCodes macro6;
+    const MetaButtonCodes workpiece_home;
+    const MetaButtonCodes macro7;
+    const MetaButtonCodes spindle_on_off;
+    const MetaButtonCodes macro8;
+    const MetaButtonCodes function;
+    const MetaButtonCodes probe_z;
+    const MetaButtonCodes macro9;
+    const MetaButtonCodes macro10;
+    const MetaButtonCodes macro14;
+    const MetaButtonCodes manual_pulse_generator;
+    const MetaButtonCodes macro15;
+    const MetaButtonCodes step_continuous;
+    const MetaButtonCodes macro16;
+    const MetaButtonCodes undefined;
+
     const std::list<const MetaButtonCodes*> buttons;
+
     MetaButtonsCodes(const ButtonsCode& buttons);
     ~MetaButtonsCodes();
+
+    const MetaButtonCodes& find(const KeyCode& keyCode, const KeyCode& modifierCode) const;
 };
 
 // ----------------------------------------------------------------------
@@ -609,7 +646,7 @@ public:
     Button(const KeyCode& key);
     virtual ~Button();
     virtual const KeyCode& keyCode() const;
-    virtual void setKeyCode(KeyCode& keyCode);
+    virtual bool setKeyCode(const KeyCode& keyCode);
     Button& operator=(const Button& other);
 
 protected:
@@ -665,6 +702,7 @@ public:
                      HandwheelStepmodes::Mode stepMode = HandwheelStepmodes::Mode::CONTINUOUS,
                      KeyEventListener* listener = nullptr);
     ~FeedRotaryButton();
+    virtual bool setKeyCode(const KeyCode& keyCode) override;
     void setStepMode(HandwheelStepmodes::Mode stepMode);
     HandwheelStepmodes::Mode stepMode() const;
     float stepSize() const;
@@ -725,6 +763,8 @@ private:
     int32_t mCounts;
     const FeedRotaryButton& mFeedButton;
     KeyEventListener      * mEventListener;
+    std::ostream          * mWheelCout;
+    const char            * mPrefix;
 };
 
 // ----------------------------------------------------------------------
@@ -752,6 +792,7 @@ public:
     const MetaButtonCodes* currentMetaButton() const;
     const AxisRotaryButton& axisButton() const;
     const FeedRotaryButton& feedButton() const;
+    FeedRotaryButton& feedButton();
 
 private:
     std::list<const KeyCode*> mPressedButtons;
@@ -780,7 +821,6 @@ public:
                 uint8_t rotaryButtonFeedKeyCode,
                 int8_t handWheelStepCount);
 
-    void shiftButtonState();
     const ButtonsState& currentButtonsState() const;
     const ButtonsState& previousButtonsState() const;
     const Handwheel& handWheel() const;
@@ -804,6 +844,7 @@ private:
     const char  * mPrefix;
     std::ostream* mPendantCout;
 
+    void shiftButtonState();
     void update(const KeyCode& keyCode,
                 const KeyCode& modifierCode,
                 const KeyCode& rotaryButtonAxisKeyCode,

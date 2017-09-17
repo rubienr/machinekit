@@ -23,6 +23,8 @@
 #include <assert.h>
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
+#include <functional>
 
 // 3rd party includes
 
@@ -82,9 +84,9 @@ std::ostream& operator<<(std::ostream& os, const WhbKeyCode& data)
     std::ios init(NULL);
     init.copyfmt(os);
 
-    os << std::hex << std::setfill('0') << "code=0x" << std::setw(2) << static_cast<uint16_t>(data.code)
+    os << std::hex << std::setfill('0') << "{code=0x" << std::setw(2) << static_cast<uint16_t>(data.code)
        << " text='" << data.text << "'"
-       << " altText='" << data.altText << "'";
+       << " altText='" << data.altText << "'}";
 
     os.copyfmt(init);
     return os;
@@ -579,9 +581,9 @@ std::ostream& operator<<(std::ostream& os, const KeyCode& data)
     std::ios init(NULL);
     init.copyfmt(os);
 
-    os << std::hex << std::setfill('0') << "code=0x" << std::setw(2) << static_cast<uint16_t>(data.code)
+    os << std::hex << std::setfill('0') << "{code=0x" << std::setw(2) << static_cast<uint16_t>(data.code)
        << " text='" << data.text << "'"
-       << " altText='" << data.altText << "'";
+       << " altText='" << data.altText << "'}";
 
     os.copyfmt(init);
     return os;
@@ -607,7 +609,7 @@ std::ostream& operator<<(std::ostream& os, const MetaButtonCodes& data)
 {
     std::ios init(NULL);
     init.copyfmt(os);
-    os << "key={" << data.key << "} modifier={" << data.modifier << "}";
+    os << "{key=" << data.key << " modifier=" << data.modifier << "}";
     os.copyfmt(init);
     return os;
 }
@@ -621,52 +623,117 @@ bool MetaButtonCodes::containsKeys(const KeyCode& key, const KeyCode& modifier) 
 
 // ----------------------------------------------------------------------
 
+bool MetaButtonCodes::operator==(const MetaButtonCodes& other) const
+{
+    return (key == other.key) && (modifier == other.modifier);
+}
+
+// ----------------------------------------------------------------------
+
+bool MetaButtonCodes::operator!=(const MetaButtonCodes& other) const
+{
+    return !(*this == other);
+}
+
+// ----------------------------------------------------------------------
+
 MetaButtonsCodes::MetaButtonsCodes(const ButtonsCode& buttons) :
+    reset(buttons.reset, buttons.undefined),
+    macro11(buttons.reset, buttons.function),
+    stop(buttons.stop, buttons.undefined),
+    macro12(buttons.stop, buttons.function),
+    start(buttons.start, buttons.undefined),
+    macro13(buttons.start, buttons.function),
+    feed_plus(buttons.feed_plus, buttons.undefined),
+    macro1(buttons.feed_plus, buttons.function),
+    feed_minus(buttons.feed_minus, buttons.undefined),
+    macro2(buttons.feed_minus, buttons.function),
+    spindle_plus(buttons.spindle_plus, buttons.undefined),
+    macro3(buttons.spindle_plus, buttons.function),
+    spindle_minus(buttons.spindle_minus, buttons.undefined),
+    macro4(buttons.spindle_minus, buttons.function),
+    machine_home(buttons.machine_home, buttons.undefined),
+    macro5(buttons.machine_home, buttons.function),
+    safe_z(buttons.safe_z, buttons.undefined),
+    macro6(buttons.safe_z, buttons.function),
+    workpiece_home(buttons.workpiece_home, buttons.undefined),
+    macro7(buttons.workpiece_home, buttons.function),
+    spindle_on_off(buttons.spindle_on_off, buttons.undefined),
+    macro8(buttons.spindle_on_off, buttons.function),
+    function(buttons.function, buttons.undefined),
+    probe_z(buttons.probe_z, buttons.undefined),
+    macro9(buttons.probe_z, buttons.function),
+    macro10(buttons.macro10, buttons.undefined),
+    macro14(buttons.macro10, buttons.function),
+    manual_pulse_generator(buttons.manual_pulse_generator, buttons.undefined),
+    macro15(buttons.manual_pulse_generator, buttons.function),
+    step_continuous(buttons.step_continuous, buttons.undefined),
+    macro16(buttons.step_continuous, buttons.function),
+    undefined(buttons.undefined, buttons.undefined),
     buttons{
-        {new MetaButtonCodes(buttons.reset, buttons.undefined)},
-        {new MetaButtonCodes(buttons.reset, buttons.function)},
-        {new MetaButtonCodes(buttons.stop, buttons.undefined)},
-        {new MetaButtonCodes(buttons.stop, buttons.function)},
-        {new MetaButtonCodes(buttons.start, buttons.undefined)},
-        {new MetaButtonCodes(buttons.start, buttons.function)},
-        {new MetaButtonCodes(buttons.feed_plus, buttons.undefined)},
-        {new MetaButtonCodes(buttons.feed_plus, buttons.function)},
-        {new MetaButtonCodes(buttons.feed_minus, buttons.undefined)},
-        {new MetaButtonCodes(buttons.feed_minus, buttons.function)},
-        {new MetaButtonCodes(buttons.spindle_plus, buttons.undefined)},
-        {new MetaButtonCodes(buttons.spindle_plus, buttons.function)},
-        {new MetaButtonCodes(buttons.spindle_minus, buttons.undefined)},
-        {new MetaButtonCodes(buttons.spindle_minus, buttons.function)},
-        {new MetaButtonCodes(buttons.machine_home, buttons.undefined)},
-        {new MetaButtonCodes(buttons.machine_home, buttons.function)},
-        {new MetaButtonCodes(buttons.safe_z, buttons.undefined)},
-        {new MetaButtonCodes(buttons.safe_z, buttons.function)},
-        {new MetaButtonCodes(buttons.workpiece_home, buttons.undefined)},
-        {new MetaButtonCodes(buttons.workpiece_home, buttons.function)},
-        {new MetaButtonCodes(buttons.spindle_on_off, buttons.undefined)},
-        {new MetaButtonCodes(buttons.spindle_on_off, buttons.function)},
-        {new MetaButtonCodes(buttons.function, buttons.undefined)},
-        {new MetaButtonCodes(buttons.probe_z, buttons.undefined)},
-        {new MetaButtonCodes(buttons.probe_z, buttons.function)},
-        {new MetaButtonCodes(buttons.macro10, buttons.undefined)},
-        {new MetaButtonCodes(buttons.macro10, buttons.function)},
-        {new MetaButtonCodes(buttons.manual_pulse_generator, buttons.undefined)},
-        {new MetaButtonCodes(buttons.manual_pulse_generator, buttons.function)},
-        {new MetaButtonCodes(buttons.step_continuous, buttons.undefined)},
-        {new MetaButtonCodes(buttons.step_continuous, buttons.function)},
-        {new MetaButtonCodes(buttons.undefined, buttons.undefined)}
+        {&reset},
+        {&macro11},
+        {&stop},
+        {&macro12},
+        {&start},
+        {&macro13},
+        {&feed_plus},
+        {&macro1},
+        {&feed_minus},
+        {&macro2},
+        {&spindle_plus},
+        {&macro3},
+        {&spindle_minus},
+        {&macro4},
+        {&machine_home},
+        {&macro5},
+        {&safe_z},
+        {&macro6},
+        {&workpiece_home},
+        {&macro7},
+        {&spindle_on_off},
+        {&macro8},
+        {&function},
+        {&probe_z},
+        {&macro9},
+        {&macro10},
+        {&macro14},
+        {&manual_pulse_generator},
+        {&macro15},
+        {&step_continuous},
+        {&macro16},
+        {&undefined}
     }
 {
 }
 
 // ----------------------------------------------------------------------
 
+const MetaButtonCodes& MetaButtonsCodes::find(const KeyCode& keyCode, const KeyCode& modifierCode) const
+{
+
+    std::function<bool(const MetaButtonCodes*)> comparator = [&keyCode, &modifierCode](
+        const MetaButtonCodes* metaButton)
+    {
+        return metaButton->containsKeys(keyCode, modifierCode);
+    };
+
+    std::list<const MetaButtonCodes*>::const_iterator button = std::find_if(buttons.begin(), buttons.end(), comparator);
+
+    if (button == buttons.end())
+    {
+        std::cerr << "failed to find metaButton={ keyCode={" << keyCode << "} modifierCode={" << modifierCode << "}}"
+                  << endl;
+    }
+    assert(button != buttons.end());
+
+    return **button;
+}
+
+// ----------------------------------------------------------------------
+
 MetaButtonsCodes::~MetaButtonsCodes()
 {
-    for (const MetaButtonCodes* b : buttons)
-    {
-        delete b;
-    }
 }
 
 // ----------------------------------------------------------------------
@@ -702,13 +769,14 @@ AxisRotaryButtonCodes::AxisRotaryButtonCodes() :
     c(0x16, "C", ""),
     undefined(0x00, "", ""),
     codeMap{
-        {off.code, &off},
-        {x.code,   &x},
-        {y.code,   &y},
-        {z.code,   &z},
-        {a.code,   &a},
-        {b.code,   &b},
-        {c.code,   &c}
+        {off.code,       &off},
+        {x.code,         &x},
+        {y.code,         &y},
+        {z.code,         &z},
+        {a.code,         &a},
+        {b.code,         &b},
+        {c.code,         &c},
+        {undefined.code, &undefined}
     }
 {
 }
@@ -773,6 +841,7 @@ ButtonsCode::ButtonsCode() :
         {probe_z.code,                &probe_z},
         {macro10.code,                &macro10},
         {manual_pulse_generator.code, &manual_pulse_generator},
+        {step_continuous.code,        &step_continuous},
         {undefined.code,              &undefined}
     }
 {
@@ -788,9 +857,11 @@ const KeyCode& Button::keyCode() const
 
 // ----------------------------------------------------------------------
 
-void Button::setKeyCode(KeyCode& keyCode)
+bool Button::setKeyCode(const KeyCode& keyCode)
 {
+    bool isNewButton = *mKey != keyCode;
     mKey = &keyCode;
+    return isNewButton;
 }
 
 // ----------------------------------------------------------------------
@@ -799,7 +870,7 @@ std::ostream& operator<<(std::ostream& os, const Button& data)
 {
     std::ios init(NULL);
     init.copyfmt(os);
-    os << "key={" << data.keyCode() << "}";
+    os << "{key=" << data.keyCode() << "}";
     os.copyfmt(init);
     return os;
 }
@@ -824,7 +895,7 @@ std::ostream& operator<<(std::ostream& os, const ToggleButton& data)
 {
     std::ios init(NULL);
     init.copyfmt(os);
-    os << *static_cast<const Button*>(&data) << " modifier={" << data.modifierCode() << "}";
+    os << "{" << *static_cast<const Button*>(&data) << " modifier=" << data.modifierCode() << "}";
     os.copyfmt(init);
     return os;
 }
@@ -878,7 +949,7 @@ std::ostream& operator<<(std::ostream& os, const RotaryButton& data)
 {
     std::ios init(NULL);
     init.copyfmt(os);
-    os << *static_cast<const Button*>(&data);
+    os << "{" << *static_cast<const Button*>(&data) << "}";
     os.copyfmt(init);
     return os;
 }
@@ -950,11 +1021,11 @@ std::ostream& operator<<(std::ostream& os, const FeedRotaryButton& data)
 {
     std::ios init(NULL);
     init.copyfmt(os);
-    os << *static_cast<const RotaryButton*>(&data) << " "
+    os << "{" << *static_cast<const RotaryButton*>(&data) << " "
        << "isPermitted=" << ((data.isPermitted()) ? "TRUE" : "FALSE") << " "
        << "stepSize=" << data.stepSize() << " "
        << "stepMode=0x" << std::setfill('0') << std::hex << std::setw(2)
-       << static_cast<std::underlying_type<HandwheelStepmodes::Mode>::type>(data.stepMode());
+       << static_cast<int16_t>(data.stepMode()) << "}";
     os.copyfmt(init);
     return os;
 }
@@ -966,6 +1037,15 @@ FeedRotaryButton& FeedRotaryButton::operator=(const FeedRotaryButton& other)
     RotaryButton::operator=(other);
     mStepMode = other.mStepMode;
     return *this;
+}
+
+// ----------------------------------------------------------------------
+
+bool FeedRotaryButton::setKeyCode(const KeyCode& keyCode)
+{
+    bool hasChanged = Button::setKeyCode(keyCode);
+    update();
+    return hasChanged;
 }
 
 // ----------------------------------------------------------------------
@@ -994,6 +1074,12 @@ float FeedRotaryButton::stepSize() const
 
 void FeedRotaryButton::update()
 {
+    if (*mKey == KeyCodes::Feed.undefined)
+    {
+        mIsPermitted = false;
+        return;
+    }
+
     if (mStepMode == HandwheelStepmodes::Mode::CONTINUOUS)
     {
         auto enumValue = mContinuousKeycodeLut.find(mKey);
@@ -1010,13 +1096,10 @@ void FeedRotaryButton::update()
         mStepSize    = mStepStepSizeMapper.getStepSize(second);
         mIsPermitted = mStepStepSizeMapper.isPermitted(second);
     }
-    else if (mStepMode == HandwheelStepmodes::Mode::LEAD)
+    else if (*mKey == KeyCodes::Feed.lead)
     {
-        auto enumValue = mLeadKeycodeLut.find(mKey);
-        assert(enumValue != mLeadKeycodeLut.end());
-        auto second = enumValue->second;
-        mStepSize    = mLeadStepSizeMapper.getStepSize(second);
-        mIsPermitted = mLeadStepSizeMapper.isPermitted(second);
+        mStepSize    = 1;
+        mIsPermitted = false;
     }
     else
     {
@@ -1051,8 +1134,8 @@ std::ostream& operator<<(std::ostream& os, const AxisRotaryButton& data)
 {
     std::ios init(NULL);
     init.copyfmt(os);
-    os << *static_cast<const RotaryButton*>(&data)
-       << " isPermitted=" << ((data.isPermitted()) ? "TRUE" : "FALSE");
+    os << "{" << *static_cast<const RotaryButton*>(&data)
+       << " isPermitted=" << ((data.isPermitted()) ? "TRUE" : "FALSE") << "}";
     os.copyfmt(init);
     return os;
 }
@@ -1069,7 +1152,7 @@ AxisRotaryButton& AxisRotaryButton::operator=(const AxisRotaryButton& other)
 
 bool AxisRotaryButton::isPermitted() const
 {
-    return (mKey != &KeyCodes::Axis.undefined);
+    return (*mKey != KeyCodes::Axis.undefined) && (*mKey != KeyCodes::Axis.off);
 }
 
 // ----------------------------------------------------------------------
@@ -1077,7 +1160,9 @@ bool AxisRotaryButton::isPermitted() const
 Handwheel::Handwheel(const FeedRotaryButton& feedButton, KeyEventListener* listener) :
     mCounts(0),
     mFeedButton(feedButton),
-    mEventListener(listener)
+    mEventListener(listener),
+    mWheelCout(&std::cout),
+    mPrefix("pndnt ")
 {
 }
 
@@ -1094,7 +1179,7 @@ std::ostream& operator<<(std::ostream& os, const Handwheel& data)
     std::ios init(NULL);
     init.copyfmt(os);
 
-    os << "counts={" << data.counts() << "}";
+    os << "{counts=" << data.counts() << "}";
     return os;
 }
 
@@ -1102,18 +1187,27 @@ std::ostream& operator<<(std::ostream& os, const Handwheel& data)
 
 int32_t Handwheel::consumeScaledCounts()
 {
-    int32_t tmp = mCounts;
+    int32_t counts = mCounts, scaled = 0;
     mCounts = 0;
 
     if (mFeedButton.stepMode() == HandwheelStepmodes::Mode::STEP)
     {
         if (mFeedButton.isPermitted())
         {
-            return tmp * mFeedButton.stepSize();
+            scaled = counts * mFeedButton.stepSize();
         }
-        return 0;
+        else
+        {
+            scaled = 0;
+        }
     }
-    return tmp;
+
+    std::ios init(NULL);
+    init.copyfmt(*mWheelCout);
+    *mWheelCout << mPrefix << "handwheel consumed " << counts << " counts as " << scaled << " scaled counts"
+                << std::setfill(' ') << std::setw(4) << mCounts << endl;
+    mWheelCout->copyfmt(init);
+    return scaled;
 }
 
 // ----------------------------------------------------------------------
@@ -1128,13 +1222,17 @@ int32_t Handwheel::counts() const
 void Handwheel::produceCount(int8_t counts)
 {
     mCounts += counts;
+    std::ios init(NULL);
+    init.copyfmt(*mWheelCout);
+    *mWheelCout << mPrefix << "handwheel total counts " << std::setfill(' ') << std::setw(5) << mCounts << endl;
+    mWheelCout->copyfmt(init);
 }
 
 // ----------------------------------------------------------------------
 
 ButtonsState::ButtonsState(KeyEventListener* listener, const ButtonsState* previousState) :
     mPressedButtons(),
-    mCurrentMetaButton(KeyCodes::Meta.buttons.back()),
+    mCurrentMetaButton(&KeyCodes::Meta.undefined),
     mAxisButton(KeyCodes::Axis.undefined, listener),
     mFeedButton(KeyCodes::Feed.undefined, HandwheelStepmodes::Mode::CONTINUOUS, listener),
     mPreviousState(previousState),
@@ -1155,6 +1253,43 @@ void ButtonsState::update(const KeyCode& keyCode,
                           const KeyCode& axisButton,
                           const KeyCode& feedButton)
 {
+    //! propagate push button events
+    const MetaButtonCodes& newButton = KeyCodes::Meta.find(keyCode, modifierCode);
+    if (*mCurrentMetaButton != newButton)
+    {
+        if (*mCurrentMetaButton != KeyCodes::Meta.undefined)
+        {
+            if (mEventListener != nullptr)
+            {
+                mEventListener->onButtonReleasedEvent(*mCurrentMetaButton);
+            }
+        }
+
+        mCurrentMetaButton = &newButton;
+        if (*mCurrentMetaButton != KeyCodes::Meta.undefined)
+        {
+            if (mEventListener != nullptr)
+            {
+                mEventListener->onButtonPressedEvent(*mCurrentMetaButton);
+            }
+        }
+    }
+
+    //! propagate axis rotary button events
+    const KeyCode& oldAxisKeyCode = mAxisButton.keyCode();
+    if (mAxisButton.setKeyCode(axisButton))
+    {
+        mEventListener->onAxisInactiveEvent(oldAxisKeyCode);
+        mEventListener->onAxisActiveEvent(mAxisButton.keyCode());
+    }
+
+    //! propagate feed rotary button events
+    const KeyCode& oldFeedKeyCode = mFeedButton.keyCode();
+    if (mFeedButton.setKeyCode(feedButton))
+    {
+        mEventListener->onFeedInactiveEvent(oldFeedKeyCode);
+        mEventListener->onFeedActiveEvent(mFeedButton.keyCode());
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -1164,15 +1299,15 @@ std::ostream& operator<<(std::ostream& os, const ButtonsState& data)
     std::ios init(NULL);
     init.copyfmt(os);
 
-    os << "pressed buttons={";
+    os << "{pressed buttons=";
     for (const KeyCode* pb : data.pressedButtons())
     {
         assert(pb != nullptr);
         os << *pb << " ";
     }
-    os << "} metaButton={" << *data.currentMetaButton()
-       << "} axisButton={" << data.axisButton()
-       << "} feedButton={" << data.feedButton() << "}";
+    os << " metaButton=" << *data.currentMetaButton()
+       << " axisButton=" << data.axisButton()
+       << " feedButton=" << data.feedButton() << "}";
     os.copyfmt(init);
     return os;
 }
@@ -1225,6 +1360,13 @@ const FeedRotaryButton& ButtonsState::feedButton() const
 
 // ----------------------------------------------------------------------
 
+FeedRotaryButton& ButtonsState::feedButton()
+{
+    return mFeedButton;
+}
+
+// ----------------------------------------------------------------------
+
 Pendant::Pendant() :
     mPreviousButtonsState(this),
     mCurrentButtonsState(this, &mPreviousButtonsState),
@@ -1232,7 +1374,6 @@ Pendant::Pendant() :
     mPrefix("pndnt "),
     mPendantCout(&std::cout)
 {
-    *mPendantCout << mPrefix << *this << endl;
 }
 
 // ----------------------------------------------------------------------
@@ -1248,9 +1389,9 @@ std::ostream& operator<<(std::ostream& os, const Pendant& data)
     std::ios init(NULL);
     init.copyfmt(os);
 
-    os << "currentButtonState={" << data.currentButtonsState() << "} "
-       << "previousButtonState={" << data.previousButtonsState() << "} "
-       << "handwheel={ " << data.handWheel() << "}";
+    os << "{currentButtonState=" << data.currentButtonsState() << " "
+       << "previousButtonState=" << data.previousButtonsState() << " "
+       << "handwheel= " << data.handWheel() << "}";
     return os;
 }
 
@@ -1262,6 +1403,31 @@ void Pendant::update(uint8_t keyCode,
                      uint8_t rotaryButtonFeedKeyCode,
                      int8_t handWheelStepCount)
 {
+    shiftButtonState();
+
+    auto key      = KeyCodes::Buttons.codeMap.find(keyCode);
+    auto modifier = KeyCodes::Buttons.codeMap.find(modifierCode);
+    auto axis     = KeyCodes::Axis.codeMap.find(rotaryButtonAxisKeyCode);
+    auto feed     = KeyCodes::Feed.codeMap.find(rotaryButtonFeedKeyCode);
+
+    if (key == KeyCodes::Buttons.codeMap.end())
+    {
+        *mPendantCout << mPrefix << "failed to interpret key code keyCode={" << keyCode << "}" << endl;
+    }
+    if (modifier == KeyCodes::Buttons.codeMap.end())
+    {
+        *mPendantCout << mPrefix << "failed to interpret modifier code keyCode={" << modifierCode << "}" << endl;
+    }
+    if (axis == KeyCodes::Axis.codeMap.end())
+    {
+        *mPendantCout << mPrefix << "failed to interpret axis code axisCode={" << modifierCode << "}" << endl;
+    }
+    if (feed == KeyCodes::Feed.codeMap.end())
+    {
+        *mPendantCout << mPrefix << "failed to interpret axis code axisCode={" << modifierCode << "}" << endl;
+    }
+
+    update(*key->second, *modifier->second, *axis->second, *feed->second, handWheelStepCount);
 }
 
 // ----------------------------------------------------------------------
@@ -1309,54 +1475,66 @@ const Handwheel& Pendant::handWheel() const
 
 bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
 {
-    *mPendantCout << mPrefix << "button pressed  event" << metaButton;
-    return true;
+    *mPendantCout << mPrefix << "button pressed  event metaButton=" << metaButton << endl;
+
+    if (metaButton == KeyCodes::Meta.step_continuous)
+    {
+        mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::STEP);
+    }
+    else if (metaButton == KeyCodes::Meta.manual_pulse_generator)
+    {
+        mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::CONTINUOUS);
+    }
+
+    return false;
 }
 
 // ----------------------------------------------------------------------
 
 bool Pendant::onButtonReleasedEvent(const MetaButtonCodes& metaButton)
 {
-    *mPendantCout << mPrefix << "button released event" << metaButton;
-    return true;
+    *mPendantCout << mPrefix << "button released event metaButton=" << metaButton << endl;
+    return false;
 }
 
 // ----------------------------------------------------------------------
 
 void Pendant::onAxisActiveEvent(const KeyCode& axis)
 {
-    *mPendantCout << mPrefix << "axis   active   event" << axis;
+    *mPendantCout << mPrefix << "axis   active   event axis=" << axis
+                  << " axisButton" << mCurrentButtonsState.axisButton() << endl;
 }
 
 // ----------------------------------------------------------------------
 
 void Pendant::onAxisInactiveEvent(const KeyCode& axis)
 {
-    *mPendantCout << mPrefix << "axis   inactive event" << axis;
+    *mPendantCout << mPrefix << "axis   inactive event axis=" << axis
+                  << " axisButton" << mCurrentButtonsState.axisButton() << endl;
 }
 
 // ----------------------------------------------------------------------
 
 void Pendant::onFeedActiveEvent(const KeyCode& feed)
 {
-    *mPendantCout << mPrefix << "feed   active   event" << feed;
+    *mPendantCout << mPrefix << "feed   active   event feed=" << feed
+                  << " feedButton" << mCurrentButtonsState.feedButton() << endl;
 }
 
 // ----------------------------------------------------------------------
 
 void Pendant::onFeedInactiveEvent(const KeyCode& feed)
 {
-    *mPendantCout << mPrefix << "feed   inactive event" << feed;
+    *mPendantCout << mPrefix << "feed   inactive event feed=" << feed
+                  << " feedButton" << mCurrentButtonsState.feedButton() << endl;
 }
 
 // ----------------------------------------------------------------------
 
 void Pendant::onJogDialEvent(int8_t delta)
 {
-    *mPendantCout << mPrefix << "wheel  event " << static_cast<int16_t>(delta);
+    *mPendantCout << mPrefix << "wheel  event " << static_cast<int16_t>(delta) << endl;
 }
-
-// ----------------------------------------------------------------------
 
 // ----------------------------------------------------------------------
 
