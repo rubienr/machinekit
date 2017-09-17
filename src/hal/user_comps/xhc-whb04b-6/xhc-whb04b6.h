@@ -176,6 +176,7 @@ private:
     UsbInputPackageInterpreted& packageInterpretedEventReceiver;
     bool                 mIsCrcDebuggingEnabled;
     MachineConfiguration mMachineConfig;
+    Pendant              mPendant;
 
     //! prints human readable output of the push buttons state
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out);

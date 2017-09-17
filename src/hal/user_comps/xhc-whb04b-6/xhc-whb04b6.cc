@@ -185,27 +185,27 @@ void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOut
 //! interprets data packages as delivered by the XHC WHB04B-6 device
 void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
 {
-    if (mIsSimulationMode)
+    //if (mIsSimulationMode)
+    //{
+    *mRxCout << "in    ";
+    printHexdump(inPackage);
+    if (inPackage.rotaryButtonFeedKeyCode != 0)
     {
-        *mRxCout << "in    ";
-        printHexdump(inPackage);
-        if (inPackage.rotaryButtonFeedKeyCode != 0)
-        {
-            std::ios init(NULL);
-            init.copyfmt(*mRxCout);
-            *mRxCout << " delta " << std::setfill(' ') << std::setw(2)
-                     << static_cast<unsigned short>(inPackage.rotaryButtonFeedKeyCode);
-            mRxCout->copyfmt(init);
-        }
-        else
-        {
-            *mRxCout << " delta NA";
-        }
-        *mRxCout << " => ";
-        printInputData(inPackage);
-        printCrcDebug(inPackage, mUsb.getOutputPackageData());
-        *mRxCout << endl;
+        std::ios init(NULL);
+        init.copyfmt(*mRxCout);
+        *mRxCout << " delta " << std::setfill(' ') << std::setw(2)
+                 << static_cast<unsigned short>(inPackage.rotaryButtonFeedKeyCode);
+        mRxCout->copyfmt(init);
     }
+    else
+    {
+        *mRxCout << " delta NA";
+    }
+    *mRxCout << " => ";
+    printInputData(inPackage);
+    printCrcDebug(inPackage, mUsb.getOutputPackageData());
+    *mRxCout << endl;
+    //}
 
     uint8_t modifierCode = mKeyCodes.buttons.undefined.code;
     uint8_t keyCode      = mKeyCodes.buttons.undefined.code;
@@ -233,6 +233,10 @@ void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
         keyCode = inPackage.buttonKeyCode1;
     }
 
+    mPendant.shiftButtonState();
+
+    mPendant.update(keyCode, modifierCode, inPackage.rotaryButtonAxisKeyCode, inPackage.rotaryButtonFeedKeyCode,
+                    inPackage.stepCount);
     //! update previous and current button state
     mPreviousButtonCodes = mCurrentButtonCodes;
     mCurrentButtonCodes.updateButtonState(keyCode, modifierCode, inPackage.rotaryButtonAxisKeyCode,
@@ -336,7 +340,8 @@ WhbContext::WhbContext() :
     packageReceivedEventReceiver(*this),
     packageInterpretedEventReceiver(*this),
     mIsCrcDebuggingEnabled(false),
-    mMachineConfig()
+    mMachineConfig(),
+    mPendant()
 {
     setSimulationMode(true);
     enableVerboseRx(false);

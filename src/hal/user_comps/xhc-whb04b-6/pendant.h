@@ -65,6 +65,10 @@ public:
 
 // ----------------------------------------------------------------------
 
+std::ostream& operator<<(std::ostream& os, const WhbKeyCode& data);
+
+// ----------------------------------------------------------------------
+
 //! meta-button state which is dependent on the "Fn" modifier button's state
 class WhbSoftwareButton
 {
@@ -192,7 +196,7 @@ public:
     WhbHandwheelStepModeStepSize();
 
 private:
-    const float mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
+    const float mSequence[static_cast<std::underlying_type<WhbHandwheelStepModeStepSize::PositionNameIndex>::type>(PositionNameIndex::POSITIONS_COUNT)];
 };
 
 // ----------------------------------------------------------------------
@@ -224,7 +228,7 @@ public:
     WhbHandwheelContinuousModeStepSize();
 
 private:
-    const uint8_t mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
+    const uint8_t mSequence[static_cast<std::underlying_type<WhbHandwheelContinuousModeStepSize::PositionNameIndex>::type>(PositionNameIndex::POSITIONS_COUNT)];
 };
 
 // ----------------------------------------------------------------------
@@ -329,7 +333,6 @@ private:
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
-// ----------------------------------------------------------------------
 
 
 // ----------------------------------------------------------------------
@@ -376,7 +379,7 @@ public:
     virtual bool isPermitted(PositionNameIndex buttonPosition) const;
 
 private:
-    const float mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
+    const float mSequence[static_cast<std::underlying_type<HandwheelStepModeStepSize::PositionNameIndex>::type>(PositionNameIndex::POSITIONS_COUNT)];
 };
 
 // ----------------------------------------------------------------------
@@ -409,7 +412,7 @@ public:
     virtual bool isPermitted(PositionNameIndex buttonPosition) const;
 
 private:
-    const int8_t mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
+    const int8_t mSequence[static_cast<std::underlying_type<HandwheelContinuousModeStepSize::PositionNameIndex>::type>(PositionNameIndex::POSITIONS_COUNT)];
 };
 
 // ----------------------------------------------------------------------
@@ -441,67 +444,149 @@ public:
     virtual bool isPermitted(PositionNameIndex buttonPosition) const;
 
 private:
-    const int8_t mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
+    const int8_t mSequence[static_cast<std::underlying_type<HandwheelLeadModeStepSize::PositionNameIndex>::type>(PositionNameIndex::POSITIONS_COUNT)];
 };
 
 // ----------------------------------------------------------------------
-/*
-class HandwheelAxisIsPermittedValidator : public HandwheelModeStepSize
+
+//! pendant button key code description
+class KeyCode
 {
 public:
-    enum class PositionNameIndex : uint8_t
-    {
-        OFF             = 0,
-        X               = 1,
-        Y               = 2,
-        Z               = 3,
-        A               = 4,
-        B               = 5,
-        C               = 6,
-        UNDEFINED       = 7,
-        POSITIONS_COUNT = 8
-    };
-
-    HandwheelAxisIsPermittedValidator() :
-        mSequence{false, true, true, true, true, true, true, false}
-    {
-    }
-
-    virtual ~HandwheelAxisIsPermittedValidator()
-    {
-    }
-
-    bool isPermitted(PositionNameIndex buttonPosition) const
-    {
-        return mSequence[static_cast<uint8_t>(buttonPosition)];
-    }
-
-private:
-    const bool mSequence[static_cast<uint8_t>(PositionNameIndex::POSITIONS_COUNT)];
+    const uint8_t code;
+    //! default button text as written on pendant (if available)
+    const char* text;
+    //! alternative button text as written on pendant (if available)
+    const char* altText;
+    bool operator==(const KeyCode& other) const;
+    bool operator!=(const KeyCode& other) const;
+    KeyCode(uint8_t code, const char* text, const char* altText);
+    KeyCode(const KeyCode& other);
 };
-*/
+
+// ----------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const KeyCode& data);
 
 // ----------------------------------------------------------------------
 
 //! meta-button state which is dependent on the "Fn" modifier button's state
-class MetaButton
+class MetaButtonCodes
 {
 public:
-    const WhbKeyCode& key;
-    const WhbKeyCode& modifier;
+    const KeyCode& key;
+    const KeyCode& modifier;
 
-    MetaButton(const WhbKeyCode& key, const WhbKeyCode& modifier);
-    virtual ~MetaButton();
-    bool containsKeys(const WhbKeyCode& key, const WhbKeyCode& modifier) const;
+    MetaButtonCodes(const KeyCode& key, const KeyCode& modifier);
+    virtual ~MetaButtonCodes();
+    bool containsKeys(const KeyCode& key, const KeyCode& modifier) const;
 };
+
+// ----------------------------------------------------------------------
+
+//! rotary axis selection button related parameters
+class AxisRotaryButtonCodes
+{
+public:
+    const KeyCode                           off;
+    const KeyCode                           x;
+    const KeyCode                           y;
+    const KeyCode                           z;
+    const KeyCode                           a;
+    const KeyCode                           b;
+    const KeyCode                           c;
+    const KeyCode                           undefined;
+    const std::map<uint8_t, const KeyCode*> codeMap;
+
+    AxisRotaryButtonCodes();
+};
+
+// ----------------------------------------------------------------------
+
+//! rotary feed button related parameters
+class FeedRotaryButtonCodes
+{
+public:
+    const KeyCode                           speed_0_001;
+    const KeyCode                           speed_0_01;
+    const KeyCode                           speed_0_1;
+    const KeyCode                           speed_1;
+    const KeyCode                           percent_60;
+    const KeyCode                           percent_100;
+    const KeyCode                           lead;
+    const KeyCode                           undefined;
+    const std::map<uint8_t, const KeyCode*> codeMap;
+
+    FeedRotaryButtonCodes();
+};
+
+// ----------------------------------------------------------------------
+
+//! pendant button related parameters
+class ButtonsCode
+{
+public:
+    const KeyCode reset;
+    const KeyCode stop;
+    const KeyCode start;
+    const KeyCode feed_plus;
+    const KeyCode feed_minus;
+    const KeyCode spindle_plus;
+    const KeyCode spindle_minus;
+    const KeyCode machine_home;
+    const KeyCode safe_z;
+    const KeyCode workpiece_home;
+    const KeyCode spindle_on_off;
+    const KeyCode function;
+    const KeyCode probe_z;
+    const KeyCode macro10;
+    const KeyCode manual_pulse_generator;
+    const KeyCode step_continuous;
+    const KeyCode undefined;
+    const KeyCode& getKeyCode(uint8_t keyCode) const;
+    const std::map<uint8_t, const KeyCode*> codeMap;
+
+    ButtonsCode();
+};
+
+// ----------------------------------------------------------------------
+
+class KeyEventListener
+{
+public:
+    //! Called when button is pressed.
+    //! \param softwareButton the button pressed
+    //! \return true if a subsequent re-evaluation should be performed.
+    //! Example: A button event changes the feed rotary buttons step mode from
+    //! step to continuous. The button must be re-evaluated, otherwise the
+    //! button state remains untouched until the next button's event.
+    virtual bool onButtonPressedEvent(const MetaButtonCodes& metaButton) = 0;
+    //! Called when button is released.
+    //! \param softwareButton the button released
+    //! \return true if a subsequent re-evaluation should be performed.
+    //! Example: A button event changes the feed rotary buttons step mode from
+    //! step to continuous. The button must be re-evaluated, otherwise the
+    //! button state remains untouched until the next button's event.
+    virtual bool onButtonReleasedEvent(const MetaButtonCodes& metaButton) = 0;
+    virtual void onAxisActiveEvent(const KeyCode& axis) = 0;
+    virtual void onAxisInactiveEvent(const KeyCode& axis) = 0;
+    virtual void onFeedActiveEvent(const KeyCode& axis) = 0;
+    virtual void onFeedInactiveEvent(const KeyCode& axis) = 0;
+    virtual void onJogDialEvent(int8_t delta) = 0;
+    virtual ~KeyEventListener();
+};
+
+// ----------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const MetaButtonCodes& data);
 
 // ----------------------------------------------------------------------
 
 class MetaButtonsCodes
 {
 public:
-    const std::list<const MetaButton*> buttons;
-    MetaButtonsCodes(const WhbButtonsCode& buttons);
+    const std::list<const MetaButtonCodes*> buttons;
+    MetaButtonsCodes(const ButtonsCode& buttons);
     ~MetaButtonsCodes();
 };
 
@@ -510,10 +595,10 @@ public:
 class KeyCodes
 {
 public:
-    static const WhbButtonsCode           Buttons;
-    static const MetaButtonsCodes         Meta;
-    static const WhbAxisRotaryButtonCodes Axis;
-    static const WhbFeedRotaryButtonCodes Feed;
+    static const ButtonsCode           Buttons;
+    static const MetaButtonsCodes      Meta;
+    static const AxisRotaryButtonCodes Axis;
+    static const FeedRotaryButtonCodes Feed;
 };
 
 // ----------------------------------------------------------------------
@@ -521,14 +606,19 @@ public:
 class Button
 {
 public:
-    Button(const WhbKeyCode& key);
+    Button(const KeyCode& key);
     virtual ~Button();
-    virtual const WhbKeyCode& keyCode() const;
-    virtual void setKeyCode(WhbKeyCode& keyCode);
+    virtual const KeyCode& keyCode() const;
+    virtual void setKeyCode(KeyCode& keyCode);
+    Button& operator=(const Button& other);
 
 protected:
-    const WhbKeyCode* mKey;
+    const KeyCode* mKey;
 };
+
+// ----------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const Button& data);
 
 // ----------------------------------------------------------------------
 
@@ -536,107 +626,192 @@ protected:
 class ToggleButton : public Button
 {
 public:
-    ToggleButton(const WhbKeyCode& key, const WhbKeyCode& modifier);
+    ToggleButton(const KeyCode& key, const KeyCode& modifier);
     virtual ~ToggleButton();
-    virtual const WhbKeyCode& modifierCode() const;
-    virtual void setModifierCode(WhbKeyCode& modifierCode);
-    bool containsKeys(const WhbKeyCode& key, const WhbKeyCode& modifier) const;
+    virtual const KeyCode& modifierCode() const;
+    virtual void setModifierCode(KeyCode& modifierCode);
+    bool containsKeys(const KeyCode& key, const KeyCode& modifier) const;
+    ToggleButton& operator=(const ToggleButton& other);
 
 private:
-    const WhbKeyCode* mModifier;
+    const KeyCode* mModifier;
 };
+
+// ----------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const ToggleButton& data);
 
 // ----------------------------------------------------------------------
 
 class RotaryButton : public Button
 {
 public:
-    RotaryButton(const WhbKeyCode& keyCode);
+    RotaryButton(const KeyCode& keyCode);
     virtual ~RotaryButton();
     virtual bool isPermitted() const = 0;
+    RotaryButton& operator=(const RotaryButton& other);
 };
+
+// ----------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const RotaryButton& data);
 
 // ----------------------------------------------------------------------
 
 class FeedRotaryButton : public RotaryButton
 {
 public:
-    FeedRotaryButton(const WhbKeyCode& keyCode = KeyCodes::Feed.undefined,
-                     HandwheelStepmodes::Mode stepMode = HandwheelStepmodes::Mode::CONTINUOUS);
+    FeedRotaryButton(const KeyCode& keyCode = KeyCodes::Feed.undefined,
+                     HandwheelStepmodes::Mode stepMode = HandwheelStepmodes::Mode::CONTINUOUS,
+                     KeyEventListener* listener = nullptr);
     ~FeedRotaryButton();
     void setStepMode(HandwheelStepmodes::Mode stepMode);
     HandwheelStepmodes::Mode stepMode() const;
     float stepSize() const;
     bool isPermitted() const override;
+    FeedRotaryButton& operator=(const FeedRotaryButton& other);
 
 private:
-    HandwheelStepmodes::Mode              mStepMode;
-    const HandwheelStepModeStepSize       mStepStepSizeMapper;
-    const HandwheelContinuousModeStepSize mContinuousSizeMapper;
-    const HandwheelLeadModeStepSize       mLeadStepSizeMapper;
+    HandwheelStepmodes::Mode mStepMode;
+    bool                     mIsPermitted;
+    float                    mStepSize;
+    KeyEventListener* mEventListener;
 
-    const std::map<const WhbKeyCode*, HandwheelStepModeStepSize::PositionNameIndex>       mStepKeycodeLut;
-    const std::map<const WhbKeyCode*, HandwheelContinuousModeStepSize::PositionNameIndex> mContinuousKeycodeLut;
-    const std::map<const WhbKeyCode*, HandwheelLeadModeStepSize::PositionNameIndex>       mLeadKeycodeLut;
+    static const HandwheelStepModeStepSize       mStepStepSizeMapper;
+    static const HandwheelContinuousModeStepSize mContinuousSizeMapper;
+    static const HandwheelLeadModeStepSize       mLeadStepSizeMapper;
+
+    static const std::map<const KeyCode*, HandwheelStepModeStepSize::PositionNameIndex>       mStepKeycodeLut;
+    static const std::map<const KeyCode*, HandwheelContinuousModeStepSize::PositionNameIndex> mContinuousKeycodeLut;
+    static const std::map<const KeyCode*, HandwheelLeadModeStepSize::PositionNameIndex>       mLeadKeycodeLut;
+
+    void update();
 };
+
+// ----------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const FeedRotaryButton& data);
 
 // ----------------------------------------------------------------------
 
 class AxisRotaryButton : public RotaryButton
 {
 public:
-    AxisRotaryButton(const WhbKeyCode& keyCode = KeyCodes::Axis.undefined);
+    AxisRotaryButton(const KeyCode& keyCode = KeyCodes::Axis.undefined, KeyEventListener* listener = nullptr);
     virtual ~AxisRotaryButton();
     bool isPermitted() const override;
+    AxisRotaryButton& operator=(const AxisRotaryButton& other);
 
 private:
+    KeyEventListener* mEventListener;
 };
+
+// ----------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const AxisRotaryButton& data);
 
 // ----------------------------------------------------------------------
 
 class Handwheel
 {
 public:
-    Handwheel(const FeedRotaryButton& feedButton);
+    Handwheel(const FeedRotaryButton& feedButton, KeyEventListener* listener = nullptr);
     ~Handwheel();
-    int32_t consumeScaledCounts();
     void produceCount(int8_t counts);
+    int32_t consumeScaledCounts();
+    int32_t counts() const;
 
 private:
     int32_t mCounts;
     const FeedRotaryButton& mFeedButton;
+    KeyEventListener      * mEventListener;
 };
+
+// ----------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const Handwheel& data);
 
 // ----------------------------------------------------------------------
 
 class ButtonsState
 {
 public:
-    ButtonsState();
+    ButtonsState(KeyEventListener* listener = nullptr, const ButtonsState* previousState = nullptr);
     ~ButtonsState();
-    FeedRotaryButton& feedRotaryButton();
+
+    ButtonsState& operator=(const ButtonsState& other);
+
+    void update(const KeyCode& keyCode,
+                const KeyCode& modifierCode,
+                const KeyCode& axisButton,
+                const KeyCode& feedButton);
+
+    void clearPressedButtons();
+
+    const std::list<const KeyCode*>& pressedButtons() const;
+    const MetaButtonCodes* currentMetaButton() const;
+    const AxisRotaryButton& axisButton() const;
+    const FeedRotaryButton& feedButton() const;
 
 private:
-    std::list<const WhbKeyCode*> mPressedButtons;
-    const MetaButton* mCurrentMetaButton;
+    std::list<const KeyCode*> mPressedButtons;
+    const MetaButtonCodes* mCurrentMetaButton;
     AxisRotaryButton mAxisButton;
     FeedRotaryButton mFeedButton;
+    const ButtonsState* mPreviousState;
+    KeyEventListener  * mEventListener;
 };
 
 // ----------------------------------------------------------------------
 
-class Pendant
+std::ostream& operator<<(std::ostream& os, const ButtonsState& data);
+
+// ----------------------------------------------------------------------
+
+class Pendant : public KeyEventListener
 {
 public:
     Pendant();
     ~Pendant();
 
+    void update(uint8_t keyCode,
+                uint8_t modifierCode,
+                uint8_t rotaryButtonAxisKeyCode,
+                uint8_t rotaryButtonFeedKeyCode,
+                int8_t handWheelStepCount);
+
+    void shiftButtonState();
+    const ButtonsState& currentButtonsState() const;
+    const ButtonsState& previousButtonsState() const;
+    const Handwheel& handWheel() const;
+
+    virtual bool onButtonPressedEvent(const MetaButtonCodes& metaButton) override;
+    virtual bool onButtonReleasedEvent(const MetaButtonCodes& metaButton) override;
+    virtual void onAxisActiveEvent(const KeyCode& axis) override;
+    virtual void onAxisInactiveEvent(const KeyCode& axis) override;
+    virtual void onFeedActiveEvent(const KeyCode& axis) override;
+    virtual void onFeedInactiveEvent(const KeyCode& axis) override;
+    virtual void onJogDialEvent(int8_t delta) override;
+
 private:
-    ButtonsState mCurrentButtonsState;
     ButtonsState mPreviousButtonsState;
+    ButtonsState mCurrentButtonsState;
     Handwheel    mHandWheel;
 
     float mScale;
     float mMaxVelocity;
+
+    const char  * mPrefix;
+    std::ostream* mPendantCout;
+
+    void update(const KeyCode& keyCode,
+                const KeyCode& modifierCode,
+                const KeyCode& rotaryButtonAxisKeyCode,
+                const KeyCode& rotaryButtonFeedKeyCode,
+                int8_t handWheelStepCount);
 };
+
+// ----------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& os, const Pendant& data);
 }

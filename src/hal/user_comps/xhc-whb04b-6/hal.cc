@@ -376,7 +376,6 @@ int WhbHal::newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int compone
     }
     else
     {
-        *mHalCout << " pin" << endl;
         int r = hal_pin_s32_new(pin_name, direction, ptr, componentId);
         assert(r == 0);
         return r;
