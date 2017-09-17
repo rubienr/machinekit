@@ -21,6 +21,6 @@ frame HAL_Components {
  WHB04B_6 <-->WhbComponent: USB i/o
 }
 
-caption Fig1: components diagram
+caption Fig1: Components diagram in HAL mode usecase
 
 @enduml
