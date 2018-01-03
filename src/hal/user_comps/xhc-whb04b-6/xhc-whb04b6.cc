@@ -357,7 +357,7 @@ WhbContext::WhbContext() :
     packageInterpretedEventReceiver(*this),
     mIsCrcDebuggingEnabled(false),
     mMachineConfig(),
-    mPendant()
+    mPendant(mHal)
 {
     setSimulationMode(true);
     enableVerboseRx(false);
@@ -798,7 +798,7 @@ bool WhbContext::isSimulationModeEnabled() const
 }
 
 // ----------------------------------------------------------------------
-
+// TODO: remove
 size_t WhbContext::getSoftwareButtonIndex(uint8_t keyCode) const
 {
     int      buttonsCount = sizeof(mSoftwareButtons) / sizeof(WhbSoftwareButton);
@@ -813,7 +813,7 @@ size_t WhbContext::getSoftwareButtonIndex(uint8_t keyCode) const
 }
 
 // ----------------------------------------------------------------------
-
+// TODO: remove
 bool WhbContext::dispatchButtonEventToHal(const WhbSoftwareButton& softwareButton, bool isButtonPressed)
 {
     const WhbButtonsCode& buttonCodes = mKeyCodes.buttons;
@@ -821,175 +821,175 @@ bool WhbContext::dispatchButtonEventToHal(const WhbSoftwareButton& softwareButto
     // reset button
     if (softwareButton.containsKeys(buttonCodes.reset, buttonCodes.undefined))
     {
-        mHal.setReset(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setReset(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // stop button
     else if (softwareButton.containsKeys(buttonCodes.stop, buttonCodes.undefined))
     {
-        mHal.setStop(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setStop(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // start pause button
     else if (softwareButton.containsKeys(buttonCodes.start, buttonCodes.undefined))
     {
-        mHal.setStart(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setStart(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // feed + button
     else if (softwareButton.containsKeys(buttonCodes.feed_plus, buttonCodes.undefined))
     {
-        mHal.setFeedPlus(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setFeedPlus(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // feed - button
     else if (softwareButton.containsKeys(buttonCodes.feed_minus, buttonCodes.undefined))
     {
-        mHal.setFeedMinus(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setFeedMinus(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // spindle + button
     else if (softwareButton.containsKeys(buttonCodes.spindle_plus, buttonCodes.undefined))
     {
-        mHal.setSpindlePlus(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setSpindlePlus(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // spindle - button
     else if (softwareButton.containsKeys(buttonCodes.spindle_minus, buttonCodes.undefined))
     {
-        mHal.setSpindleMinus(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setSpindleMinus(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // machine home button
     else if (softwareButton.containsKeys(buttonCodes.machine_home, buttonCodes.undefined))
     {
-        mHal.setMachineHome(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMachineHome(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // safe-z button
     else if (softwareButton.containsKeys(buttonCodes.safe_z, buttonCodes.undefined))
     {
-        mHal.setSafeZ(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setSafeZ(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // workpiece home button
     else if (softwareButton.containsKeys(buttonCodes.workpiece_home, buttonCodes.undefined))
     {
-        mHal.setWorkpieceHome(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setWorkpieceHome(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // spindle on/off button
     else if (softwareButton.containsKeys(buttonCodes.spindle_on_off, buttonCodes.undefined))
     {
-        mHal.setSpindleOn(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setSpindleOn(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // function - button
     else if (softwareButton.containsKeys(buttonCodes.function, buttonCodes.undefined))
     {
-        mHal.setFunction(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setFunction(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // probe-z button
     else if (softwareButton.containsKeys(buttonCodes.probe_z, buttonCodes.undefined))
     {
-        mHal.setProbeZ(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setProbeZ(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 10 button
     else if (softwareButton.containsKeys(buttonCodes.macro10, buttonCodes.undefined))
     {
-        mHal.setMacro10(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro10(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 11 button
     else if (softwareButton.containsKeys(buttonCodes.reset, buttonCodes.function))
     {
-        mHal.setMacro11(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro11(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 12 button
     else if (softwareButton.containsKeys(buttonCodes.stop, buttonCodes.function))
     {
-        mHal.setMacro12(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro12(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 13 button
     else if (softwareButton.containsKeys(buttonCodes.start, buttonCodes.function))
     {
-        mHal.setMacro13(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro13(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 1 button
     else if (softwareButton.containsKeys(buttonCodes.feed_plus, buttonCodes.function))
     {
-        mHal.setMacro1(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro1(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 2 button
     else if (softwareButton.containsKeys(buttonCodes.feed_minus, buttonCodes.function))
     {
-        mHal.setMacro2(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro2(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 3 button
     else if (softwareButton.containsKeys(buttonCodes.spindle_plus, buttonCodes.function))
     {
-        mHal.setMacro3(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro3(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 4 button
     else if (softwareButton.containsKeys(buttonCodes.spindle_minus, buttonCodes.function))
     {
-        mHal.setMacro4(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro4(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 5 button
     else if (softwareButton.containsKeys(buttonCodes.machine_home, buttonCodes.function))
     {
-        mHal.setMacro5(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro5(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 6 button
     else if (softwareButton.containsKeys(buttonCodes.safe_z, buttonCodes.function))
     {
-        mHal.setMacro6(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro6(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 7 button
     else if (softwareButton.containsKeys(buttonCodes.workpiece_home, buttonCodes.function))
     {
-        mHal.setMacro7(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro7(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 8 button
     else if (softwareButton.containsKeys(buttonCodes.spindle_on_off, buttonCodes.function))
     {
-        mHal.setMacro8(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro8(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 9 button
     else if (softwareButton.containsKeys(buttonCodes.probe_z, buttonCodes.function))
     {
-        mHal.setMacro9(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro9(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 14 button
     else if (softwareButton.containsKeys(buttonCodes.macro10, buttonCodes.function))
     {
-        mHal.setMacro14(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro14(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 15 button
     else if (softwareButton.containsKeys(buttonCodes.manual_pulse_generator, buttonCodes.function))
     {
-        mHal.setMacro15(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro15(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
         // macro 16 button
     else if (softwareButton.containsKeys(buttonCodes.step_continuous, buttonCodes.function))
     {
-        mHal.setMacro16(isButtonPressed, getHalPinNumber(softwareButton));
+        mHal.setMacro16(isButtonPressed);//, getHalPinNumber(softwareButton));
         return true;
     }
 
@@ -997,7 +997,7 @@ bool WhbContext::dispatchButtonEventToHal(const WhbSoftwareButton& softwareButto
 }
 // ----------------------------------------------------------------------
 
-
+// TODO: remove
 bool WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
 {
     bool isUpdateRecommended = false;
@@ -1029,7 +1029,7 @@ bool WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
 }
 
 // ----------------------------------------------------------------------
-
+// TODO: remove
 bool WhbContext::onButtonReleasedEvent(const WhbSoftwareButton& softwareButton)
 {
     bool isUpdateRecommended = false;
@@ -1374,7 +1374,7 @@ void WhbContext::offerHalMemory()
 }
 
 // ----------------------------------------------------------------------
-
+// TODO: remove
 void WhbContext::dispatchAxisEventToHal(const WhbKeyCode& axis, bool isActive)
 {
     if (axis.code == mKeyCodes.axis.off.code)

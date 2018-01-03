@@ -179,7 +179,7 @@ proc wheel_setup {jogmode} {
   net pendant:jog-counts-neg <= xhc-whb04b-6.jog.counts-neg
 
   set anames {x y z a b c}
-  # xhc-whb04b-6.cc hardcodes pin names as: x y z a b c
+  # xhc-whb04b-6.cc hardcoded pin names as: x y z a b c
   # herein: Use names in order of the [XHC_WHB04B_6_CONFIG]coords
   #         specification in the inifile.
   #         These pin names will be a little confusing when

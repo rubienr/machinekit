@@ -19,36 +19,42 @@
 
 #pragma once
 
+// local includes
+#include "pendant-types.h"
+
 // system includes
 #include <stdint.h>
 #include <list>
+
 #include <map>
 
 // 3rd party includes
-
 // local library includes
 #include <hal_types.h>
 
 // forward declarations
 
+// ----------------------------------------------------------------------
 
 namespace XhcWhb04b6 {
 
 // forward declarations
 class WhbContext;
 class WhbButtonsState;
+class WhbHal;
 
 // ----------------------------------------------------------------------
 
-enum class JogWheelStepMode : uint8_t
-{
-    CONTINUOUS,
-    STEP
-};
+//enum class JogWheelStepMode : uint8_t
+//{
+//    CONTINUOUS,
+//    STEP
+//};
 
 // ----------------------------------------------------------------------
 
 //! pendant button key code description
+// TODO: remove class
 class WhbKeyCode
 {
 public:
@@ -298,7 +304,7 @@ public:
     void setCurrentContinuousModeStepSize(WhbHandwheelContinuousModeStepSize::PositionNameIndex stepSize);
     void setCurrentModeStepMode();
     void setCurrentModeContinuousMode();
-    JogWheelStepMode currentStepMode() const;
+    HandwheelStepmodes::Mode currentStepMode() const;
     bool isCurrentModeStepMode() const;
     bool isCurrentModeContinuousMode() const;
 
@@ -312,7 +318,7 @@ private:
     const WhbHandwheelContinuousModeStepSize& mContinuousModeStepSizeLookup;
     WhbHandwheelContinuousModeStepSize::PositionNameIndex mCurrentContinuousModeSize;
     WhbHandwheelStepModeStepSize::PositionNameIndex       mCurrentStepModeSize;
-    JogWheelStepMode                                      mCurrentStepMode;
+    HandwheelStepmodes::Mode                              mCurrentStepMode;
     uint8_t                                               mCurrentButton1Code;
     uint8_t                                               mCurrentButton2Code;
     const WhbSoftwareButton* mSoftwareButton;
@@ -333,21 +339,6 @@ private:
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
 // ----------------------------------------------------------------------
-
-
-// ----------------------------------------------------------------------
-
-class HandwheelStepmodes
-{
-public:
-    enum class Mode : uint8_t
-    {
-        CONTINUOUS  = 0,
-        STEP        = 1,
-        MODES_COUNT = 2
-    };
-};
-
 // ----------------------------------------------------------------------
 
 //! If hand wheel is in step mode (toggled by Step/Continuous" button) this speed setting is applied.
@@ -812,7 +803,7 @@ std::ostream& operator<<(std::ostream& os, const ButtonsState& data);
 class Pendant : public KeyEventListener
 {
 public:
-    Pendant();
+    Pendant(WhbHal &hal);
     ~Pendant();
 
     void update(uint8_t keyCode,
@@ -834,6 +825,7 @@ public:
     virtual void onJogDialEvent(int8_t delta) override;
 
 private:
+    WhbHal&      mHal;
     ButtonsState mPreviousButtonsState;
     ButtonsState mCurrentButtonsState;
     Handwheel    mHandWheel;
@@ -850,6 +842,8 @@ private:
                 const KeyCode& rotaryButtonAxisKeyCode,
                 const KeyCode& rotaryButtonFeedKeyCode,
                 int8_t handWheelStepCount);
+    void dispatchAxisEventToHal(const KeyCode& axis, bool isActive);
+    void dispatchFeedToHal();
 };
 
 // ----------------------------------------------------------------------

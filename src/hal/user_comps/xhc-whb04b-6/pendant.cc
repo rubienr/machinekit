@@ -231,7 +231,7 @@ WhbStepHandler::WhbStepHandler() :
 
 // ----------------------------------------------------------------------
 
-JogWheelStepMode WhbButtonsState::currentStepMode() const
+HandwheelStepmodes::Mode WhbButtonsState::currentStepMode() const
 {
     return mCurrentStepMode;
 }
@@ -240,21 +240,21 @@ JogWheelStepMode WhbButtonsState::currentStepMode() const
 
 bool WhbButtonsState::isCurrentModeStepMode() const
 {
-    return mCurrentStepMode == JogWheelStepMode::STEP;
+    return mCurrentStepMode == HandwheelStepmodes::Mode::STEP;
 }
 
 // ----------------------------------------------------------------------
 
 bool WhbButtonsState::isCurrentModeContinuousMode() const
 {
-    return mCurrentStepMode == JogWheelStepMode::CONTINUOUS;
+    return mCurrentStepMode == HandwheelStepmodes::Mode::CONTINUOUS;
 }
 
 // ----------------------------------------------------------------------
 
 void WhbButtonsState::setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::PositionNameIndex stepSize)
 {
-    mCurrentStepMode     = JogWheelStepMode::STEP;
+    mCurrentStepMode     = HandwheelStepmodes::Mode::STEP;
     mCurrentStepModeSize = stepSize;
 }
 
@@ -263,7 +263,7 @@ void WhbButtonsState::setCurrentStepModeStepSize(WhbHandwheelStepModeStepSize::P
 void
 WhbButtonsState::setCurrentContinuousModeStepSize(WhbHandwheelContinuousModeStepSize::PositionNameIndex stepSize)
 {
-    mCurrentStepMode           = JogWheelStepMode::CONTINUOUS;
+    mCurrentStepMode           = HandwheelStepmodes::Mode::CONTINUOUS;
     mCurrentContinuousModeSize = stepSize;
 }
 
@@ -326,12 +326,12 @@ hal_float_t WhbButtonsState::getStepSize()
     float maxVelocity_mm_sec = 40.0;
     float stepsPerUnit_mm    = 200.0 / 5.0;
 
-    if (mCurrentStepMode == JogWheelStepMode::CONTINUOUS)
+    if (mCurrentStepMode == HandwheelStepmodes::Mode::CONTINUOUS)
     {
         // transform step size into percental of maximum-velocity
         return maxVelocity_mm_sec * (0.01 * mContinuousModeStepSizeLookup.getStepSize(mCurrentContinuousModeSize));
     }
-    else if (mCurrentStepMode == JogWheelStepMode::STEP)
+    else if (mCurrentStepMode == HandwheelStepmodes::Mode::STEP)
     {
         // transform step size to metric units
         return stepsPerUnit_mm * mStepModeStepSizeLookup.getStepSize(mCurrentStepModeSize);
@@ -356,7 +356,7 @@ WhbButtonsState::WhbButtonsState(const WhbButtonsCode& buttonCodesLookup,
     mContinuousModeStepSizeLookup(continuousStepSizeLookup),
     mCurrentContinuousModeSize(WhbHandwheelContinuousModeStepSize::PositionNameIndex::RotaryButtonUndefined),
     mCurrentStepModeSize(WhbHandwheelStepModeStepSize::PositionNameIndex::RotaryButtonUndefined),
-    mCurrentStepMode(JogWheelStepMode::CONTINUOUS),
+    mCurrentStepMode(HandwheelStepmodes::Mode::CONTINUOUS),
     mCurrentButton1Code(buttonCodesLookup.undefined.code),
     mCurrentButton2Code(buttonCodesLookup.undefined.code),
     mSoftwareButton(nullptr),
@@ -393,12 +393,12 @@ void WhbButtonsState::updateButtonState(const WhbSoftwareButton& softwareButton)
     if (softwareButton.key.code == mButtonCodesLookup.manual_pulse_generator.code &&
         softwareButton.modifier == mButtonCodesLookup.undefined)
     {
-        mCurrentStepMode = JogWheelStepMode::CONTINUOUS;
+        mCurrentStepMode = HandwheelStepmodes::Mode::CONTINUOUS;
     }
     else if (softwareButton.key.code == mButtonCodesLookup.step_continuous.code &&
              softwareButton.modifier == mButtonCodesLookup.undefined)
     {
-        mCurrentStepMode = JogWheelStepMode::STEP;
+        mCurrentStepMode = HandwheelStepmodes::Mode::STEP;
     }
 }
 
@@ -434,14 +434,14 @@ const WhbKeyCode& WhbButtonsState::getFeedCode() const
 
 void WhbButtonsState::setCurrentModeStepMode()
 {
-    mCurrentStepMode = JogWheelStepMode::STEP;
+    mCurrentStepMode = HandwheelStepmodes::Mode::STEP;
 }
 
 // ----------------------------------------------------------------------
 
 void WhbButtonsState::setCurrentModeContinuousMode()
 {
-    mCurrentStepMode = JogWheelStepMode::CONTINUOUS;
+    mCurrentStepMode = HandwheelStepmodes::Mode::CONTINUOUS;
 }
 
 // ----------------------------------------------------------------------
@@ -518,7 +518,7 @@ bool HandwheelContinuousModeStepSize::isPermitted(PositionNameIndex buttonPositi
 // ----------------------------------------------------------------------
 
 HandwheelLeadModeStepSize::HandwheelLeadModeStepSize() :
-    mSequence{0, 0, 0, 0, 0, 0, 1, 0}
+    mSequence{0, 0, 0, 0, 0, 0, 1}
 {
 }
 
@@ -971,7 +971,7 @@ const std::map<const KeyCode*, HandwheelStepModeStepSize::PositionNameIndex>    
     {&KeyCodes::Feed.speed_0_001, HandwheelStepModeStepSize::PositionNameIndex::RotaryButton0001},
     {&KeyCodes::Feed.speed_0_01,  HandwheelStepModeStepSize::PositionNameIndex::RotaryButton0010},
     {&KeyCodes::Feed.speed_0_1,   HandwheelStepModeStepSize::PositionNameIndex::RotaryButton0100},
-    {&KeyCodes::Feed.speed_1,     HandwheelStepModeStepSize::PositionNameIndex::RotaryButtonUndefined},
+    {&KeyCodes::Feed.speed_1,     HandwheelStepModeStepSize::PositionNameIndex::RotaryButton100},
     {&KeyCodes::Feed.percent_60,  HandwheelStepModeStepSize::PositionNameIndex::RotaryButtonUndefined},
     {&KeyCodes::Feed.percent_100, HandwheelStepModeStepSize::PositionNameIndex::RotaryButtonUndefined},
     {&KeyCodes::Feed.lead,        HandwheelStepModeStepSize::PositionNameIndex::RotaryButtonUndefined}
@@ -1367,7 +1367,8 @@ FeedRotaryButton& ButtonsState::feedButton()
 
 // ----------------------------------------------------------------------
 
-Pendant::Pendant() :
+Pendant::Pendant(WhbHal &hal) :
+    mHal(hal),
     mPreviousButtonsState(this),
     mCurrentButtonsState(this, &mPreviousButtonsState),
     mHandWheel(mCurrentButtonsState.feedButton(), this),
@@ -1396,7 +1397,7 @@ std::ostream& operator<<(std::ostream& os, const Pendant& data)
 }
 
 // ----------------------------------------------------------------------
-
+// TODO: remove
 void Pendant::update(uint8_t keyCode,
                      uint8_t modifierCode,
                      uint8_t rotaryButtonAxisKeyCode,
@@ -1431,7 +1432,7 @@ void Pendant::update(uint8_t keyCode,
 }
 
 // ----------------------------------------------------------------------
-
+// TODO: remove
 void Pendant::update(const KeyCode& keyCode,
                      const KeyCode& modifierCode,
                      const KeyCode& rotaryButtonAxisKeyCode,
@@ -1477,13 +1478,160 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
 {
     *mPendantCout << mPrefix << "button pressed  event metaButton=" << metaButton << endl;
 
-    if (metaButton == KeyCodes::Meta.step_continuous)
+    if (metaButton == KeyCodes::Meta.reset)
     {
-        mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::STEP);
+        mHal.setReset(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.stop)
+    {
+        mHal.setStop(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.start)
+    {
+        mHal.setStart(true);
+        mHal.toggleStartResumeProgram();
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.feed_plus)
+    {
+        mHal.setFeedPlus(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.feed_minus)
+    {
+        mHal.setFeedMinus(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.spindle_plus)
+    {
+        mHal.setSpindlePlus(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.spindle_minus)
+    {
+        mHal.setSpindleMinus(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.machine_home)
+    {
+        mHal.setMachineHome(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.safe_z)
+    {
+        mHal.setSafeZ(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.workpiece_home)
+    {
+        mHal.setWorkpieceHome(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.spindle_on_off)
+    {
+        mHal.setSpindleOn(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.probe_z)
+    {
+        mHal.setProbeZ(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro10)
+    {
+        mHal.setMacro10(true);
+        return true;
     }
     else if (metaButton == KeyCodes::Meta.manual_pulse_generator)
     {
         mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::CONTINUOUS);
+        mHal.setContinuousMode(true);
+        dispatchFeedToHal();
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.step_continuous)
+    {
+        mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::STEP);
+        mHal.setStepMode(true);
+        dispatchFeedToHal();
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro11)
+    {
+        mHal.setMacro11(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro12)
+    {
+        mHal.setMacro12(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro13)
+    {
+        mHal.setMacro13(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro1)
+    {
+        mHal.setMacro1(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro2)
+    {
+        mHal.setMacro2(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro3)
+    {
+        mHal.setMacro3(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro4)
+    {
+        mHal.setMacro4(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro5)
+    {
+        mHal.setMacro5(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro6)
+    {
+        mHal.setMacro6(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro7)
+    {
+        mHal.setMacro7(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro8)
+    {
+        mHal.setMacro8(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro9)
+    {
+        mHal.setMacro9(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro14)
+    {
+        mHal.setMacro14(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro15)
+    {
+        mHal.setMacro15(true);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro16)
+    {
+        mHal.setMacro16(true);
+        return true;
     }
 
     return false;
@@ -1494,6 +1642,157 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
 bool Pendant::onButtonReleasedEvent(const MetaButtonCodes& metaButton)
 {
     *mPendantCout << mPrefix << "button released event metaButton=" << metaButton << endl;
+    if (metaButton == KeyCodes::Meta.reset)
+    {
+        mHal.setReset(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.stop)
+    {
+        mHal.setStop(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.start)
+    {
+        mHal.setStart(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.feed_plus)
+    {
+        mHal.setFeedPlus(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.feed_minus)
+    {
+        mHal.setFeedMinus(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.spindle_plus)
+    {
+        mHal.setSpindlePlus(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.spindle_minus)
+    {
+        mHal.setSpindleMinus(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.machine_home)
+    {
+        mHal.setMachineHome(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.safe_z)
+    {
+        mHal.setSafeZ(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.workpiece_home)
+    {
+        mHal.setWorkpieceHome(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.spindle_on_off)
+    {
+        mHal.setSpindleOn(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.probe_z)
+    {
+        mHal.setProbeZ(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro10)
+    {
+        mHal.setMacro10(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.manual_pulse_generator)
+    {
+        mHal.setContinuousMode(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.step_continuous)
+    {
+        mHal.setStepMode(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro11)
+    {
+        mHal.setMacro11(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro12)
+    {
+        mHal.setMacro12(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro13)
+    {
+        mHal.setMacro13(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro1)
+    {
+        mHal.setMacro1(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro2)
+    {
+        mHal.setMacro2(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro3)
+    {
+        mHal.setMacro3(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro4)
+    {
+        mHal.setMacro4(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro5)
+    {
+        mHal.setMacro5(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro6)
+    {
+        mHal.setMacro6(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro7)
+    {
+        mHal.setMacro7(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro8)
+    {
+        mHal.setMacro8(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro9)
+    {
+        mHal.setMacro9(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro14)
+    {
+        mHal.setMacro14(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro15)
+    {
+        mHal.setMacro15(false);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro16)
+    {
+        mHal.setMacro16(false);
+        return true;
+    }
+
     return false;
 }
 
@@ -1502,7 +1801,8 @@ bool Pendant::onButtonReleasedEvent(const MetaButtonCodes& metaButton)
 void Pendant::onAxisActiveEvent(const KeyCode& axis)
 {
     *mPendantCout << mPrefix << "axis   active   event axis=" << axis
-                  << " axisButton" << mCurrentButtonsState.axisButton() << endl;
+                  << " axisButton=" << mCurrentButtonsState.axisButton() << endl;
+    dispatchAxisEventToHal(axis, true);
 }
 
 // ----------------------------------------------------------------------
@@ -1510,15 +1810,30 @@ void Pendant::onAxisActiveEvent(const KeyCode& axis)
 void Pendant::onAxisInactiveEvent(const KeyCode& axis)
 {
     *mPendantCout << mPrefix << "axis   inactive event axis=" << axis
-                  << " axisButton" << mCurrentButtonsState.axisButton() << endl;
+                  << " axisButton=" << mCurrentButtonsState.axisButton() << endl;
+    dispatchAxisEventToHal(axis, false);
 }
 
 // ----------------------------------------------------------------------
 
 void Pendant::onFeedActiveEvent(const KeyCode& feed)
 {
-    *mPendantCout << mPrefix << "feed   active   event feed=" << feed
-                  << " feedButton" << mCurrentButtonsState.feedButton() << endl;
+    (*mPendantCout) << mPrefix << "feed   active   event feed=" << feed
+                  << " feedButton=" << mCurrentButtonsState.feedButton() << endl;
+    dispatchFeedToHal();
+}
+
+void Pendant::dispatchFeedToHal()
+{
+    FeedRotaryButton& feedButton = mCurrentButtonsState.feedButton();
+    if (feedButton.isPermitted()) {
+        mHal.setJogWheelStepMode(feedButton.stepMode());
+        mHal.setStepSize(feedButton.stepSize());
+    }
+    else
+    {
+        mHal.setStepSize(0);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -1526,7 +1841,7 @@ void Pendant::onFeedActiveEvent(const KeyCode& feed)
 void Pendant::onFeedInactiveEvent(const KeyCode& feed)
 {
     *mPendantCout << mPrefix << "feed   inactive event feed=" << feed
-                  << " feedButton" << mCurrentButtonsState.feedButton() << endl;
+                  << " feedButton=" << mCurrentButtonsState.feedButton() << endl;
 }
 
 // ----------------------------------------------------------------------
@@ -1536,6 +1851,44 @@ void Pendant::onJogDialEvent(int8_t delta)
     *mPendantCout << mPrefix << "wheel  event " << static_cast<int16_t>(delta) << endl;
 }
 
+
 // ----------------------------------------------------------------------
 
+void Pendant::dispatchAxisEventToHal(const KeyCode& axis, bool isActive)
+{
+    if (axis.code == KeyCodes::Axis.off.code)
+    {
+        mHal.setNoAxisActive(isActive);
+    }
+    else if (axis.code == KeyCodes::Axis.x.code)
+    {
+        mHal.setAxisXActive(isActive);
+    }
+    else if (axis.code == KeyCodes::Axis.y.code)
+    {
+        mHal.setAxisYActive(isActive);
+    }
+    else if (axis.code == KeyCodes::Axis.z.code)
+    {
+        mHal.setAxisZActive(isActive);
+    }
+    else if (axis.code == KeyCodes::Axis.a.code)
+    {
+        mHal.setAxisAActive(isActive);
+    }
+    else if (axis.code == KeyCodes::Axis.b.code)
+    {
+        mHal.setAxisBActive(isActive);
+    }
+    else if (axis.code == KeyCodes::Axis.c.code)
+    {
+        mHal.setAxisCActive(isActive);
+    }
+    else if (axis.code == KeyCodes::Axis.undefined.code)
+    {
+        mHal.setNoAxisActive(isActive);
+    }
 }
+
+}
+

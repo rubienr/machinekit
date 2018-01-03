@@ -19,9 +19,14 @@
 
 #pragma once
 
+// local includes
+#include "pendant-types.h"
+
 // system includes
 #include <stdint.h>
 #include <ostream>
+#include <string>
+#include <map>
 
 // 3rd party includes
 
@@ -35,7 +40,7 @@ namespace XhcWhb04b6 {
 // forward declarations
 class WhbSoftwareButton;
 class WhbKeyCodes;
-enum class JogWheelStepMode : uint8_t;
+
 
 // ----------------------------------------------------------------------
 
@@ -91,6 +96,14 @@ public:
         hal_bit_t  * isProgramPaused;
         //! to be connected to \ref halui.program.is-idle
         hal_bit_t  * isProgramIdle;
+        //! to be connected to \ref halui.mode.is-auto
+        hal_bit_t* isModeAuto;
+
+        //! to be connected to \ref halui.estop.is-activated
+        hal_bit_t* isEmergencyStop;
+
+        //! to be connected to \ref halui.machine.is-on
+        hal_bit_t* isMachineOn;
 
         In();
     };
@@ -228,7 +241,18 @@ public:
         //! to be connected to \ref halui.home-all
         hal_bit_t* homeAll;
 
+        //! to be connected to \ref halui.jog.selected.increment
         hal_float_t* jogIncrement;
+        //! to be connected to \ref halui.jog.selected.increment-plus
+        hal_bit_t* jogIncrementPlus;
+        //! to be connected to \ref halui.jog.selected.increment-minus
+        hal_bit_t* jogIncrementMinus;
+        //! to be connected to \ref halui.jog.selected.plus
+        hal_bit_t* jogPlus; //jogging with jog-speed
+        //! to be connected to \ref halui.jog.selected.minus
+        hal_bit_t* jogMinus; // jogging with jog-speed
+
+
         /*
           hal_bit_t  * jogPlusX;
           hal_bit_t  *         // TODO: begin: to be removed
@@ -274,9 +298,18 @@ public:
         hal_bit_t* doResumeProgram;
         //! to be connected to \ref halui.program.stop
         hal_bit_t* doStopProgram;
+        //! to be connected to \ref halui.mode.auto
+        hal_bit_t* doModeAuto;
 
         //! to be connected to \ref halui.estop.activate
         hal_bit_t* doEmergencyStop;
+        //! to be connected to \ref halui.estop.reset
+        hal_bit_t* resetEmergencyStop;
+
+        //! to be connected to \ref halui.machine.on
+        hal_bit_t* doMachineOn;
+        //! to be connected to \ref halui.machine.off
+        hal_bit_t* doMachineOff;
 
         Out();
     };
@@ -305,6 +338,7 @@ class WhbHal
 {
 public:
     WhbHalMemory* memory;
+    std::map<std::string, size_t> mButtonNameToIdx;
     WhbVelocityComputation velocityComputation;
 
     WhbHal();
@@ -340,100 +374,104 @@ public:
     void setAxisCActive(bool enabled);
 
     //! Set the new jog wheel step mode. The mode affects the pins chosen to generate jog movements.
-    void setJogWheelStepMode(JogWheelStepMode stepMode);
+    void setJogWheelStepMode(HandwheelStepmodes::Mode stepMode);
 
     //! Sets the new feed rate. The step mode must be set accordingly.
     //! \param feedRate the new feed rate independent of step mode
     void setStepSize(const hal_float_t& feedRate);
     //! If lead is active.
     void setLead();
-    //! Sets the hal state of the reset pin. Usually called in case the reset
+    //! Sets the hal state of the respecitive pin (reset). Usually called in case the reset
     //! button is pressed or released. The pin should be connected to \ref halui.estop.activate.
     //! \param enabled the new pin value, (true if the button was pressed, false otherwise)
     //! \param pinNumber The pin number in \ref WhbHalMemory as registered in
     //! \ref WhbHal::halInit(const WhbSoftwareButton* , size_t , const WhbKeyCodes&)
     //! \sa doEmergencyStop
-    void setReset(bool enabled, size_t pinNumber);
+    void setReset(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setStop(bool enabled, size_t pinNumber);
+    void setStop(bool enabled);
     //! Toggles the start/pause/resume states.
     //! \param enabled true if start/resume is requested, false otherwise
     //! \param pinNumber \sa setReset(bool, size_t)
-    void setStart(bool enabled, size_t pinNumber);
+    void setStart(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setFeedPlus(bool enabled, size_t pinNumber);
+    void setFeedPlus(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setFeedMinus(bool enabled, size_t pinNumber);
+    void setFeedMinus(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setSpindlePlus(bool enabled, size_t pinNumber);
+    void setSpindlePlus(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setSpindleMinus(bool enabled, size_t pinNumber);
+    void setSpindleMinus(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setFunction(bool enabled, size_t pinNumber);
+    void setFunction(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setMachineHome(bool enabled, size_t pinNumber);
+    void setMachineHome(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setSafeZ(bool enabled, size_t pinNumber);
+    void setSafeZ(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setWorkpieceHome(bool enabled, size_t pinNumber);
+    void setWorkpieceHome(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setSpindleOn(bool enabled, size_t pinNumber);
+    void setSpindleOn(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setProbeZ(bool enabled, size_t pinNumber);
+    void setProbeZ(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setContinuousMode(bool enabled, size_t pinNumber);
+    void setContinuousMode(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setStepMode(bool enabled, size_t pinNumber);
+    void setStepMode(bool enabled);
     //! Sets the hal state of the macro pin. Usually called in case the macro
     //! button is pressed or released. A macro button can be any button
     //! when pressed together with the modifier key.
     //! \param enabled the new pin value, (true if the button was pressed, false otherwise)
     //! \param pinNumber The pin number in \ref WhbHalMemory.
     //! \sa setReset(bool, size_t)
-    void setMacro1(bool enabled, size_t pinNumber);
+    void setMacro1(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro2(bool enabled, size_t pinNumber);
+    void setMacro2(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro3(bool enabled, size_t pinNumber);
+    void setMacro3(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro4(bool enabled, size_t pinNumber);
+    void setMacro4(bool enabled);
+    //! \sa setMacro1(bool)
+    void setMacro5(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro5(bool enabled, size_t pinNumber);
+    void setMacro6(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro6(bool enabled, size_t pinNumber);
+    void setMacro7(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro7(bool enabled, size_t pinNumber);
+    void setMacro8(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro8(bool enabled, size_t pinNumber);
+    void setMacro9(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro9(bool enabled, size_t pinNumber);
+    void setMacro10(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro10(bool enabled, size_t pinNumber);
+    void setMacro11(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro11(bool enabled, size_t pinNumber);
+    void setMacro12(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro12(bool enabled, size_t pinNumber);
+    void setMacro13(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro13(bool enabled, size_t pinNumber);
+    void setMacro14(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro14(bool enabled, size_t pinNumber);
+    void setMacro15(bool enabled);
     //! \sa setMacro1(bool, size_t)
-    void setMacro15(bool enabled, size_t pinNumber);
-    //! \sa setMacro1(bool, size_t)
-    void setMacro16(bool enabled, size_t pinNumber);
+    void setMacro16(bool enabled);
     //! This method cumulates new jog dial delta. In other words it produces counts
     //! to be consumed by an icomp component.
     //! \param delta new jog dial delta
     void newJogDialDelta(int8_t delta);
     void computeVelocity();
+    //! Toggles program states; running, paused, resume.
+    //! Should be called each time after setStart(true) (\sa setStart(bool)) to stay in sync.
+    void toggleStartResumeProgram();
 
 private:
     bool mIsSimulationMode;
     const char* mName;
+    const char* mComponentPrefix;
     int          mHalCompId;
     std::ostream mDevNull;
     std::ostream* mHalCout;
-    JogWheelStepMode mStepMode;
+    HandwheelStepmodes::Mode mStepMode;
     //int16_t                    mPendingStepsContinuousMode;
     //int16_t                    mPendingStepsStepMode;
 
@@ -463,5 +501,7 @@ private:
     //! \param pinNumber the pin number to set the value
     //! \param pinName arbitrary name for logging
     void setPin(bool enabled, size_t pinNumber, const char* pinName);
+    //! \sa setPin(bool, size_t, const char*)
+    void setPin(bool enabled, const char* pinName);
 };
 }
