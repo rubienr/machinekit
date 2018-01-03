@@ -10,6 +10,7 @@
       * [Received data structure](#received-data-structure)
          * [Checksum investigation](#checksum-investigation)
       * [Transmission data structure](#transmission-data-structure)
+         * [Display examples](#display-examples)
    * [What we did so far](#what-we-did-so-far)
    * [What we didn't](#what-we-didnt)
    * [Issues](#issues)
@@ -210,10 +211,10 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 |:------|:--------|:---------------------------------------------------------------------|:--------------------|:-:|
 | 0x00  | [0:15]  | header, **unclear if different headers (commands) can be sent**      | constant 0xfdfe     | * |
 | 0x02  | [0:7]   | seed                                                                 |                     | * |
-| 0x03  | [0:1]   | display indicator flags: step mode                                   |                     |   |
-| 0x03  | [2:5]   | display indicator flags: **unknown**                                 |                     | * |
-| 0x03  | [6:6]   | display indicator flags: reset                                       |                     |   |
-| 0x03  | [7:7]   | display indicator flags: machine coordinate                          |                     |   |
+| 0x03  | [0:1]   | display indicator flags: step mode                                   | see [A1](#display-examples)|   |
+| 0x03  | [2:5]   | display indicator flags: **unknown**                                 |                     | [\*](#display-examples) |
+| 0x03  | [6:6]   | display indicator flags: reset                                       | see [C2](#display-examples)|   |
+| 0x03  | [7:7]   | display indicator flags: machine coordinate                          | see [C3, D1](#display-examples)|   |
 | 0x04  | [0:15]  | axis coordinate on display line 1: integer value                     |                     |   |
 | 0x06  | [0:14]  | axis coordinate on display line 1: fraction value                    | 15bit width but device cuts off to 4 digits, **seems to be a firmware bug** | |
 | 0x06  | [15:15] | axis coordinate on display line 1: sign                              |                     |   |
@@ -223,11 +224,14 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | 0x12  | [0:15]  | axis coordinate on display line 3: integer value                     |                     |   |
 | 0x14  | [0:14]  | axis coordinate on display line 3: fraction value                    |                     |   |
 | 0x14  | [15:15] | axis coordinate on display line 3: sign                              | **same as axis 1**  |   |
-| 0x16  | [0:15]  | feed rate                                                            |                     |   |
-| 0x18  | [0:15]  | spindle speed                                                        |                     |   |
+| 0x16  | [0:15]  | feed rate                                                            | see [B2](#display-examples)|   |
+| 0x18  | [0:15]  | spindle speed                                                        | see [B3, C1](#display-examples)|   |
 | 0x20  | [0:x]   | **unclear if axis A, B, C, X1, Y1, Z1, A1, B1, C1 are also transmitted or just coordinates for lines 1-3**   |                     | * |
 | 0x20  | [0:x]   | unclear if the device interprets subsequent bytes                    |                     | * |
 | 0xn   | [0:x]   | the **maximum length** is also **unclear**                           |                     | * |
+
+##### Display examples
+![LCD display examples.](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/rubienr/machinekit/feature-xhc-whb04b-6/src/hal/user_comps/xhc-whb04b-6/display-layout-diagram.txt)
 
 ### What we did so far
 * Searched the web and found not 100% related but interesting information on this [site](http://forum.planet-cnc.com/viewtopic.php?f=12&t=1125), and
