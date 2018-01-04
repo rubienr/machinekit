@@ -570,8 +570,8 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_IN, &(memory->in.isEmergencyStop), mHalCompId, "%s.halui.estop.is-activated", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.resetEmergencyStop), mHalCompId, "%s.halui.estop.reset", mComponentPrefix);
 
-    newHalBit(HAL_OUT, &(memory->out.doMachineOn), mHalCompId, "%s.halui.machine.on", mComponentPrefix);
     newHalBit(HAL_IN, &(memory->in.isMachineOn), mHalCompId, "%s.halui.machine.is-on", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.doMachineOn), mHalCompId, "%s.halui.machine.on", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.doMachineOff), mHalCompId, "%s.halui.machine.off", mComponentPrefix);
 
 
@@ -779,25 +779,17 @@ void WhbHal::setLead()
 
 void WhbHal::setReset(bool enabled)
 {
-
-    if (*memory->in.isEmergencyStop) { // de-activate emergency stop
-        *memory->out.doEmergencyStop = false;
-        *memory->out.resetEmergencyStop = true;
-    }
-    else { // activate emergency stop
-        *memory->out.resetEmergencyStop = false;
-        *memory->out.doEmergencyStop = true;
-    }
-
-    /*
     if (*memory->in.isMachineOn) { // disable machine
         *memory->out.doMachineOff = true;
-        *memory->out.doMachineOn = false;
     }
     else { // enable machine
-        *memory->out.doMachineOff = true;
+        *memory->out.doMachineOn = true;
+    }
+
+    if (!enabled) {
+        *memory->out.doMachineOff = false;
         *memory->out.doMachineOn = false;
-    }*/
+    }
     setPin(enabled, KeyCodes::Buttons.reset.text);
 }
 
@@ -813,7 +805,11 @@ hal_bit_t* WhbHal::getButtonHalBit(size_t pinNumber)
 
 void WhbHal::setStop(bool enabled)
 {
-    *memory->out.doStopProgram = enabled;
+    *memory->out.doModeAuto      = false;
+    *memory->out.doPauseProgram  = false;
+    *memory->out.doRunProgram    = false;
+    *memory->out.doResumeProgram = false;
+    *memory->out.doStopProgram   = enabled;
     setPin(enabled, KeyCodes::Buttons.stop.text);
 }
 
@@ -821,34 +817,22 @@ void WhbHal::setStop(bool enabled)
 
 void WhbHal::setStart(bool enabled)
 {
-
     if (!enabled) {
-        // toggle request: auto mode
-        if (*memory->in.isModeAuto) {
-            *memory->out.doModeAuto = false;
-        }
-        // on release clear program states
-        *memory->out.doPauseProgram  = false;
-        *memory->out.doRunProgram    = false;
-        *memory->out.doResumeProgram = false;
+        // clear auto mode
+        *memory->out.doModeAuto = false;
     }
     else {
         // request auto mode
-        if (!*memory->in.isModeAuto) {
-            *memory->out.doModeAuto = true;
-        }
+        *memory->out.doModeAuto = true;
+        toggleStartResumeProgram();
     }
     setPin(enabled, KeyCodes::Buttons.start.text);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::toggleStartResumeProgram() {
-    // start/resume program is not allowed if not halui.mode.is-auto
-    if (!*memory->in.isModeAuto) {
-        return;
-    }
-
+void WhbHal::toggleStartResumeProgram()
+{
     if (*memory->in.isProgramPaused)
     {
         *memory->out.doPauseProgram  = false;

@@ -1491,7 +1491,6 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
     else if (metaButton == KeyCodes::Meta.start)
     {
         mHal.setStart(true);
-        mHal.toggleStartResumeProgram();
         return true;
     }
     else if (metaButton == KeyCodes::Meta.feed_plus)

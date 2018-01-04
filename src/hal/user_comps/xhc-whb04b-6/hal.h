@@ -460,9 +460,6 @@ public:
     //! \param delta new jog dial delta
     void newJogDialDelta(int8_t delta);
     void computeVelocity();
-    //! Toggles program states; running, paused, resume.
-    //! Should be called each time after setStart(true) (\sa setStart(bool)) to stay in sync.
-    void toggleStartResumeProgram();
 
 private:
     bool mIsSimulationMode;
@@ -503,5 +500,8 @@ private:
     void setPin(bool enabled, size_t pinNumber, const char* pinName);
     //! \sa setPin(bool, size_t, const char*)
     void setPin(bool enabled, const char* pinName);
+    //! Toggles program states; running, paused, resume.
+    //! Should be called each time after setStart(true) (\sa setStart(bool)) to stay in sync.
+    void toggleStartResumeProgram();
 };
 }
