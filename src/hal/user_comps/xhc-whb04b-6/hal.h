@@ -52,34 +52,10 @@ public:
     struct In
     {
     public:
-        //! to be connected to \ref halui.axis.N.pos-relative
-        hal_float_t* xWorkpieceCoordinate;
-        //! to be connected to \ref halui.axis.N.pos-relative
-        hal_float_t* yWorkpieceCoordinate;
-        //! to be connected to \ref halui.axis.N.pos-relative
-        hal_float_t* zWorkpieceCoordinate;
-        //! to be connected to \ref halui.axis.N.pos-relative
-        hal_float_t* aWorkpieceCoordinate;
-        //! to be connected to \ref halui.axis.N.pos-relative
-        hal_float_t* bWorkpieceCoordinate;
-        //! to be connected to \ref halui.axis.N.pos-relative
-        hal_float_t* cWorkpieceCoordinate;
-        //! to be connected to \ref halui.axis.N.pos-commanded
-        hal_float_t* xMachineCoordinate;
-        //! to be connected to \ref halui.axis.N.pos-commanded
-        hal_float_t* yMachineCoordinate;
-        //! to be connected to \ref halui.axis.N.pos-commanded
-        hal_float_t* zMachineCoordinate;
-        //! to be connected to \ref halui.axis.N.pos-commanded
-        hal_float_t* aMachineCoordinate;
-        //! to be connected to \ref halui.axis.N.pos-commanded
-        hal_float_t* bMachineCoordinate;
-        //! to be connected to \ref halui.axis.C.pos-commanded
-        hal_float_t* cMachineCoordinate;
+
         //! to be connected to \ref halui.feed-override.value
-        hal_float_t* feedrateOverride;
-        // TODO: where should it be connected to
-        hal_float_t* feedrate;
+        hal_float_t* feedOverrideValue;
+
         //! to be connected to \ref halui.spindle.is-on
         hal_bit_t  * spindleIsOn;
         //! to be connected to \ref halui.spindle-override.value
@@ -96,8 +72,16 @@ public:
         hal_bit_t  * isProgramPaused;
         //! to be connected to \ref halui.program.is-idle
         hal_bit_t  * isProgramIdle;
+
         //! to be connected to \ref halui.mode.is-auto
         hal_bit_t* isModeAuto;
+        //! to be connected to \ref halui.mode.is-joint
+        hal_bit_t* isModeJoint;
+        //! to be connected to \ref halui.mode.is-manual
+        hal_bit_t* isModeManual;
+        //! to be connected to \ref halui.mode.is-madi
+        hal_bit_t* isModeMdi;
+
 
         //! to be connected to \ref halui.estop.is-activated
         hal_bit_t* isEmergencyStop;
@@ -112,35 +96,7 @@ public:
     {
     public:
         hal_bit_t* button_pin[64];
-        //hal_bit_t  * jogEnableOff;
-        /*hal_bit_t  * jogEnableX;
-        hal_bit_t  * jogEnableY;// system includes
-#include <stdlib.h>
-#include <stdio.h>
-#include <iostream>
-#include <bitset>
-#include <iomanip>
-#include <sstream>
-#include <assert.h>
-#include <signal.h>
-#include <libusb.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdarg.h>
-#include <libgen.h>
 
-// 3rd party includes
-#include <google/protobuf/stubs/common.h>
-
-// local library includes
-#include "rtapi_math.h"
-#include "hal.h"
-#include "inifile.hh"
-#include "config.h"
-        hal_bit_t  * jogEnableZ;
-        hal_bit_t  * jogEnableA;
-        hal_bit_t  * jogEnableB;
-        hal_bit_t  * jogEnableC;*/
         //! Incremental jog counter. Counts will be consumed by icomp.
         hal_s32_t* jogCount;
 
@@ -159,84 +115,16 @@ public:
         hal_bit_t* spindleStop;
 
         //! to be connected to halui.spindle.decrease
-        hal_bit_t* spindleOverrideDecrease;
+        hal_bit_t* spindleDoDecrease;
         //! to be connected to halui.spindle.increase
-        hal_bit_t* spindleOverrideIncrease;
-
-        //! to be connected to \ref halui.jog.N.increment
-        hal_float_t* jogXIncrementValue;
-        //! to be connected to \ref halui.jog.N.increment-plus
-        hal_bit_t  * jogXIncrementPlus;
-        //! to be connected to \ref halui.jog.N.increment-minus
-        hal_bit_t  * jogXIncrementMinus;
-
-        //! to be connected to \ref halui.jog.N.increment
-        hal_float_t* jogYIncrementValue;
-        //! to be connected to \ref halui.jog.N.increment-plus
-        hal_bit_t  * jogYIncrementPlus;
-        //! to be connected to \ref halui.jog.N.increment-minus
-        hal_bit_t  * jogYIncrementMinus;
-
-        //! to be connected to \ref halui.jog.N.increment
-        hal_float_t* jogZIncrementValue;
-        //! to be connected to \ref halui.jog.N.increment-plus
-        hal_bit_t  * jogZIncrementPlus;
-        //! to be connected to \ref halui.jog.N.increment-minus
-        hal_bit_t  * jogZIncrementMinus;
-
-        //! to be connected to \ref halui.jog.N.increment
-        hal_float_t* jogAIncrementValue;
-        //! to be connected to \ref halui.jog.N.increment-plus
-        hal_bit_t  * jogAIncrementPlus;
-        //! to be connected to \ref halui.jog.N.increment-minus
-        hal_bit_t  * jogAIncrementMinus;
-
-        //! to be connected to \ref halui.jog.N.increment
-        hal_float_t* jogBIncrementValue;
-        //! to be connected to \ref halui.jog.N.increment-plus
-        hal_bit_t  * jogBIncrementPlus;
-        //! to be connected to \ref halui.jog.N.increment-minus
-        hal_bit_t  * jogBIncrementMinus;
-
-        //! to be connected to \ref halui.jog.N.increment
-        hal_float_t* jogCIncrementValue;
-        //! to be connected to \ref halui.jog.N.increment-plus
-        hal_bit_t  * jogCIncrementPlus;
-        //! to be connected to \ref halui.jog.N.increment-minus
-        hal_bit_t  * jogCIncrementMinus;
+        hal_bit_t* spindleDoIncrease;
+        //! to be connected to halui.spindle-override.decrease
+        hal_bit_t* spindleOverrideDoDecrease;
+        //! to be connected to halui.spindle-override.increase
+        hal_bit_t* spindleOverrideDoIncrease;
 
         //! to be connected to \ref halui.jog-speed
         hal_float_t* jogSpeedValue;
-
-        //! to be connected to \ref halui.jog.N.plus
-        hal_bit_t* jogXSpeedPlus;
-        //! to be connected to \ref halui.jog.N.minus
-        hal_bit_t* jogXSpeedMinus;
-
-        //! to be connected to \ref halui.jog.N.plus
-        hal_bit_t* jogYSpeedPlus;
-        //! to be connected to \ref halui.jog.N.minus
-        hal_bit_t* jogYSpeedMinus;
-
-        //! to be connected to \ref halui.jog.N.plus
-        hal_bit_t* jogZSpeedPlus;
-        //! to be connected to \ref halui.jog.N.minus
-        hal_bit_t* jogZSpeedMinus;
-
-        //! to be connected to \ref halui.jog.N.plus
-        hal_bit_t* jogASpeedPlus;
-        //! to be connected to \ref halui.jog.N.minus
-        hal_bit_t* jogASpeedMinus;
-
-        //! to be connected to \ref halui.jog.N.plus
-        hal_bit_t* jogBSpeedPlus;
-        //! to be connected to \ref halui.jog.N.minus
-        hal_bit_t* jogBSpeedMinus;
-
-        //! to be connected to \ref halui.jog.N.plus
-        hal_bit_t* jogCSpeedPlus;
-        //! to be connected to \ref halui.jog.N.minus
-        hal_bit_t* jogCSpeedMinus;
 
         //! to be connected to \ref halui.home-all
         hal_bit_t* homeAll;
@@ -252,22 +140,6 @@ public:
         //! to be connected to \ref halui.jog.selected.minus
         hal_bit_t* jogMinus; // jogging with jog-speed
 
-
-        /*
-          hal_bit_t  * jogPlusX;
-          hal_bit_t  *         // TODO: begin: to be removed
-;
-          hal_bit_t  * jogPlusZ;
-          hal_bit_t  * jogPlusA;
-          hal_bit_t  * jogPlusB;
-          hal_bit_t  * jogPlusC;
-          hal_bit_t  * jogMinusX;
-          hal_bit_t  * jogMinusY;
-          hal_bit_t  * jogMinusZ;
-          hal_bit_t  * jogMinusA;
-          hal_bit_t  * jogMinusB;
-          hal_bit_t  * jogMinusC;
-  */
         //!to be connected to \ref halui.joint.N.select
         hal_bit_t  * jointXSelect;
         //!to be connected to \ref halui.joint.N.select
@@ -298,8 +170,15 @@ public:
         hal_bit_t* doResumeProgram;
         //! to be connected to \ref halui.program.stop
         hal_bit_t* doStopProgram;
+
         //! to be connected to \ref halui.mode.auto
         hal_bit_t* doModeAuto;
+        //! to be connected to \ref halui.mode.joint
+        hal_bit_t* doModeJoint;
+        //! to be connected to \ref halui.mode.manual
+        hal_bit_t* doModeManual;
+        //! to be connected to \ref halui.mode.mdi
+        hal_bit_t* doModeMdi;
 
         //! to be connected to \ref halui.estop.activate
         hal_bit_t* doEmergencyStop;
@@ -503,5 +382,11 @@ private:
     //! Toggles program states; running, paused, resume.
     //! Should be called each time after setStart(true) (\sa setStart(bool)) to stay in sync.
     void toggleStartResumeProgram();
+
+    void clearStartResumeProgramStates();
+
+    void enableManualMode(bool isRisingEdge);
+
+    void enableMdiMode(bool isRisingEdge);
 };
 }

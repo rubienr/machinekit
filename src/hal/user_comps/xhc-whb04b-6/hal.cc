@@ -53,20 +53,7 @@ WhbHalMemory::~WhbHalMemory()
 
 
 WhbHalMemory::In::In() :
-    xWorkpieceCoordinate(nullptr),
-    yWorkpieceCoordinate(nullptr),
-    zWorkpieceCoordinate(nullptr),
-    aWorkpieceCoordinate(nullptr),
-    bWorkpieceCoordinate(nullptr),
-    cWorkpieceCoordinate(nullptr),
-    xMachineCoordinate(nullptr),
-    yMachineCoordinate(nullptr),
-    zMachineCoordinate(nullptr),
-    aMachineCoordinate(nullptr),
-    bMachineCoordinate(nullptr),
-    cMachineCoordinate(nullptr),
-    feedrateOverride(nullptr),
-    feedrate(nullptr),
+    feedOverrideValue(nullptr),
     spindleIsOn(nullptr),
     spindleOverrideValue(nullptr),
     spindleRps(nullptr),
@@ -76,6 +63,9 @@ WhbHalMemory::In::In() :
     isProgramPaused(nullptr),
     isProgramIdle(nullptr),
     isModeAuto(nullptr),
+    isModeJoint(nullptr),
+    isModeManual(nullptr),
+    isModeMdi(nullptr),
     isEmergencyStop(nullptr),
     isMachineOn(nullptr)
 {
@@ -85,69 +75,22 @@ WhbHalMemory::In::In() :
 
 WhbHalMemory::Out::Out() :
     button_pin{0},
-    //jogEnableOff(nullptr),
-    /*jogEnableX(nullptr),
-    jogEnableY(nullptr),
-    jogEnableZ(nullptr),
-    jogEnableA(nullptr),
-    jogEnableB(nullptr),
-    jogEnableC(nullptr),*/
     jogCount(nullptr),
     jogCountNeg(nullptr),
     jogVelocity(nullptr),
     feedOverrideDecrease(nullptr),
     feedOverrideIncrease(nullptr),
-    spindleOverrideDecrease(nullptr),
-    spindleOverrideIncrease(nullptr),
-    jogXIncrementValue(nullptr),
-    jogXIncrementPlus(nullptr),
-    jogXIncrementMinus(nullptr),
-    jogYIncrementValue(nullptr),
-    jogYIncrementPlus(nullptr),
-    jogYIncrementMinus(nullptr),
-    jogZIncrementValue(nullptr),
-    jogZIncrementPlus(nullptr),
-    jogZIncrementMinus(nullptr),
-    jogAIncrementValue(nullptr),
-    jogAIncrementPlus(nullptr),
-    jogAIncrementMinus(nullptr),
-    jogBIncrementValue(nullptr),
-    jogBIncrementPlus(nullptr),
-    jogBIncrementMinus(nullptr),
-    jogCIncrementValue(nullptr),
-    jogCIncrementPlus(nullptr),
-    jogCIncrementMinus(nullptr),
+    spindleDoDecrease(nullptr),
+    spindleDoIncrease(nullptr),
+    spindleOverrideDoDecrease(nullptr),
+    spindleOverrideDoIncrease(nullptr),
     jogSpeedValue(nullptr),
-    jogXSpeedPlus(nullptr),
-    jogXSpeedMinus(nullptr),
-    jogYSpeedPlus(nullptr),
-    jogYSpeedMinus(nullptr),
-    jogZSpeedPlus(nullptr),
-    jogZSpeedMinus(nullptr),
-    jogASpeedPlus(nullptr),
-    jogASpeedMinus(nullptr),
-    jogBSpeedPlus(nullptr),
-    jogBSpeedMinus(nullptr),
-    jogCSpeedPlus(nullptr),
-    jogCSpeedMinus(nullptr),
     homeAll(nullptr),
     jogIncrement(nullptr),
     jogIncrementPlus(nullptr),
     jogIncrementMinus(nullptr),
     jogPlus(nullptr),
     jogMinus(nullptr),
-    /*jogPlusX(nullptr),
-    jogPlusY(nullptr),
-    jogPlusZ(nullptr),
-    jogPlusA(nullptr),
-    jogPlusB(nullptr),
-    jogPlusC(nullptr),
-    jogMinusX(nullptr),
-    jogMinusY(nullptr),
-    jogMinusZ(nullptr),
-    jogMinusA(nullptr),
-    jogMinusB(nullptr),
-    jogMinusC(nullptr),*/
     jointXSelect(nullptr),
     jointYSelect(nullptr),
     jointZSelect(nullptr),
@@ -163,6 +106,9 @@ WhbHalMemory::Out::Out() :
     doResumeProgram(nullptr),
     doStopProgram(nullptr),
     doModeAuto(nullptr),
+    doModeJoint(nullptr),
+    doModeManual(nullptr),
+    doModeMdi(nullptr),
     doEmergencyStop(nullptr),
     resetEmergencyStop(nullptr)
 {
@@ -211,20 +157,7 @@ WhbHal::~WhbHal()
         return;
     }
 
-    freeSimulatedPin((void**)(&memory->in.xWorkpieceCoordinate));
-    freeSimulatedPin((void**)(&memory->in.yWorkpieceCoordinate));
-    freeSimulatedPin((void**)(&memory->in.zWorkpieceCoordinate));
-    freeSimulatedPin((void**)(&memory->in.aWorkpieceCoordinate));
-    freeSimulatedPin((void**)(&memory->in.bWorkpieceCoordinate));
-    freeSimulatedPin((void**)(&memory->in.cWorkpieceCoordinate));
-    freeSimulatedPin((void**)(&memory->in.xMachineCoordinate));
-    freeSimulatedPin((void**)(&memory->in.yMachineCoordinate));
-    freeSimulatedPin((void**)(&memory->in.zMachineCoordinate));
-    freeSimulatedPin((void**)(&memory->in.aMachineCoordinate));
-    freeSimulatedPin((void**)(&memory->in.bMachineCoordinate));
-    freeSimulatedPin((void**)(&memory->in.cMachineCoordinate));
-    freeSimulatedPin((void**)(&memory->in.feedrateOverride));
-    freeSimulatedPin((void**)(&memory->in.feedrate));
+    freeSimulatedPin((void**)(&memory->in.feedOverrideValue));
     freeSimulatedPin((void**)(&memory->in.spindleIsOn));
     freeSimulatedPin((void**)(&memory->in.spindleOverrideValue));
     freeSimulatedPin((void**)(&memory->in.spindleRps));
@@ -232,13 +165,6 @@ WhbHal::~WhbHal()
     {
         freeSimulatedPin((void**)(&memory->out.button_pin[idx]));
     }
-    //freeSimulatedPin((void**)(&memory->out.jogEnableOff));
-    /*freeSimulatedPin((void**)(&memory->out.jogEnableX));
-    freeSimulatedPin((void**)(&memory->out.jogEnableY));
-    freeSimulatedPin((void**)(&memory->out.jogEnableZ));
-    freeSimulatedPin((void**)(&memory->out.jogEnableA));
-    freeSimulatedPin((void**)(&memory->out.jogEnableB));
-    freeSimulatedPin((void**)(&memory->out.jogEnableC));*/
     freeSimulatedPin((void**)(&memory->out.jogCount));
     freeSimulatedPin((void**)(&memory->out.jogCountNeg));
     freeSimulatedPin((void**)(&memory->out.jogVelocity));
@@ -246,58 +172,18 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->out.feedOverrideIncrease));
     freeSimulatedPin((void**)(&memory->out.spindleStart));
     freeSimulatedPin((void**)(&memory->out.spindleStop));
-    freeSimulatedPin((void**)(&memory->out.spindleOverrideDecrease));
-    freeSimulatedPin((void**)(&memory->out.spindleOverrideIncrease));
+    freeSimulatedPin((void**)(&memory->out.spindleDoDecrease));
+    freeSimulatedPin((void**)(&memory->out.spindleDoIncrease));
+    freeSimulatedPin((void**)(&memory->out.spindleOverrideDoDecrease));
+    freeSimulatedPin((void**)(&memory->out.spindleOverrideDoIncrease));
     freeSimulatedPin((void**)(&memory->in.jogMaxVelocity));
     freeSimulatedPin((void**)(&memory->out.jogIncrement));
     freeSimulatedPin((void**)(&memory->out.jogIncrementPlus));
     freeSimulatedPin((void**)(&memory->out.jogIncrementMinus));
     freeSimulatedPin((void**)(&memory->out.jogPlus));
     freeSimulatedPin((void**)(&memory->out.jogMinus));
-    freeSimulatedPin((void**)(&memory->out.jogXIncrementValue));
-    freeSimulatedPin((void**)(&memory->out.jogXIncrementPlus));
-    freeSimulatedPin((void**)(&memory->out.jogXIncrementMinus));
-    freeSimulatedPin((void**)(&memory->out.jogYIncrementValue));
-    freeSimulatedPin((void**)(&memory->out.jogYIncrementPlus));
-    freeSimulatedPin((void**)(&memory->out.jogYIncrementMinus));
-    freeSimulatedPin((void**)(&memory->out.jogZIncrementValue));
-    freeSimulatedPin((void**)(&memory->out.jogZIncrementPlus));
-    freeSimulatedPin((void**)(&memory->out.jogZIncrementMinus));
-    freeSimulatedPin((void**)(&memory->out.jogAIncrementValue));
-    freeSimulatedPin((void**)(&memory->out.jogAIncrementPlus));
-    freeSimulatedPin((void**)(&memory->out.jogAIncrementMinus));
-    freeSimulatedPin((void**)(&memory->out.jogBIncrementValue));
-    freeSimulatedPin((void**)(&memory->out.jogBIncrementPlus));
-    freeSimulatedPin((void**)(&memory->out.jogBIncrementMinus));
-    freeSimulatedPin((void**)(&memory->out.jogCIncrementValue));
-    freeSimulatedPin((void**)(&memory->out.jogCIncrementPlus));
-    freeSimulatedPin((void**)(&memory->out.jogCIncrementMinus));
     freeSimulatedPin((void**)(&memory->out.jogSpeedValue));
-    freeSimulatedPin((void**)(&memory->out.jogXSpeedPlus));
-    freeSimulatedPin((void**)(&memory->out.jogXSpeedMinus));
-    freeSimulatedPin((void**)(&memory->out.jogYSpeedPlus));
-    freeSimulatedPin((void**)(&memory->out.jogYSpeedMinus));
-    freeSimulatedPin((void**)(&memory->out.jogZSpeedPlus));
-    freeSimulatedPin((void**)(&memory->out.jogZSpeedMinus));
-    freeSimulatedPin((void**)(&memory->out.jogASpeedPlus));
-    freeSimulatedPin((void**)(&memory->out.jogASpeedMinus));
-    freeSimulatedPin((void**)(&memory->out.jogBSpeedPlus));
-    freeSimulatedPin((void**)(&memory->out.jogBSpeedMinus));
-    freeSimulatedPin((void**)(&memory->out.jogCSpeedPlus));
-    freeSimulatedPin((void**)(&memory->out.jogCSpeedMinus));
     freeSimulatedPin((void**)(&memory->out.homeAll));
-    /* freeSimulatedPin((void**)(&memory->out.jogPlusX));
-     freeSimulatedPin((void**)(&memory->out.jogPlusY));
-     freeSimulatedPin((void**)(&memory->out.jogPlusZ));
-     freeSimulatedPin((void**)(&memory->out.jogPlusA));
-     freeSimulatedPin((void**)(&memory->out.jogPlusB));
-     freeSimulatedPin((void**)(&memory->out.jogPlusC));
-     freeSimulatedPin((void**)(&memory->out.jogMinusX));
-     freeSimulatedPin((void**)(&memory->out.jogMinusY));
-     freeSimulatedPin((void**)(&memory->out.jogMinusZ));
-     freeSimulatedPin((void**)(&memory->out.jogMinusA));
-     freeSimulatedPin((void**)(&memory->out.jogMinusB));
-     freeSimulatedPin((void**)(&memory->out.jogMinusC));*/
     freeSimulatedPin((void**)(&memory->in.stepsizeUp));
     freeSimulatedPin((void**)(&memory->out.jointXSelect));
     freeSimulatedPin((void**)(&memory->out.jointYSelect));
@@ -314,6 +200,9 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->out.doResumeProgram));
     freeSimulatedPin((void**)(&memory->out.doStopProgram));
     freeSimulatedPin((void**)(&memory->out.doModeAuto));
+    freeSimulatedPin((void**)(&memory->out.doModeJoint));
+    freeSimulatedPin((void**)(&memory->out.doModeManual));
+    freeSimulatedPin((void**)(&memory->out.doModeMdi));
     freeSimulatedPin((void**)(&memory->out.doEmergencyStop));
     freeSimulatedPin((void**)(&memory->out.resetEmergencyStop));
     freeSimulatedPin((void**)(&memory->in.isEmergencyStop));
@@ -518,51 +407,26 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_OUT, &(memory->out.isPendantConnected), mHalCompId, "%s.pendant.is-connected", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.isPendantRequired), mHalCompId, "%s.pendant.is-required", mComponentPrefix);
 
-    newHalFloat(HAL_IN, &(memory->in.xMachineCoordinate), mHalCompId, "%s.halui.axis.x.pos-commanded",
-                mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.yMachineCoordinate), mHalCompId, "%s.halui.axis.y.pos-commanded",
-                mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.zMachineCoordinate), mHalCompId, "%s.halui.axis.z.pos-commanded",
-                mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.aMachineCoordinate), mHalCompId, "%s.halui.axis.a.pos-commanded",
-                mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.bMachineCoordinate), mHalCompId, "%s.halui.axis.b.pos-commanded",
-                mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.cMachineCoordinate), mHalCompId, "%s.halui.axis.c.pos-commanded",
-                mComponentPrefix);
-
-    newHalFloat(HAL_IN, &(memory->in.yWorkpieceCoordinate), mHalCompId, "%s.halui.axis.y.pos-relative",
-                mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.xWorkpieceCoordinate), mHalCompId, "%s.halui.axis.x.pos-relative",
-                mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.zWorkpieceCoordinate), mHalCompId, "%s.halui.axis.z.pos-relative",
-                mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.aWorkpieceCoordinate), mHalCompId, "%s.halui.axis.a.pos-relative",
-                mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.bWorkpieceCoordinate), mHalCompId, "%s.halui.axis.b.pos-relative",
-                mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.cWorkpieceCoordinate), mHalCompId, "%s.halui.axis.c.pos-relative",
-                mComponentPrefix);
-
-    newHalFloat(HAL_IN, &(memory->in.feedrate), mHalCompId, "%s.feed", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.feedrateOverride), mHalCompId, "%s.halui.feed-override.value", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.feedOverrideValue), mHalCompId, "%s.halui.feed-override.value", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.feedOverrideDecrease), mHalCompId, "%s.halui.feed-override.decrease", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedOverrideIncrease), mHalCompId, "%s.halui.feed-override.increase",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.feedOverrideDecrease), mHalCompId, "%s.halui.feed-override.decrease",
               mComponentPrefix);
 
     newHalSigned32(HAL_OUT, &(memory->out.stepsize), mHalCompId, "%s.stepsize", mComponentPrefix);
     newHalBit(HAL_IN, &(memory->in.stepsizeUp), mHalCompId, "%s.stepsize-up", mComponentPrefix);
 
     newHalFloat(HAL_IN, &(memory->in.spindleRps), mHalCompId, "%s.spindle-rps", mComponentPrefix);
-    newHalBit(HAL_IN, &(memory->in.spindleIsOn), mHalCompId, "%s.halui.spindle.is-on", mComponentPrefix);
     newHalFloat(HAL_IN, &(memory->in.spindleOverrideValue), mHalCompId, "%s.halui.spindle-override.value",
                 mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.spindleOverrideIncrease), mHalCompId, "%s.halui.spindle.increase",
+    newHalBit(HAL_OUT, &(memory->out.spindleDoIncrease), mHalCompId, "%s.halui.spindle.increase",
               mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.spindleOverrideDecrease), mHalCompId, "%s.halui.spindle.decrease",
+    newHalBit(HAL_OUT, &(memory->out.spindleDoDecrease), mHalCompId, "%s.halui.spindle.decrease",
               mComponentPrefix);
-
+    newHalBit(HAL_OUT, &(memory->out.spindleOverrideDoIncrease), mHalCompId, "%s.halui.spindle-override.increase",
+              mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.spindleOverrideDoDecrease), mHalCompId, "%s.halui.spindle-override.decrease",
+              mComponentPrefix);
+    newHalBit(HAL_IN, &(memory->in.spindleIsOn), mHalCompId, "%s.halui.spindle.is-on", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.spindleStart), mHalCompId, "%s.halui.spindle.start", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.spindleStop), mHalCompId, "%s.halui.spindle.stop", mComponentPrefix);
 
@@ -574,7 +438,6 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_OUT, &(memory->out.doMachineOn), mHalCompId, "%s.halui.machine.on", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.doMachineOff), mHalCompId, "%s.halui.machine.off", mComponentPrefix);
 
-
     newHalBit(HAL_IN, &(memory->in.isProgramIdle), mHalCompId, "%s.halui.program.is-idle", mComponentPrefix);
     newHalBit(HAL_IN, &(memory->in.isProgramPaused), mHalCompId, "%s.halui.program.is-paused", mComponentPrefix);
     newHalBit(HAL_IN, &(memory->in.isProgramRunning), mHalCompId, "%s.halui.program.is-running", mComponentPrefix);
@@ -584,15 +447,13 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_OUT, &(memory->out.doStopProgram), mHalCompId, "%s.halui.program.stop", mComponentPrefix);
 
     newHalBit(HAL_IN, &(memory->in.isModeAuto), mHalCompId, "%s.halui.mode.is-auto", mComponentPrefix);
+    newHalBit(HAL_IN, &(memory->in.isModeJoint), mHalCompId, "%s.halui.mode.is-joint", mComponentPrefix);
+    newHalBit(HAL_IN, &(memory->in.isModeManual), mHalCompId, "%s.halui.mode.is-manual", mComponentPrefix);
+    newHalBit(HAL_IN, &(memory->in.isModeMdi), mHalCompId, "%s.halui.mode.is-mdi", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.doModeAuto), mHalCompId, "%s.halui.mode.auto", mComponentPrefix);
-
-    /*r |= newBitHalPin(HAL_OUT, &(memory->out.jogEnableOff), mHalCompId, "%s.jog.enable-off", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogEnableX), mHalCompId, "%s.jog.enable-x", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogEnableY), mHalCompId, "%s.jog.enable-y", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogEnableZ), mHalCompId, "%s.jog.enable-z", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogEnableA), mHalCompId, "%s.jog.enable-a", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogEnableB), mHalCompId, "%s.jog.enable-b", mComponentPrefix);
-    r |= newHalBit(HAL_OUT, &(memory->out.jogEnableC), mHalCompId, "%s.jog.enable-c", mComponentPrefix);*/
+    newHalBit(HAL_OUT, &(memory->out.doModeJoint), mHalCompId, "%s.halui.mode.joint", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.doModeManual), mHalCompId, "%s.halui.mode.manual", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.doModeMdi), mHalCompId, "%s.halui.mode.mdi", mComponentPrefix);
 
     newHalBit(HAL_OUT, &(memory->out.jointXSelect), mHalCompId, "%s.halui.joint.x.select", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.jointYSelect), mHalCompId, "%s.halui.joint.y.select", mComponentPrefix);
@@ -601,54 +462,7 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_OUT, &(memory->out.jointBSelect), mHalCompId, "%s.halui.joint.b.select", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.jointCSelect), mHalCompId, "%s.halui.joint.c.select", mComponentPrefix);
 
-    newHalFloat(HAL_OUT, &(memory->out.jogXIncrementValue), mHalCompId, "%s.halui.jog.x.increment", mComponentPrefix);
-    newHalFloat(HAL_OUT, &(memory->out.jogYIncrementValue), mHalCompId, "%s.halui.jog.y.increment", mComponentPrefix);
-    newHalFloat(HAL_OUT, &(memory->out.jogZIncrementValue), mHalCompId, "%s.halui.jog.z.increment", mComponentPrefix);
-    newHalFloat(HAL_OUT, &(memory->out.jogAIncrementValue), mHalCompId, "%s.halui.jog.a.increment", mComponentPrefix);
-    newHalFloat(HAL_OUT, &(memory->out.jogBIncrementValue), mHalCompId, "%s.halui.jog.b.increment", mComponentPrefix);
-    newHalFloat(HAL_OUT, &(memory->out.jogCIncrementValue), mHalCompId, "%s.halui.jog.c.increment", mComponentPrefix);
-
-    newHalBit(HAL_OUT, &(memory->out.jogXIncrementPlus), mHalCompId, "%s.halui.jog.x.increment-plus",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogYIncrementPlus), mHalCompId, "%s.halui.jog.y.increment-plus",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogZIncrementPlus), mHalCompId, "%s.halui.jog.z.increment-plus",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogAIncrementPlus), mHalCompId, "%s.halui.jog.a.increment-plus",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogBIncrementPlus), mHalCompId, "%s.halui.jog.b.increment-plus",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogCIncrementPlus), mHalCompId, "%s.halui.jog.c.increment-plus",
-              mComponentPrefix);
-
-    newHalBit(HAL_OUT, &(memory->out.jogXIncrementMinus), mHalCompId, "%s.halui.jog.x.increment-minus",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogYIncrementMinus), mHalCompId, "%s.halui.jog.y.increment-minus",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogZIncrementMinus), mHalCompId, "%s.halui.jog.z.increment-minus",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogAIncrementMinus), mHalCompId, "%s.halui.jog.a.increment-minus",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogBIncrementMinus), mHalCompId, "%s.halui.jog.b.increment-minus",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogCIncrementMinus), mHalCompId, "%s.halui.jog.c.increment-minus",
-              mComponentPrefix);
-
     newHalFloat(HAL_OUT, &(memory->out.jogSpeedValue), mHalCompId, "%s.halui.jog-speed", mComponentPrefix);
-
-    newHalBit(HAL_OUT, &(memory->out.jogXSpeedPlus), mHalCompId, "%s.halui.jog.x.speed-plus", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogYSpeedPlus), mHalCompId, "%s.halui.jog.y.speed-plus", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogZSpeedPlus), mHalCompId, "%s.halui.jog.z.speed-plus", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogASpeedPlus), mHalCompId, "%s.halui.jog.a.speed-plus", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogBSpeedPlus), mHalCompId, "%s.halui.jog.b.speed-plus", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogCSpeedPlus), mHalCompId, "%s.halui.jog.c.speed-plus", mComponentPrefix);
-
-    newHalBit(HAL_OUT, &(memory->out.jogXSpeedMinus), mHalCompId, "%s.halui.jog.x.speed-minus", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogYSpeedMinus), mHalCompId, "%s.halui.jog.y.speed-minus", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogZSpeedMinus), mHalCompId, "%s.halui.jog.z.speed-minus", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogASpeedMinus), mHalCompId, "%s.halui.jog.a.speed-minus", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogBSpeedMinus), mHalCompId, "%s.halui.jog.b.speed-minus", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.jogCSpeedMinus), mHalCompId, "%s.halui.jog.c.speed-minus", mComponentPrefix);
 
     newHalSigned32(HAL_OUT, &(memory->out.jogCount), mHalCompId, "%s.jog.counts", mComponentPrefix);
     newHalSigned32(HAL_OUT, &(memory->out.jogCountNeg), mHalCompId, "%s.jog.counts-neg", mComponentPrefix);
@@ -660,21 +474,6 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_OUT, &(memory->out.jogIncrementMinus), mHalCompId, "%s.halui.jog.selected.increment-minus", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.jogPlus), mHalCompId, "%s.halui.jog.selected.plus", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.jogMinus), mHalCompId, "%s.halui.jog.selected.minus", mComponentPrefix);
-
-    /*
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogPlusX), mHalCompId, "%s.jog.plus-x", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogPlusY), mHalCompId, "%s.jog.plus-y", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogPlusZ), mHalCompId, "%s.jog.plus-z", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogPlusA), mHalCompId, "%s.jog.plus-a", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogPlusB), mHalCompId, "%s.jog.plus-b", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogPlusC), mHalCompId, "%s.jog.plus-c", mComponentPrefix);
-
-    r |= newHalBit(HAL_OUT, &(memory->out.jogMinusX), mHalCompId, "%s.jog.minus-x", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogMinusY), mHalCompId, "%s.jog.minus-y", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogMinusZ), mHalCompId, "%s.jog.minus-z", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogMinusA), mHalCompId, "%s.jog.minus-a", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogMinusB), mHalCompId, "%s.jog.minus-b", mComponentPrefix);
-    r |= newBitHalPin(HAL_OUT, &(memory->out.jogMinusC), mHalCompId, "%s.jog.minus-c", mComponentPrefix);*/
 
     newHalBit(HAL_OUT, &(memory->out.homeAll), mHalCompId, "%s.halui.home-all", mComponentPrefix);
 }
@@ -780,6 +579,7 @@ void WhbHal::setLead()
 void WhbHal::setReset(bool enabled)
 {
     if (*memory->in.isMachineOn) { // disable machine
+        clearStartResumeProgramStates();
         *memory->out.doMachineOff = true;
     }
     else { // enable machine
@@ -805,11 +605,8 @@ hal_bit_t* WhbHal::getButtonHalBit(size_t pinNumber)
 
 void WhbHal::setStop(bool enabled)
 {
-    *memory->out.doModeAuto      = false;
-    *memory->out.doPauseProgram  = false;
-    *memory->out.doRunProgram    = false;
-    *memory->out.doResumeProgram = false;
-    *memory->out.doStopProgram   = enabled;
+    clearStartResumeProgramStates();
+    *memory->out.doStopProgram = enabled;
     setPin(enabled, KeyCodes::Buttons.stop.text);
 }
 
@@ -827,6 +624,16 @@ void WhbHal::setStart(bool enabled)
         toggleStartResumeProgram();
     }
     setPin(enabled, KeyCodes::Buttons.start.text);
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::clearStartResumeProgramStates()
+{
+    *memory->out.doModeAuto      = false;
+    *memory->out.doPauseProgram  = false;
+    *memory->out.doRunProgram    = false;
+    *memory->out.doResumeProgram = false;
 }
 
 // ----------------------------------------------------------------------
@@ -873,7 +680,14 @@ void WhbHal::setFeedMinus(bool enabled)
 
 void WhbHal::setSpindlePlus(bool enabled)
 {
-    *memory->out.spindleOverrideIncrease = enabled;
+    if (enabled)
+    {
+        *memory->out.spindleOverrideDoIncrease = true;
+    }
+    else
+    {
+        *memory->out.spindleOverrideDoIncrease = false;
+    }
     setPin(enabled, KeyCodes::Buttons.spindle_plus.text);
 }
 
@@ -881,7 +695,14 @@ void WhbHal::setSpindlePlus(bool enabled)
 
 void WhbHal::setSpindleMinus(bool enabled)
 {
-    *memory->out.spindleOverrideDecrease = enabled;
+    if (enabled)
+    {
+        *memory->out.spindleOverrideDoDecrease = true;
+    }
+    else
+    {
+        *memory->out.spindleOverrideDoDecrease = false;
+    }
     setPin(enabled, KeyCodes::Buttons.spindle_minus.text);
 }
 
@@ -889,6 +710,7 @@ void WhbHal::setSpindleMinus(bool enabled)
 
 void WhbHal::setMachineHome(bool enabled)
 {
+    enableMdiMode(enabled);
     *memory->out.homeAll = enabled;
     setPin(enabled, KeyCodes::Buttons.machine_home.text);
 }
@@ -897,6 +719,7 @@ void WhbHal::setMachineHome(bool enabled)
 
 void WhbHal::setSafeZ(bool enabled)
 {
+    enableMdiMode(enabled);
     setPin(enabled, KeyCodes::Buttons.safe_z.text);
 }
 
@@ -904,6 +727,7 @@ void WhbHal::setSafeZ(bool enabled)
 
 void WhbHal::setWorkpieceHome(bool enabled)
 {
+    enableMdiMode(enabled);
     setPin(enabled, KeyCodes::Buttons.workpiece_home.text);
 }
 
@@ -911,23 +735,20 @@ void WhbHal::setWorkpieceHome(bool enabled)
 
 void WhbHal::setSpindleOn(bool enabled)
 {
-    // on button pressed
     if (enabled)
     {
-        // generate rising edge on respective pins
+        // stop spindle
         if (*memory->in.spindleIsOn)
         {
             *memory->out.spindleStop = enabled;
         }
-        else
+        else // start spindle
         {
             *memory->out.spindleStart = enabled;
         }
     }
-        // on button released
     else
     {
-        // pull pins to low
         *memory->out.spindleStop  = false;
         *memory->out.spindleStart = false;
     }
@@ -938,6 +759,7 @@ void WhbHal::setSpindleOn(bool enabled)
 
 void WhbHal::setProbeZ(bool enabled)
 {
+    enableMdiMode(enabled);
     setPin(enabled, KeyCodes::Buttons.probe_z.text);
 }
 
@@ -973,6 +795,17 @@ void WhbHal::setMacro2(bool enabled)
 
 void WhbHal::setMacro3(bool enabled)
 {
+    if (enabled)
+    {
+        if (*memory->in.spindleIsOn)
+        {
+            *memory->out.spindleDoIncrease = true;
+        }
+    }
+    else
+    {
+        *memory->out.spindleDoIncrease = false;
+    }
     setPin(enabled, KeyCodes::Buttons.spindle_plus.altText);
 }
 
@@ -980,6 +813,17 @@ void WhbHal::setMacro3(bool enabled)
 
 void WhbHal::setMacro4(bool enabled)
 {
+    if (enabled)
+    {
+        if (*memory->in.spindleIsOn)
+        {
+            *memory->out.spindleDoDecrease = true;
+        }
+    }
+    else
+    {
+        *memory->out.spindleDoDecrease = false;
+    }
     setPin(enabled, KeyCodes::Buttons.spindle_minus.altText);
 }
 
@@ -1022,6 +866,7 @@ void WhbHal::setMacro9(bool enabled)
 
 void WhbHal::setMacro10(bool enabled)
 {
+    enableManualMode(enabled);
     setPin(enabled, KeyCodes::Buttons.macro10.text);
 }
 
@@ -1119,6 +964,40 @@ void WhbHal::setJogWheelStepMode(HandwheelStepmodes::Mode stepMode)
 void WhbHal::setFunction(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.function.text);
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::enableManualMode(bool isRisingEdge)
+{
+    if (isRisingEdge)
+    {
+        if (*memory->in.isModeManual || *memory->in.isModeMdi)
+        {
+            *memory->out.doModeManual = true;
+        }
+    }
+    else
+    {
+        *memory->out.doModeManual = false;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::enableMdiMode(bool isRisingEdge)
+{
+    if (isRisingEdge)
+    {
+        if (*memory->in.isModeManual || *memory->in.isModeMdi)
+        {
+            *memory->out.doModeMdi = true;
+        }
+    }
+    else
+    {
+        *memory->out.doModeMdi = false;
+    }
 }
 
 // ----------------------------------------------------------------------
