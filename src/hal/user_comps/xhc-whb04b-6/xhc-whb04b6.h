@@ -46,19 +46,19 @@ public:
     //! Example: A button event changes the feed rotary buttons step mode from
     //! step to continuous. The button must be re-evaluated, otherwise the
     //! button state remains untouched until the next button's event.
-    virtual bool onButtonPressedEvent(const WhbSoftwareButton& softwareButton) = 0;
+    //virtual bool onButtonPressedEvent(const WhbSoftwareButton& softwareButton) = 0;
     //! Called when button is released.
     //! \param softwareButton the button released
     //! \return true if a subsequent re-evaluation should be performed.
     //! Example: A button event changes the feed rotary buttons step mode from
     //! step to continuous. The button must be re-evaluated, otherwise the
     //! button state remains untouched until the next button's event.
-    virtual bool onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) = 0;
-    virtual void onAxisActiveEvent(const WhbKeyCode& axis) = 0;
-    virtual void onAxisInactiveEvent(const WhbKeyCode& axis) = 0;
-    virtual void onFeedActiveEvent(const WhbKeyCode& axis) = 0;
-    virtual void onFeedInactiveEvent(const WhbKeyCode& axis) = 0;
-    virtual void onJogDialEvent(int8_t delta) = 0;
+    //virtual bool onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) = 0;
+    //virtual void onAxisActiveEvent(const WhbKeyCode& axis) = 0;
+    //virtual void onAxisInactiveEvent(const WhbKeyCode& axis) = 0;
+    //virtual void onFeedActiveEvent(const WhbKeyCode& axis) = 0;
+    //virtual void onFeedInactiveEvent(const WhbKeyCode& axis) = 0;
+    //virtual void onJogDialEvent(int8_t delta) = 0;
     virtual ~WhbKeyEventListener();
 };
 
@@ -67,7 +67,7 @@ public:
 class UsbInputPackageInterpreted
 {
 public:
-    virtual void onDataInterpreted() = 0;
+    //virtual void onDataInterpreted() = 0;
     virtual ~UsbInputPackageInterpreted();
 };
 
@@ -112,12 +112,12 @@ public:
     const char* getHalName() const;
     //! callback method received by \ref WhbUsb when a \ref libusb_transfer is received
     void onInputDataReceived(const WhbUsbInPackage& inPackage) override;
-    size_t getSoftwareButtonIndex(uint8_t keyCode) const;
+    //size_t getSoftwareButtonIndex(uint8_t keyCode) const;
     void initWhb();
     void initHal();
     void teardownHal();
     bool enableReceiveAsyncTransfer();
-    void sendDisplayData();
+    void updateDisplay();
     void linuxcncSimulate();
     void requestTermination(int signal = -42);
     bool isRunning() const;
@@ -131,25 +131,25 @@ public:
     void enableVerboseInit(bool enable);
     void enableCrcDebugging(bool enable);
     void setWaitWithTimeout(uint8_t waitSecs = 3);
-    bool onButtonPressedEvent(const WhbSoftwareButton& softwareButton) override;
-    bool onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) override;
-    void onAxisActiveEvent(const WhbKeyCode& axis) override;
-    void onAxisInactiveEvent(const WhbKeyCode& axis) override;
-    void onDataInterpreted() override;
-    void onFeedActiveEvent(const WhbKeyCode& axis) override;
-    void onFeedInactiveEvent(const WhbKeyCode& axis) override;
-    void onJogDialEvent(int8_t delta) override;
-    void updateAxisRotaryButton(const WhbUsbInPackage& inPackage);
+    //bool onButtonPressedEvent(const WhbSoftwareButton& softwareButton) override;
+    //bool onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) override;
+    //void onAxisActiveEvent(const WhbKeyCode& axis) override;
+    //void onAxisInactiveEvent(const WhbKeyCode& axis) override;
+    //void onDataInterpreted() override;
+    //void onFeedActiveEvent(const WhbKeyCode& axis) override;
+    //void onFeedInactiveEvent(const WhbKeyCode& axis) override;
+    //void onJogDialEvent(int8_t delta) override;
+    //void updateAxisRotaryButton(const WhbUsbInPackage& inPackage);
     //! update all buttons' state to hal and detect button pressed/released event
     //! \param inPackage input package to interpret
     //! \param keyCode pressed button
     //! \param modifierCode Optional pressed modifier button. Usually "Fn", but could be any button.
     //! \return \ref WhbKeyEventListener::onButtonPressedEvent
-    bool updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode);
-    void updateJogDial(const WhbUsbInPackage& inPackage);
-    void updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool forceEvents = false);
+    //bool updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode);
+    //void updateJogDial(const WhbUsbInPackage& inPackage);
+    //void updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool forceEvents = false);
     void printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOutPackageData& outPackageBuffer) const;
-    size_t getHalPinNumber(const WhbSoftwareButton& button);
+    //size_t getHalPinNumber(const WhbSoftwareButton& button);
     void offerHalMemory();
 
     void setMachineConfig(const MachineConfiguration& machineConfig);
@@ -163,8 +163,8 @@ private:
     WhbUsb                  mUsb;
     bool                    mIsRunning;
     bool                    mIsSimulationMode;
-    WhbButtonsState         mPreviousButtonCodes;
-    WhbButtonsState         mCurrentButtonCodes;
+    //WhbButtonsState         mPreviousButtonCodes;
+    //WhbButtonsState         mCurrentButtonCodes;
     std::ostream            mDevNull;
     std::ostream              * mTxCout;
     std::ostream              * mRxCout;
@@ -194,7 +194,7 @@ private:
     void printHexdump(const WhbUsbInPackage& inPackage, std::ostream& out);
     //! prints a hexdump of the input package to \ref verboseRxOut stream
     void printHexdump(const WhbUsbInPackage& inPackage);
-    bool dispatchButtonEventToHal(const WhbSoftwareButton& softwareButton, bool isButtonPressed);
-    void dispatchAxisEventToHal(const WhbKeyCode& axis, bool isActive);
+    //bool dispatchButtonEventToHal(const WhbSoftwareButton& softwareButton, bool isButtonPressed);
+    //void dispatchAxisEventToHal(const WhbKeyCode& axis, bool isActive);
 };
 }

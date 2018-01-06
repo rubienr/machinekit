@@ -342,10 +342,10 @@ WhbContext::WhbContext() :
     mUsb(mName, *this),
     mIsRunning(false),
     mIsSimulationMode(false),
-    mPreviousButtonCodes(mKeyCodes.buttons, mKeyCodes.axis, mKeyCodes.feed, mStepHandler.stepSize.step,
-                         mStepHandler.stepSize.continuous),
-    mCurrentButtonCodes(mKeyCodes.buttons, mKeyCodes.axis, mKeyCodes.feed, mStepHandler.stepSize.step,
-                        mStepHandler.stepSize.continuous),
+    //mPreviousButtonCodes(mKeyCodes.buttons, mKeyCodes.axis, mKeyCodes.feed, mStepHandler.stepSize.step,
+    //                     mStepHandler.stepSize.continuous),
+    //mCurrentButtonCodes(mKeyCodes.buttons, mKeyCodes.axis, mKeyCodes.feed, mStepHandler.stepSize.step,
+    //                    mStepHandler.stepSize.continuous),
     mDevNull(nullptr),
     mTxCout(&mDevNull),
     mRxCout(&mDevNull),
@@ -374,7 +374,7 @@ WhbContext::~WhbContext()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::sendDisplayData()
+void WhbContext::updateDisplay()
 {
     mUsb.sendDisplayData();
 }
@@ -431,14 +431,12 @@ void WhbContext::printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t ke
 }
 
 
-
 // ----------------------------------------------------------------------
 
 DisplayIndicator::DisplayIndicator() :
     asByte(0)
 {
 }
-
 
 // ----------------------------------------------------------------------
 
@@ -509,7 +507,7 @@ int WhbContext::run()
     while (isRunning())
     {
         *(mHal.memory->out.isPendantConnected) = 0;
-        *(mHal.memory->out.isPendantRequired)  = mUsb.isWaitForPendantBeforeHalEnabled();
+        //*(mHal.memory->out.isPendantRequired)  = mUsb.isWaitForPendantBeforeHalEnabled();
 
         initWhb();
         if (!mUsb.init())
@@ -534,9 +532,7 @@ int WhbContext::run()
                 return EXIT_FAILURE;
             }
             *mInitCout << " ok" << endl;
-            //Whb.sendDisplayData();
         }
-
         process();
         teardownUsb();
     }
@@ -547,69 +543,7 @@ int WhbContext::run()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::linuxcncSimulate()
-{
-    static int last_jog_counts = 0; // todo: move to class field
-    // *(hal->stepsizeUp) = ((xhc->button_step != 0) && (currentButtonCodes.mCurrentButton1Code == xhc->button_step));
-
-    if (*(mHal.memory->out.jogCount) != last_jog_counts)
-    {
-        /*
-        int   delta_int = *(mHal.memory.jogCount) - last_jog_counts;
-        float delta     = delta_int * *(mHal.memory.jogScale);
-        if (*(mHal.memory.jogEnableX))
-        {
-            *(mHal.memory.xMachineCoordinate) += delta;
-            *(mHal.memory.xWorkpieceCoordinate) += delta;
-        }
-
-        if (*(mHal.memory.jogEnableY))
-        {
-            *(mHal.memory.yMachineCoordinate) += delta;
-            *(mHal.memory.yWorkpieceCoordinate) += delta;
-        }
-
-        if (*(mHal.memory.jogEnableZ))
-        {
-            *(mHal.memory.zMachineCoordinate) += delta;
-            *(mHal.memory.zWorkpieceCoordinate) += delta;
-        }
-
-        if (*(mHal.memory.jogEnableA))
-        {
-            *(mHal.memory.aMachineCoordinate) += delta;
-            *(mHal.memory.aWorkpieceCoordinate) += delta;
-        }
-
-        if (*(mHal.memory.jogEnableB))
-        {
-            *(mHal.memory.bMachineCoordinate) += delta;
-            *(mHal.memory.bWorkpieceCoordinate) += delta;
-        }
-
-        if (*(mHal.memory.jogEnableC))
-        {
-            *(mHal.memory.cMachineCoordinate) += delta;
-            *(mHal.memory.cWorkpieceCoordinate) += delta;
-        }*/
-
-        //if (*(hal->jog_enable_spindle)) {
-        //*(hal->spindle_override) += delta_int * 0.01;
-        //if (*(hal->spindle_override) > 1) *(hal->spindle_override) = 1;
-        //if (*(hal->spindle_override) < 0) *(hal->spindle_override) = 0;
-        //*(hal->spindle_rps) = 25000.0/60.0 * *(hal->spindle_override);
-        //}
-
-        //if (*(hal->jog_enable_feedrate)) {
-        //*(hal->feedrate_override) += delta_int * 0.01;
-        //if (*(hal->feedrate_override) > 1) *(hal->feedrate_override) = 1;
-        //if (*(hal->feedrate_override) < 0) *(hal->feedrate_override) = 0;
-        //*(hal->feedrate) = 3000.0/60.0 * *(hal->feedrate_override);
-        //}
-
-        last_jog_counts = *(mHal.memory->out.jogCount);
-    }
-}
+void WhbContext::linuxcncSimulate() {}
 
 // ----------------------------------------------------------------------
 
@@ -657,19 +591,18 @@ void WhbContext::process()
     {
         while (isRunning() && !mUsb.getDoReconnect())
         {
-            struct timeval tv;
-            tv.tv_sec  = 4;
-            tv.tv_usec = 0;
+            struct timeval timeout;
+            timeout.tv_sec  = 0;
+            timeout.tv_usec = 500;
 
-            int r = libusb_handle_events_timeout_completed(getUsbContext(), &tv, nullptr);
+            int r = libusb_handle_events_timeout_completed(getUsbContext(), &timeout, nullptr);
             assert((r == LIBUSB_SUCCESS) || (r == LIBUSB_ERROR_NO_DEVICE) || (r == LIBUSB_ERROR_BUSY) ||
                    (r == LIBUSB_ERROR_TIMEOUT) || (r == LIBUSB_ERROR_INTERRUPTED));
-            //mHal.computeVelocity();
             if (mHal.isSimulationModeEnabled())
             {
                 linuxcncSimulate();
             }
-            sendDisplayData();
+            updateDisplay();
         }
 
         *(mHal.memory->out.isPendantConnected) = 0;
@@ -797,6 +730,7 @@ bool WhbContext::isSimulationModeEnabled() const
     return mIsSimulationMode;
 }
 
+    /*
 // ----------------------------------------------------------------------
 // TODO: remove
 size_t WhbContext::getSoftwareButtonIndex(uint8_t keyCode) const
@@ -810,8 +744,9 @@ size_t WhbContext::getSoftwareButtonIndex(uint8_t keyCode) const
         }
     assert (false);
     return 0;
-}
+}*/
 
+    /*
 // ----------------------------------------------------------------------
 // TODO: remove
 bool WhbContext::dispatchButtonEventToHal(const WhbSoftwareButton& softwareButton, bool isButtonPressed)
@@ -994,7 +929,8 @@ bool WhbContext::dispatchButtonEventToHal(const WhbSoftwareButton& softwareButto
     }
 
     return false;
-}
+}*/
+    /*
 // ----------------------------------------------------------------------
 
 // TODO: remove
@@ -1026,8 +962,8 @@ bool WhbContext::onButtonPressedEvent(const WhbSoftwareButton& softwareButton)
     }
 
     return isUpdateRecommended;
-}
-
+}*/
+/*
 // ----------------------------------------------------------------------
 // TODO: remove
 bool WhbContext::onButtonReleasedEvent(const WhbSoftwareButton& softwareButton)
@@ -1041,7 +977,8 @@ bool WhbContext::onButtonReleasedEvent(const WhbSoftwareButton& softwareButton)
 
     return isUpdateRecommended;
 }
-
+*/
+    /*
 // ----------------------------------------------------------------------
 
 void WhbContext::onAxisActiveEvent(const WhbKeyCode& axis)
@@ -1067,7 +1004,8 @@ void WhbContext::onAxisInactiveEvent(const WhbKeyCode& axis)
 
     dispatchAxisEventToHal(axis, false);
 }
-
+*/
+    /*
 // ----------------------------------------------------------------------
 
 void WhbContext::onDataInterpreted()
@@ -1078,7 +1016,9 @@ void WhbContext::onDataInterpreted()
     // mIsDisplayDataReady = true;
     mKeyEventCout->copyfmt(init);
 }
+     */
 
+    /*
 // ----------------------------------------------------------------------
 
 //! update axis rotary button's state to hal and detect active/inactive event
@@ -1131,7 +1071,8 @@ void WhbContext::updateAxisRotaryButton(const WhbUsbInPackage& inPackage)
         keyEventReceiver.onAxisActiveEvent(*newAxisCode);
     }
 }
-
+*/
+    /*
 // ----------------------------------------------------------------------
 
 bool WhbContext::updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode)
@@ -1166,7 +1107,8 @@ bool WhbContext::updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyC
     }
     return isUpdateRecommended;
 }
-
+*/
+    /*
 // ----------------------------------------------------------------------
 
 //! update axis rotary button's state to hal and detect active/inactive event
@@ -1277,7 +1219,8 @@ void WhbContext::updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool f
         }
     }
 }
-
+*/
+    /*
 // ----------------------------------------------------------------------
 
 void WhbContext::onFeedActiveEvent(const WhbKeyCode& axis)
@@ -1290,7 +1233,8 @@ void WhbContext::onFeedActiveEvent(const WhbKeyCode& axis)
                    << endl;
     mKeyEventCout->copyfmt(init);
 }
-
+*/
+    /*
 // ----------------------------------------------------------------------
 
 void WhbContext::onFeedInactiveEvent(const WhbKeyCode& axis)
@@ -1303,7 +1247,7 @@ void WhbContext::onFeedInactiveEvent(const WhbKeyCode& axis)
                    << endl;
     mKeyEventCout->copyfmt(init);
 }
-
+*/
 // ----------------------------------------------------------------------
 
 void WhbContext::setEnableVerboseKeyEvents(bool enable)
@@ -1319,8 +1263,9 @@ void WhbContext::setEnableVerboseKeyEvents(bool enable)
     }
 }
 
+    /*
 // ----------------------------------------------------------------------
-
+// TODO: remove
 void WhbContext::onJogDialEvent(int8_t delta)
 {
     std::ios init(NULL);
@@ -1328,9 +1273,10 @@ void WhbContext::onJogDialEvent(int8_t delta)
     *mKeyEventCout << "event jog dial " << std::setfill(' ') << std::setw(3) << static_cast<signed short>(delta)
                    << endl;
     mKeyEventCout->copyfmt(init);
-    mHal.newJogDialDelta(delta);
-}
+    //mHal.newJogDialDelta(delta);
+}*/
 
+    /*
 // ----------------------------------------------------------------------
 
 void WhbContext::updateJogDial(const WhbUsbInPackage& inPackage)
@@ -1340,7 +1286,7 @@ void WhbContext::updateJogDial(const WhbUsbInPackage& inPackage)
         onJogDialEvent(inPackage.stepCount);
     }
 }
-
+*/
 // ----------------------------------------------------------------------
 
 void WhbContext::enableCrcDebugging(bool enable)
@@ -1348,6 +1294,7 @@ void WhbContext::enableCrcDebugging(bool enable)
     mIsCrcDebuggingEnabled = enable;
 }
 
+    /*
 // ----------------------------------------------------------------------
 
 size_t WhbContext::getHalPinNumber(const WhbSoftwareButton& button)
@@ -1364,7 +1311,7 @@ size_t WhbContext::getHalPinNumber(const WhbSoftwareButton& button)
     assert(false);
     return 0;
 }
-
+*/
 // ----------------------------------------------------------------------
 
 void WhbContext::offerHalMemory()
@@ -1373,6 +1320,7 @@ void WhbContext::offerHalMemory()
     mUsb.takeHalMemoryReference(mHal.memory);
 }
 
+    /*
 // ----------------------------------------------------------------------
 // TODO: remove
 void WhbContext::dispatchAxisEventToHal(const WhbKeyCode& axis, bool isActive)
@@ -1410,7 +1358,7 @@ void WhbContext::dispatchAxisEventToHal(const WhbKeyCode& axis, bool isActive)
         mHal.setNoAxisActive(isActive);
     }
 }
-
+*/
 void WhbContext::setMachineConfig(const MachineConfiguration& machineConfig)
 {
     *mInitCout << "init  setting machine configuration to scale="

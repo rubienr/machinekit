@@ -1185,33 +1185,6 @@ std::ostream& operator<<(std::ostream& os, const Handwheel& data)
 
 // ----------------------------------------------------------------------
 
-int32_t Handwheel::consumeScaledCounts()
-{
-    int32_t counts = mCounts, scaled = 0;
-    mCounts = 0;
-
-    if (mFeedButton.stepMode() == HandwheelStepmodes::Mode::STEP)
-    {
-        if (mFeedButton.isPermitted())
-        {
-            scaled = counts * mFeedButton.stepSize();
-        }
-        else
-        {
-            scaled = 0;
-        }
-    }
-
-    std::ios init(NULL);
-    init.copyfmt(*mWheelCout);
-    *mWheelCout << mPrefix << "handwheel consumed " << counts << " counts as " << scaled << " scaled counts"
-                << std::setfill(' ') << std::setw(4) << mCounts << endl;
-    mWheelCout->copyfmt(init);
-    return scaled;
-}
-
-// ----------------------------------------------------------------------
-
 int32_t Handwheel::counts() const
 {
     return mCounts;
@@ -1219,9 +1192,12 @@ int32_t Handwheel::counts() const
 
 // ----------------------------------------------------------------------
 
-void Handwheel::produceCount(int8_t counts)
+void Handwheel::count(int8_t counts)
 {
+    assert(mEventListener != nullptr);
     mCounts += counts;
+    mEventListener->onJogDialEvent(mCounts);
+
     std::ios init(NULL);
     init.copyfmt(*mWheelCout);
     *mWheelCout << mPrefix << "handwheel total counts " << std::setfill(' ') << std::setw(5) << mCounts << endl;
@@ -1432,7 +1408,7 @@ void Pendant::update(uint8_t keyCode,
 }
 
 // ----------------------------------------------------------------------
-// TODO: remove
+
 void Pendant::update(const KeyCode& keyCode,
                      const KeyCode& modifierCode,
                      const KeyCode& rotaryButtonAxisKeyCode,
@@ -1440,7 +1416,7 @@ void Pendant::update(const KeyCode& keyCode,
                      int8_t handWheelStepCount)
 {
     mCurrentButtonsState.update(keyCode, modifierCode, rotaryButtonAxisKeyCode, rotaryButtonFeedKeyCode);
-    mHandWheel.produceCount(handWheelStepCount);
+    mHandWheel.count(handWheelStepCount);
 }
 
 // ----------------------------------------------------------------------
@@ -1470,6 +1446,13 @@ const ButtonsState& Pendant::previousButtonsState() const
 const Handwheel& Pendant::handWheel() const
 {
     return mHandWheel;
+}
+
+// ----------------------------------------------------------------------
+
+Handwheel& Pendant::handWheel()
+{
+    return const_cast<Handwheel&>(const_cast<const Pendant*>(this)->handWheel());
 }
 
 // ----------------------------------------------------------------------
@@ -1822,12 +1805,25 @@ void Pendant::onFeedActiveEvent(const KeyCode& feed)
     dispatchFeedToHal();
 }
 
+// ----------------------------------------------------------------------
+
 void Pendant::dispatchFeedToHal()
 {
     FeedRotaryButton& feedButton = mCurrentButtonsState.feedButton();
     if (feedButton.isPermitted()) {
         mHal.setJogWheelStepMode(feedButton.stepMode());
-        mHal.setStepSize(feedButton.stepSize());
+
+        float stepSize = 0;
+
+        if (feedButton.stepMode() == HandwheelStepmodes::Mode::STEP)
+        {
+            stepSize = feedButton.stepSize();
+        }
+        else if (feedButton.stepMode() == HandwheelStepmodes::Mode::CONTINUOUS)
+        {
+            stepSize = 0.1;// (feedButton.stepSize() * (static_cast<float>(*mHal.memory->in.stepgenXMaxVelocity))) / 100.0;
+        }
+        mHal.setStepSize(stepSize);
     }
     else
     {
@@ -1845,11 +1841,15 @@ void Pendant::onFeedInactiveEvent(const KeyCode& feed)
 
 // ----------------------------------------------------------------------
 
-void Pendant::onJogDialEvent(int8_t delta)
+bool Pendant::onJogDialEvent(int32_t counts)
 {
-    *mPendantCout << mPrefix << "wheel  event " << static_cast<int16_t>(delta) << endl;
+    if (counts != 0)
+    {
+        *mPendantCout << mPrefix << "wheel  event " << static_cast<int16_t>(counts) << endl;
+    }
+    mHal.doJogCounts(counts);
+    return true;
 }
-
 
 // ----------------------------------------------------------------------
 

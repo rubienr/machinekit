@@ -101,11 +101,11 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
         << "    Force being silent and not printing any output except of errors. This will also inhibit messages "
             "prefixed with \"init\"." << endl
         << endl
-        << " -s <scale>" << endl
+        << " -s <scale>" << endl // TODO: remove scale
         << "    Specifies the number of pulses that corresponds to a move of one machine unit in [mm] or [inch]. "
             "Default is " << m.getScale() << "." << endl
         << endl
-        << " -v <max_velocity>" << endl
+        << " -v <max_velocity>" << endl // TODO: remove max velocity
         << "    The maximum velocity for any axis in machine units per second (same unit as -s). "
             "Default is " << m.getMaxVelocity() << "." << endl
         << endl
@@ -212,14 +212,14 @@ int main(int argc, char** argv)
                 break;
             case 'n':
                 break;
-            case 's':
+            case 's': // TODO: remove
                 if (!parseFloat(optarg, scale))
                 {
                     return EXIT_FAILURE;
                 }
                 machineConfig.setScale(scale);
                 break;
-            case 'v':
+            case 'v': // TODO: remove
                 if (!parseFloat(optarg, maxVelocity))
                 {
                     return EXIT_FAILURE;

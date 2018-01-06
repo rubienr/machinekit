@@ -53,6 +53,31 @@ public:
     {
     public:
 
+        //! to be connected to \ref stepge.00.maxvel
+        hal_float_t* stepgenXMaxVelocity;
+        //! to be connected to \ref stepge.01.maxvel
+        hal_float_t* stepgenYMaxVelocity;
+        //! to be connected to \ref stepge.02.maxvel
+        hal_float_t* stepgenZMaxVelocity;
+        //! to be connected to \ref stepge.03.maxvel
+        hal_float_t* stepgenAMaxVelocity;
+        //! to be connected to \ref stepge.04.maxvel
+        hal_float_t* stepgenBMaxVelocity;
+        //! to be connected to \ref stepge.05.maxvel
+        hal_float_t* stepgenCMaxVelocity;
+        //! to be connected to \ref stepgen.00.position-scale
+        hal_float_t* stepgenXPositionScale;
+        //! to be connected to \ref stepgen.01.position-scale
+        hal_float_t* stepgenYPositionScale;
+        //! to be connected to \ref stepgen.02.position-scale
+        hal_float_t* stepgenZPositionScale;
+        //! to be connected to \ref stepgen.03.position-scale
+        hal_float_t* stepgenAPositionScale;
+        //! to be connected to \ref stepgen.04.position-scale
+        hal_float_t* stepgenBPositionScale;
+        //! to be connected to \ref stepgen.05.position-scale
+        hal_float_t* stepgenCPositionScale;
+
         //! to be connected to \ref halui.feed-override.value
         hal_float_t* feedOverrideValue;
 
@@ -60,12 +85,12 @@ public:
         hal_bit_t  * spindleIsOn;
         //! to be connected to \ref halui.spindle-override.value
         hal_float_t* spindleOverrideValue;
-        // TODO: where should it be connected to
-        hal_float_t* spindleRps;
+        //// TODO: where should it be connected to
+        //hal_float_t* spindleRps;
         //! to be connected to \ref halui.max-velocity.value
-        hal_float_t* jogMaxVelocity;
+        //hal_float_t* jogMaxVelocity;
         // TODO: where should it be connected to
-        hal_bit_t  * stepsizeUp;
+        //hal_bit_t  * stepsizeUp;
         //! to be connected to \ref halui.program.is-running// system includes
         hal_bit_t  * isProgramRunning;
         //! to be connected to \ref halui.program.is-paused
@@ -97,12 +122,62 @@ public:
     public:
         hal_bit_t* button_pin[64];
 
+        //! to be connected to \ref axis.0.jog-counts
+        hal_s32_t* axisXJogCounts;
+        //! to be connected to \ref axis.1.jog-counts
+        hal_s32_t* axisYJogCounts;
+        //! to be connected to \ref axis.2.jog-counts
+        hal_s32_t* axisZJogCounts;
+        //! to be connected to \ref axis.3.jog-counts
+        hal_s32_t* axisAJogCounts;
+        //! to be connected to \ref axis.4.jog-counts
+        hal_s32_t* axisBJogCounts;
+        //! to be connected to \ref axis.5.jog-counts
+        hal_s32_t* axisCJogCounts;
+
+        //! to be connected to \ref axis.0.jog-enable
+        hal_bit_t* axisXJogEnable;
+        //! to be connected to \ref axis.1.jog-enable
+        hal_bit_t* axisYJogEnable;
+        //! to be connected to \ref axis.2.jog-enable
+        hal_bit_t* axisZJogEnable;
+        //! to be connected to \ref axis.3.jog-enable
+        hal_bit_t* axisAJogEnable;
+        //! to be connected to \ref axis.4.jog-enable
+        hal_bit_t* axisBJogEnable;
+        //! to be connected to \ref axis.5.jog-enable
+        hal_bit_t* axisCJogEnable;
+
+        //! to be connected to \ref axis.0.jog-scale
+        hal_float_t* axisXJogScale;
+        //! to be connected to \ref axis.1.jog-scale
+        hal_float_t* axisYJogScale;
+        //! to be connected to \ref axis.2.jog-scale
+        hal_float_t* axisZJogScale;
+        //! to be connected to \ref axis.3.jog-scale
+        hal_float_t* axisAJogScale;
+        //! to be connected to \ref axis.4.jog-scale
+        hal_float_t* axisBJogScale;
+        //! to be connected to \ref axis.5.jog-scale
+        hal_float_t* axisCJogScale;
+
+        //! to be connected to \ref axis.0.jog-vel-mode
+        hal_bit_t* axisXSetVelocityMode;
+        //! to be connected to \ref axis.1.jog-vel-mode
+        hal_bit_t* axisYSetVelocityMode;
+        //! to be connected to \ref axis.2.jog-vel-mode
+        hal_bit_t* axisZSetVelocityMode;
+        //! to be connected to \ref axis.3.jog-vel-mode
+        hal_bit_t* axisASetVelocityMode;
+        //! to be connected to \ref axis.4.jog-vel-mode
+        hal_bit_t* axisBSetVelocityMode;
+        //! to be connected to \ref axis.5.jog-vel-mode
+        hal_bit_t* axisCSetVelocityMode;
+
         //! Incremental jog counter. Counts will be consumed by icomp.
-        hal_s32_t* jogCount;
-
-        hal_s32_t* jogCountNeg;
-
-        hal_float_t* jogVelocity;
+        //hal_s32_t* jogCount;
+        //hal_s32_t* jogCountNeg;
+        //hal_float_t* jogVelocity;
 
         //! to be connected to \ref halui.feed-override.decrease
         hal_bit_t* feedOverrideDecrease;
@@ -130,15 +205,15 @@ public:
         hal_bit_t* homeAll;
 
         //! to be connected to \ref halui.jog.selected.increment
-        hal_float_t* jogIncrement;
+        //hal_float_t* jogIncrement;
         //! to be connected to \ref halui.jog.selected.increment-plus
-        hal_bit_t* jogIncrementPlus;
+        //hal_bit_t* jogIncrementPlus;
         //! to be connected to \ref halui.jog.selected.increment-minus
-        hal_bit_t* jogIncrementMinus;
+        //hal_bit_t* jogIncrementMinus;
         //! to be connected to \ref halui.jog.selected.plus
-        hal_bit_t* jogPlus; //jogging with jog-speed
+        //hal_bit_t* jogPlus; //jogging with jog-speed
         //! to be connected to \ref halui.jog.selected.minus
-        hal_bit_t* jogMinus; // jogging with jog-speed
+        //hal_bit_t* jogMinus; // jogging with jog-speed
 
         //!to be connected to \ref halui.joint.N.select
         hal_bit_t  * jointXSelect;
@@ -153,14 +228,14 @@ public:
         //!to be connected to \ref halui.joint.N.select
         hal_bit_t  * jointCSelect;
 
-        // TODO: where should it be connected to
-        hal_s32_t* stepsize;
+        //// TODO: where should it be connected to
+        //hal_s32_t* stepsize;
         //! reflects the pendandt's idle state
         hal_bit_t* isPendantSleeping;
         //! reflects pendant's connectivity
         hal_bit_t* isPendantConnected;
-        // TODO: remove since this is not needed to be exposed
-        hal_bit_t* isPendantRequired;
+        //// TODO: remove since this is not needed to be exposed
+        //hal_bit_t* isPendantRequired;
 
         //! to be connected to \ref halui.program.run
         hal_bit_t* doRunProgram;
@@ -334,11 +409,20 @@ public:
     void setMacro15(bool enabled);
     //! \sa setMacro1(bool, size_t)
     void setMacro16(bool enabled);
+
+    /*
     //! This method cumulates new jog dial delta. In other words it produces counts
     //! to be consumed by an icomp component.
     //! \param delta new jog dial delta
     void newJogDialDelta(int8_t delta);
-    void computeVelocity();
+     */
+
+   /* //! Toggles true/false on the corresponding halui.jog.jog{increment|}Plus according to the \xrefitem mStepMode.
+    //! \param direction positive if > 0, negative if < 0, jo jog but reset signals to false otherwise
+    //! \return true if the step was consumed (on false to true transition)
+    bool jogStep(int8_t direction);
+*/
+    void doJogCounts(int32_t counts);
 
 private:
     bool mIsSimulationMode;
@@ -388,5 +472,20 @@ private:
     void enableManualMode(bool isRisingEdge);
 
     void enableMdiMode(bool isRisingEdge);
+
+    //! Jogs (toggles) one of the first two given arguments according to the given direction.
+    //! Sets each other argument to false/0.
+    //! \param jogPlus first jog candidate
+    //! \param jogMinus second jog candidate
+    //! \param otherJogPlus other candidate that will be set to false
+    //! \param otherJogMinus another candidate that will be set to false
+    //! \param direction jog direction plus if > 0, minus if < 0, reset signals but no jog otherwise
+    //! \return true on positive transition (false to true), false otherwise
+    bool doJogToggleAndReset(hal_bit_t* jogPlus,
+                             hal_bit_t* jogMinus,
+                             hal_bit_t* otherJogPlus,
+                             hal_bit_t* otherJogMinus,
+                             int8_t direction);
+
 };
 }
