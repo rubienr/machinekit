@@ -86,71 +86,75 @@ WhbHalMemory::In::In() :
 // ----------------------------------------------------------------------
 
 WhbHalMemory::Out::Out() :
-    button_pin{0},
-    axisXJogCounts(nullptr),
-    axisYJogCounts(nullptr),
-    axisZJogCounts(nullptr),
-    axisAJogCounts(nullptr),
-    axisBJogCounts(nullptr),
-    axisCJogCounts(nullptr),
+        button_pin{0},
+        axisXJogCounts(nullptr),
+        axisYJogCounts(nullptr),
+        axisZJogCounts(nullptr),
+        axisAJogCounts(nullptr),
+        axisBJogCounts(nullptr),
+        axisCJogCounts(nullptr),
 
-    axisXJogEnable(nullptr),
-    axisYJogEnable(nullptr),
-    axisZJogEnable(nullptr),
-    axisAJogEnable(nullptr),
-    axisBJogEnable(nullptr),
-    axisCJogEnable(nullptr),
+        axisXJogEnable(nullptr),
+        axisYJogEnable(nullptr),
+        axisZJogEnable(nullptr),
+        axisAJogEnable(nullptr),
+        axisBJogEnable(nullptr),
+        axisCJogEnable(nullptr),
 
-    axisXJogScale(nullptr),
-    axisYJogScale(nullptr),
-    axisZJogScale(nullptr),
-    axisAJogScale(nullptr),
-    axisBJogScale(nullptr),
-    axisCJogScale(nullptr),
+        axisXJogScale(nullptr),
+        axisYJogScale(nullptr),
+        axisZJogScale(nullptr),
+        axisAJogScale(nullptr),
+        axisBJogScale(nullptr),
+        axisCJogScale(nullptr),
 
-    axisXSetVelocityMode(nullptr),
-    axisYSetVelocityMode(nullptr),
-    axisZSetVelocityMode(nullptr),
-    axisASetVelocityMode(nullptr),
-    axisBSetVelocityMode(nullptr),
-    axisCSetVelocityMode(nullptr),
+        axisXSetVelocityMode(nullptr),
+        axisYSetVelocityMode(nullptr),
+        axisZSetVelocityMode(nullptr),
+        axisASetVelocityMode(nullptr),
+        axisBSetVelocityMode(nullptr),
+        axisCSetVelocityMode(nullptr),
 
     //jogCount(nullptr),
     //jogCountNeg(nullptr),
     //jogVelocity(nullptr),
-    feedOverrideDecrease(nullptr),
-    feedOverrideIncrease(nullptr),
-    spindleDoDecrease(nullptr),
-    spindleDoIncrease(nullptr),
-    spindleOverrideDoDecrease(nullptr),
-    spindleOverrideDoIncrease(nullptr),
-    jogSpeedValue(nullptr),
-    homeAll(nullptr),
+        spindleStart(nullptr),
+        spindleStop(nullptr),
+        feedOverrideDecrease(nullptr),
+        feedOverrideIncrease(nullptr),
+        spindleDoDecrease(nullptr),
+        spindleDoIncrease(nullptr),
+        spindleOverrideDoDecrease(nullptr),
+        spindleOverrideDoIncrease(nullptr),
+        jogSpeedValue(nullptr),
+        homeAll(nullptr),
     //jogIncrement(nullptr),
     //jogIncrementPlus(nullptr),
     //jogIncrementMinus(nullptr),
     //jogPlus(nullptr),
     //jogMinus(nullptr),
     jointXSelect(nullptr),
-    jointYSelect(nullptr),
-    jointZSelect(nullptr),
-    jointASelect(nullptr),
-    jointBSelect(nullptr),
-    jointCSelect(nullptr),
+        jointYSelect(nullptr),
+        jointZSelect(nullptr),
+        jointASelect(nullptr),
+        jointBSelect(nullptr),
+        jointCSelect(nullptr),
     //stepsize(nullptr),
     isPendantSleeping(nullptr),
-    isPendantConnected(nullptr),
+        isPendantConnected(nullptr),
     //isPendantRequired(nullptr),
     doRunProgram(nullptr),
-    doPauseProgram(nullptr),
-    doResumeProgram(nullptr),
-    doStopProgram(nullptr),
-    doModeAuto(nullptr),
-    doModeJoint(nullptr),
-    doModeManual(nullptr),
-    doModeMdi(nullptr),
-    doEmergencyStop(nullptr),
-    resetEmergencyStop(nullptr)
+        doPauseProgram(nullptr),
+        doResumeProgram(nullptr),
+        doStopProgram(nullptr),
+        doModeAuto(nullptr),
+        doModeJoint(nullptr),
+        doModeManual(nullptr),
+        doModeMdi(nullptr),
+        doEmergencyStop(nullptr),
+        resetEmergencyStop(nullptr),
+        doMachineOn(nullptr),
+        doMachineOff(nullptr)
 {
 }
 
@@ -291,6 +295,8 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->out.resetEmergencyStop));
     freeSimulatedPin((void**)(&memory->in.isEmergencyStop));
     freeSimulatedPin((void**)(&memory->in.isMachineOn));
+    freeSimulatedPin((void **) (&memory->out.doMachineOn));
+    freeSimulatedPin((void **) (&memory->out.doMachineOff));
     delete memory;
 }
 
@@ -314,8 +320,6 @@ int WhbHal::newHalFloat(hal_pin_dir_t direction, hal_float_t** ptr, int componen
     vsprintf(pin_name, fmt, args);
     va_end(args);
 
-    assert(ptr != nullptr);
-    assert(*ptr == nullptr);
     *mHalCout << "hal   float ";
     if (direction == HAL_OUT)
     {
@@ -326,6 +330,9 @@ int WhbHal::newHalFloat(hal_pin_dir_t direction, hal_float_t** ptr, int componen
         *mHalCout << "in  ";
     }
     *mHalCout << pin_name << endl;
+
+    assert(ptr != nullptr);
+    assert(*ptr == nullptr);
 
     if (mIsSimulationMode)
     {
@@ -349,8 +356,6 @@ int WhbHal::newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int compone
     vsprintf(pin_name, fmt, args);
     va_end(args);
 
-    assert(ptr != nullptr);
-    assert(*ptr == nullptr);
     *mHalCout << "hal   s32   ";
     if (direction == HAL_OUT)
     {
@@ -361,6 +366,10 @@ int WhbHal::newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int compone
         *mHalCout << "in  ";
     }
     *mHalCout << pin_name << endl;
+
+    assert(ptr != nullptr);
+    assert(*ptr == nullptr);
+
     if (mIsSimulationMode)
     {
         return newSimulatedHalPin(pin_name, (void**)ptr, sizeof(hal_s32_t));
@@ -383,8 +392,6 @@ int WhbHal::newHalBit(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId,
     vsprintf(pin_name, fmt, args);
     va_end(args);
 
-    assert(ptr != nullptr);
-    assert(*ptr == nullptr);
     *mHalCout << "hal   bit   ";
     if (direction == HAL_OUT)
     {
@@ -395,6 +402,9 @@ int WhbHal::newHalBit(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId,
         *mHalCout << "in  ";
     }
     *mHalCout << pin_name << endl;
+
+    assert(ptr != nullptr);
+    assert(*ptr == nullptr);
 
     if (mIsSimulationMode)
     {

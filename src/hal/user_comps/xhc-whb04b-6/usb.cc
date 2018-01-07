@@ -842,7 +842,7 @@ void WhbUsb::setWaitWithTimeout(uint8_t waitSecs)
 
 // ----------------------------------------------------------------------
 
-const WhbUsbOutPackageData& WhbUsb::getOutputPackageData()
+    WhbUsbOutPackageData &WhbUsb::getOutputPackageData()
 {
     return outputPackageData;
 }

@@ -247,10 +247,10 @@ void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
         assert(modifierCode == KeyCodes::Buttons.undefined.code);
     }
 
-    mPendant.update(keyCode, modifierCode,
-                    inPackage.rotaryButtonAxisKeyCode,
-                    inPackage.rotaryButtonFeedKeyCode,
-                    inPackage.stepCount);
+    mPendant.processEvent(keyCode, modifierCode,
+                          inPackage.rotaryButtonAxisKeyCode,
+                          inPackage.rotaryButtonFeedKeyCode,
+                          inPackage.stepCount);
 
     /* deprecated
     //! update previous and current button state
@@ -301,11 +301,11 @@ bool WhbContext::isRunning() const
 // ----------------------------------------------------------------------
 
 WhbContext::WhbContext() :
-    mName("XHC-WHB04B-6"),
-    mHal(),
-    mKeyCodes(),
-    mStepHandler(),
-    mSoftwareButtons{WhbSoftwareButton(mKeyCodes.buttons.reset, mKeyCodes.buttons.undefined),
+        mName("XHC-WHB04B-6"),
+        mHal(),
+        mKeyCodes(),
+        mStepHandler(),
+        mSoftwareButtons{WhbSoftwareButton(mKeyCodes.buttons.reset, mKeyCodes.buttons.undefined),
                      WhbSoftwareButton(mKeyCodes.buttons.reset, mKeyCodes.buttons.function),
                      WhbSoftwareButton(mKeyCodes.buttons.stop, mKeyCodes.buttons.undefined),
                      WhbSoftwareButton(mKeyCodes.buttons.stop, mKeyCodes.buttons.function),
@@ -339,25 +339,25 @@ WhbContext::WhbContext() :
         //! it is expected to terminate this array with the "undefined" software button
                      WhbSoftwareButton(mKeyCodes.buttons.undefined, mKeyCodes.buttons.undefined)
     },
-    mUsb(mName, *this),
-    mIsRunning(false),
-    mIsSimulationMode(false),
+        mUsb(mName, *this),
+        mIsRunning(false),
+        mIsSimulationMode(false),
     //mPreviousButtonCodes(mKeyCodes.buttons, mKeyCodes.axis, mKeyCodes.feed, mStepHandler.stepSize.step,
     //                     mStepHandler.stepSize.continuous),
     //mCurrentButtonCodes(mKeyCodes.buttons, mKeyCodes.axis, mKeyCodes.feed, mStepHandler.stepSize.step,
     //                    mStepHandler.stepSize.continuous),
     mDevNull(nullptr),
-    mTxCout(&mDevNull),
-    mRxCout(&mDevNull),
-    mKeyEventCout(&mDevNull),
-    mHalInitCout(&mDevNull),
-    mInitCout(&mDevNull),
-    keyEventReceiver(*this),
-    packageReceivedEventReceiver(*this),
-    packageInterpretedEventReceiver(*this),
-    mIsCrcDebuggingEnabled(false),
-    mMachineConfig(),
-    mPendant(mHal)
+        mTxCout(&mDevNull),
+        mRxCout(&mDevNull),
+        mKeyEventCout(&mDevNull),
+        mHalInitCout(&mDevNull),
+        mInitCout(&mDevNull),
+        keyEventReceiver(*this),
+        packageReceivedEventReceiver(*this),
+        packageInterpretedEventReceiver(*this),
+        mIsCrcDebuggingEnabled(false),
+        mMachineConfig(),
+        mPendant(mHal, mUsb.getOutputPackageData())
 {
     setSimulationMode(true);
     enableVerboseRx(false);
@@ -376,6 +376,7 @@ WhbContext::~WhbContext()
 
 void WhbContext::updateDisplay()
 {
+    mPendant.updateDisplay();
     mUsb.sendDisplayData();
 }
 
@@ -593,7 +594,7 @@ void WhbContext::process()
         {
             struct timeval timeout;
             timeout.tv_sec  = 0;
-            timeout.tv_usec = 500;
+            timeout.tv_usec = 200 * 1000;
 
             int r = libusb_handle_events_timeout_completed(getUsbContext(), &timeout, nullptr);
             assert((r == LIBUSB_SUCCESS) || (r == LIBUSB_ERROR_NO_DEVICE) || (r == LIBUSB_ERROR_BUSY) ||

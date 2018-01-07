@@ -342,7 +342,8 @@ public:
     void enableVerboseInit(bool enable);
     bool init();
     void setWaitWithTimeout(uint8_t waitSecs);
-    const WhbUsbOutPackageData& getOutputPackageData();
+
+    WhbUsbOutPackageData &getOutputPackageData();
     void takeHalMemoryReference(WhbHalMemory* memory);
 
 private:

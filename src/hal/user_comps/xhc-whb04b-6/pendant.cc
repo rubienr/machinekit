@@ -33,6 +33,7 @@
 // local includes
 #include "./hal.h"
 #include "./xhc-whb04b6.h"
+#include "./usb.h"
 
 using std::endl;
 
@@ -1343,13 +1344,14 @@ FeedRotaryButton& ButtonsState::feedButton()
 
 // ----------------------------------------------------------------------
 
-Pendant::Pendant(WhbHal &hal) :
-    mHal(hal),
-    mPreviousButtonsState(this),
-    mCurrentButtonsState(this, &mPreviousButtonsState),
-    mHandWheel(mCurrentButtonsState.feedButton(), this),
-    mPrefix("pndnt "),
-    mPendantCout(&std::cout)
+    Pendant::Pendant(WhbHal &hal, WhbUsbOutPackageData &displayOutData) :
+            mHal(hal),
+            mPreviousButtonsState(this),
+            mCurrentButtonsState(this, &mPreviousButtonsState),
+            mHandWheel(mCurrentButtonsState.feedButton(), this),
+            mDisplay(hal, displayOutData),
+            mPrefix("pndnt "),
+            mPendantCout(&std::cout)
 {
 }
 
@@ -1374,11 +1376,11 @@ std::ostream& operator<<(std::ostream& os, const Pendant& data)
 
 // ----------------------------------------------------------------------
 // TODO: remove
-void Pendant::update(uint8_t keyCode,
-                     uint8_t modifierCode,
-                     uint8_t rotaryButtonAxisKeyCode,
-                     uint8_t rotaryButtonFeedKeyCode,
-                     int8_t handWheelStepCount)
+    void Pendant::processEvent(uint8_t keyCode,
+                               uint8_t modifierCode,
+                               uint8_t rotaryButtonAxisKeyCode,
+                               uint8_t rotaryButtonFeedKeyCode,
+                               int8_t handWheelStepCount)
 {
     shiftButtonState();
 
@@ -1404,20 +1406,27 @@ void Pendant::update(uint8_t keyCode,
         *mPendantCout << mPrefix << "failed to interpret axis code axisCode={" << modifierCode << "}" << endl;
     }
 
-    update(*key->second, *modifier->second, *axis->second, *feed->second, handWheelStepCount);
+    processEvent(*key->second, *modifier->second, *axis->second, *feed->second, handWheelStepCount);
 }
 
 // ----------------------------------------------------------------------
 
-void Pendant::update(const KeyCode& keyCode,
-                     const KeyCode& modifierCode,
-                     const KeyCode& rotaryButtonAxisKeyCode,
-                     const KeyCode& rotaryButtonFeedKeyCode,
-                     int8_t handWheelStepCount)
+    void Pendant::processEvent(const KeyCode &keyCode,
+                               const KeyCode& modifierCode,
+                               const KeyCode& rotaryButtonAxisKeyCode,
+                               const KeyCode& rotaryButtonFeedKeyCode,
+                               int8_t handWheelStepCount)
 {
     mCurrentButtonsState.update(keyCode, modifierCode, rotaryButtonAxisKeyCode, rotaryButtonFeedKeyCode);
     mHandWheel.count(handWheelStepCount);
+    mDisplay.updateData();
 }
+
+// ----------------------------------------------------------------------
+
+    void Pendant::updateDisplay() {
+        mDisplay.updateData();
+    }
 
 // ----------------------------------------------------------------------
 
@@ -1616,6 +1625,7 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
         return true;
     }
 
+    mDisplay.onButtonPressedEvent(metaButton);
     return false;
 }
 
@@ -1775,6 +1785,7 @@ bool Pendant::onButtonReleasedEvent(const MetaButtonCodes& metaButton)
         return true;
     }
 
+    mDisplay.onButtonReleasedEvent(metaButton);
     return false;
 }
 
@@ -1785,6 +1796,7 @@ void Pendant::onAxisActiveEvent(const KeyCode& axis)
     *mPendantCout << mPrefix << "axis   active   event axis=" << axis
                   << " axisButton=" << mCurrentButtonsState.axisButton() << endl;
     dispatchAxisEventToHal(axis, true);
+    mDisplay.onAxisActiveEvent(axis);
 }
 
 // ----------------------------------------------------------------------
@@ -1794,6 +1806,7 @@ void Pendant::onAxisInactiveEvent(const KeyCode& axis)
     *mPendantCout << mPrefix << "axis   inactive event axis=" << axis
                   << " axisButton=" << mCurrentButtonsState.axisButton() << endl;
     dispatchAxisEventToHal(axis, false);
+    mDisplay.onAxisInactiveEvent(axis);
 }
 
 // ----------------------------------------------------------------------
@@ -1803,6 +1816,7 @@ void Pendant::onFeedActiveEvent(const KeyCode& feed)
     (*mPendantCout) << mPrefix << "feed   active   event feed=" << feed
                   << " feedButton=" << mCurrentButtonsState.feedButton() << endl;
     dispatchFeedToHal();
+    mDisplay.onFeedActiveEvent(feed);
 }
 
 // ----------------------------------------------------------------------
@@ -1821,7 +1835,9 @@ void Pendant::dispatchFeedToHal()
         }
         else if (feedButton.stepMode() == HandwheelStepmodes::Mode::CONTINUOUS)
         {
-            stepSize = 0.1;// (feedButton.stepSize() * (static_cast<float>(*mHal.memory->in.stepgenXMaxVelocity))) / 100.0;
+            //stepSize = 0.1;
+            stepSize = 2;
+            //TODO: set max-velocity or feed-override to the percentage value
         }
         mHal.setStepSize(stepSize);
     }
@@ -1837,6 +1853,7 @@ void Pendant::onFeedInactiveEvent(const KeyCode& feed)
 {
     *mPendantCout << mPrefix << "feed   inactive event feed=" << feed
                   << " feedButton=" << mCurrentButtonsState.feedButton() << endl;
+    mDisplay.onFeedInactiveEvent(feed);
 }
 
 // ----------------------------------------------------------------------
@@ -1848,6 +1865,7 @@ bool Pendant::onJogDialEvent(int32_t counts)
         *mPendantCout << mPrefix << "wheel  event " << static_cast<int16_t>(counts) << endl;
     }
     mHal.doJogCounts(counts);
+    mDisplay.onJogDialEvent(counts);
     return true;
 }
 
@@ -1888,6 +1906,51 @@ void Pendant::dispatchAxisEventToHal(const KeyCode& axis, bool isActive)
         mHal.setNoAxisActive(isActive);
     }
 }
+
+// ----------------------------------------------------------------------
+
+    Display::Display(WhbHal &hal, WhbUsbOutPackageData &displayData) :
+            mHal(hal),
+            mDisplayData(displayData) {
+    }
+
+// ----------------------------------------------------------------------
+
+    Display::~Display() {}
+
+// ----------------------------------------------------------------------
+
+    bool Display::onButtonPressedEvent(const MetaButtonCodes &metaButton) { return false; }
+
+// ----------------------------------------------------------------------
+
+    bool Display::onButtonReleasedEvent(const MetaButtonCodes &metaButton) { return false; }
+
+// ----------------------------------------------------------------------
+
+    void Display::onAxisActiveEvent(const KeyCode &axis) {}
+
+// ----------------------------------------------------------------------
+
+    void Display::onAxisInactiveEvent(const KeyCode &axis) {}
+
+// ----------------------------------------------------------------------
+
+    void Display::onFeedActiveEvent(const KeyCode &axis) {}
+
+// ----------------------------------------------------------------------
+
+    void Display::onFeedInactiveEvent(const KeyCode &axis) {}
+
+// ----------------------------------------------------------------------
+
+    bool Display::onJogDialEvent(int32_t counts) { return false; }
+
+// ----------------------------------------------------------------------
+
+    void Display::updateData() {
+        mDisplayData.displayModeFlags.asBitFields.isReset = !(*mHal.memory->in.isMachineOn);
+    }
 
 }
 

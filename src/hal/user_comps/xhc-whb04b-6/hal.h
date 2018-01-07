@@ -179,16 +179,14 @@ public:
         //hal_s32_t* jogCountNeg;
         //hal_float_t* jogVelocity;
 
+        //! to be connected to \ref halui.spindle.start
+        hal_bit_t *spindleStart;
+        //! to be connected to \ref halui.spindle.stop
+        hal_bit_t *spindleStop;
         //! to be connected to \ref halui.feed-override.decrease
         hal_bit_t* feedOverrideDecrease;
         //! to be connected to \ref halui.feed-override.increase
         hal_bit_t* feedOverrideIncrease;
-
-        //! to be connected to \ref halui.spindle.start
-        hal_bit_t* spindleStart;
-        //! to be connected to \ref halui.spindle.stop
-        hal_bit_t* spindleStop;
-
         //! to be connected to halui.spindle.decrease
         hal_bit_t* spindleDoDecrease;
         //! to be connected to halui.spindle.increase

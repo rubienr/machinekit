@@ -43,6 +43,8 @@ class WhbContext;
 class WhbButtonsState;
 class WhbHal;
 
+    class WhbUsbOutPackageData;
+
 // ----------------------------------------------------------------------
 
 //enum class JogWheelStepMode : uint8_t
@@ -799,17 +801,50 @@ std::ostream& operator<<(std::ostream& os, const ButtonsState& data);
 
 // ----------------------------------------------------------------------
 
+    class Display : public KeyEventListener {
+    public:
+        Display(WhbHal &hal, WhbUsbOutPackageData &displayData);
+
+        Display();
+
+        ~Display();
+
+        virtual bool onButtonPressedEvent(const MetaButtonCodes &metaButton) override;
+
+        virtual bool onButtonReleasedEvent(const MetaButtonCodes &metaButton) override;
+
+        virtual void onAxisActiveEvent(const KeyCode &axis) override;
+
+        virtual void onAxisInactiveEvent(const KeyCode &axis) override;
+
+        virtual void onFeedActiveEvent(const KeyCode &axis) override;
+
+        virtual void onFeedInactiveEvent(const KeyCode &axis) override;
+
+        virtual bool onJogDialEvent(int32_t counts) override;
+
+        void updateData();
+
+    private:
+        WhbHal &mHal;
+        WhbUsbOutPackageData &mDisplayData;
+    };
+
+// ----------------------------------------------------------------------
+
 class Pendant : public KeyEventListener
 {
 public:
-    Pendant(WhbHal &hal);
+    Pendant(WhbHal &hal, WhbUsbOutPackageData &displayOutData);
     ~Pendant();
 
-    void update(uint8_t keyCode,
-                uint8_t modifierCode,
-                uint8_t rotaryButtonAxisKeyCode,
-                uint8_t rotaryButtonFeedKeyCode,
-                int8_t handWheelStepCount);
+    void processEvent(uint8_t keyCode,
+                      uint8_t modifierCode,
+                      uint8_t rotaryButtonAxisKeyCode,
+                      uint8_t rotaryButtonFeedKeyCode,
+                      int8_t handWheelStepCount);
+
+    void updateDisplay();
 
     const ButtonsState& currentButtonsState() const;
     const ButtonsState& previousButtonsState() const;
@@ -829,6 +864,7 @@ private:
     ButtonsState mPreviousButtonsState;
     ButtonsState mCurrentButtonsState;
     Handwheel    mHandWheel;
+    Display mDisplay;
 
     float mScale;
     float mMaxVelocity;
@@ -837,11 +873,12 @@ private:
     std::ostream* mPendantCout;
 
     void shiftButtonState();
-    void update(const KeyCode& keyCode,
-                const KeyCode& modifierCode,
-                const KeyCode& rotaryButtonAxisKeyCode,
-                const KeyCode& rotaryButtonFeedKeyCode,
-                int8_t handWheelStepCount);
+
+    void processEvent(const KeyCode &keyCode,
+                      const KeyCode& modifierCode,
+                      const KeyCode& rotaryButtonAxisKeyCode,
+                      const KeyCode& rotaryButtonFeedKeyCode,
+                      int8_t handWheelStepCount);
     void dispatchAxisEventToHal(const KeyCode& axis, bool isActive);
     void dispatchFeedToHal();
 };
@@ -849,4 +886,5 @@ private:
 // ----------------------------------------------------------------------
 
 std::ostream& operator<<(std::ostream& os, const Pendant& data);
+
 }
