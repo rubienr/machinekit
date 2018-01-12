@@ -71,6 +71,7 @@ public:
     virtual ~UsbInputPackageInterpreted();
 };
 
+/*
 // ----------------------------------------------------------------------
 
 class MachineConfiguration
@@ -90,7 +91,7 @@ private:
     //! The maximum velocity for any axis in machine units per second (same unit as \ref mScale).
     float mMaxVelocity;
 };
-
+*/
 
 // ----------------------------------------------------------------------
 
@@ -152,7 +153,7 @@ public:
     //size_t getHalPinNumber(const WhbSoftwareButton& button);
     void offerHalMemory();
 
-    void setMachineConfig(const MachineConfiguration& machineConfig);
+    //void setMachineConfig(const MachineConfiguration& machineConfig);
 
 private:
     const char* mName;
@@ -175,7 +176,7 @@ private:
     UsbInputPackageListener   & packageReceivedEventReceiver;
     UsbInputPackageInterpreted& packageInterpretedEventReceiver;
     bool                 mIsCrcDebuggingEnabled;
-    MachineConfiguration mMachineConfig;
+    //MachineConfiguration mMachineConfig;
     Pendant              mPendant;
 
     //! prints human readable output of the push buttons state

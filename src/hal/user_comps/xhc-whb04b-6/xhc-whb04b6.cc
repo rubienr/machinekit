@@ -356,7 +356,7 @@ WhbContext::WhbContext() :
         packageReceivedEventReceiver(*this),
         packageInterpretedEventReceiver(*this),
         mIsCrcDebuggingEnabled(false),
-        mMachineConfig(),
+//        mMachineConfig(),
         mPendant(mHal, mUsb.getOutputPackageData())
 {
     setSimulationMode(true);
@@ -1360,6 +1360,7 @@ void WhbContext::dispatchAxisEventToHal(const WhbKeyCode& axis, bool isActive)
     }
 }
 */
+    /*
 void WhbContext::setMachineConfig(const MachineConfiguration& machineConfig)
 {
     *mInitCout << "init  setting machine configuration to scale="
@@ -1412,4 +1413,5 @@ MachineConfiguration& MachineConfiguration::operator=(const MachineConfiguration
     mMaxVelocity = other.mMaxVelocity;
     return *this;
 }
+     */
 }

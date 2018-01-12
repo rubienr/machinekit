@@ -51,11 +51,10 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
     {
         os = &std::cerr;
     }
-    XhcWhb04b6::MachineConfiguration m;
     *os << programName << " version " << PACKAGE_VERSION << " " << __DATE__ << " " << __TIME__ << endl
         << endl
         << "SYNOPSIS" << endl
-        << "    " << programName << " [-h] | [-H] [OPTIONS] " << endl
+        << "    " << programName << " [-h | --help] | [-H] [OPTIONS] " << endl
         << endl
         << "NAME" << endl
         << "    " << programName << " - jog dial HAL component for the " << deviceName << " device" << endl
@@ -65,49 +64,40 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
         << "and exposes them to HAL via HAL pins." << endl
         << endl
         << "OPTIONS" << endl
-        << " -h " << endl
+        << " -h, --help" << endl
         << "    Prints the synopsis and the most commonly used commands." << endl
         << endl
         << " -H " << endl
-        << "    run " << programName << " in HAL-mode instead of interactive mode. When in HAL mode "
+        << "    Run " << programName << " in HAL-mode instead of interactive mode. When in HAL mode "
         << "commands from device will be exposed to HAL's shred memory. Interactive mode is useful for "
         << "testing device connectivity and debugging." << endl
         << endl
-        << " -t " << endl
+        << " -t" << endl
         << "    Wait with timeout for USB device then proceed, exit otherwise. Without -t the timeout is "
         << "implicitly infinite." << endl
         << endl
-        << " -u, -U " << endl
+        << " -u, -U" << endl
         << "    Show received data from device. With -U received and transmitted data will be printed. "
         << "Output is prefixed with \"usb\"." << endl
         << endl
-        << " -p " << endl
+        << " -p" << endl
         << "    Show HAL pins and HAL related messages. Output is prefixed with \"hal\"." << endl
         << endl
-        << " -e " << endl
+        << " -e" << endl
         << "    Show captured events such as button pressed/released, jog dial, axis rotary button, and "
-            "feed rotary button event. Output is prefixed with \"event\"."
-        << "and in case." << endl
+            "feed rotary button event. Output is prefixed with \"event\"." << endl
         << endl
-        << " -a " << endl
+        << " -a" << endl
         << "    Enable all logging facilities without explicitly specifying each." << endl
         //! this feature must be removed when checksum check is implemented
         << endl
-        << " -c " << endl
+        << " -c" << endl
         << "    Enable checksum output which is necessary for debugging the checksum generator function. Do not rely "
-            "on this featue since it will be removed once the generator is implemented." << endl
+            "on this feature since it will be removed once the generator is implemented." << endl
         << endl
         << " -n " << endl
         << "    Force being silent and not printing any output except of errors. This will also inhibit messages "
             "prefixed with \"init\"." << endl
-        << endl
-        << " -s <scale>" << endl // TODO: remove scale
-        << "    Specifies the number of pulses that corresponds to a move of one machine unit in [mm] or [inch]. "
-            "Default is " << m.getScale() << "." << endl
-        << endl
-        << " -v <max_velocity>" << endl // TODO: remove max velocity
-        << "    The maximum velocity for any axis in machine units per second (same unit as -s). "
-            "Default is " << m.getMaxVelocity() << "." << endl
         << endl
         << "EXAMPLES" << endl
         << programName << " -ue" << endl
@@ -170,12 +160,9 @@ int main(int argc, char** argv)
     XhcWhb04b6::WhbContext whb;
     Whb = &whb;
 
-    XhcWhb04b6::MachineConfiguration machineConfig(80, 10 * 80);
     const char* optargs = "phaeHuctnUs:v:";
     for (int opt = getopt(argc, argv, optargs); opt != -1; opt = getopt(argc, argv, optargs))
     {
-        float scale, maxVelocity;
-
         switch (opt)
         {
             case 'H':
@@ -212,20 +199,6 @@ int main(int argc, char** argv)
                 break;
             case 'n':
                 break;
-            case 's': // TODO: remove
-                if (!parseFloat(optarg, scale))
-                {
-                    return EXIT_FAILURE;
-                }
-                machineConfig.setScale(scale);
-                break;
-            case 'v': // TODO: remove
-                if (!parseFloat(optarg, maxVelocity))
-                {
-                    return EXIT_FAILURE;
-                }
-                machineConfig.setMaxVelocity(maxVelocity);
-                break;
             case 'h':
                 return printUsage(basename(argv[0]), whb.getName());
                 break;
@@ -237,7 +210,6 @@ int main(int argc, char** argv)
 
     registerSignalHandler();
 
-    whb.setMachineConfig(machineConfig);
     whb.run();
 
     //! hotfix for https://github.com/machinekit/machinekit/issues/1266
