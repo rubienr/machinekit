@@ -211,7 +211,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 |:------|:--------|:---------------------------------------------------------------------|:--------------------|:-:|
 | 0x00  | [0:15]  | header, **unclear if different headers (commands) can be sent**      | constant 0xfdfe     | * |
 | 0x02  | [0:7]   | seed                                                                 |                     | * |
-| 0x03  | [0:1]   | display indicator flags: step mode                                   | see [A1](#display-examples), Caution: Step mode is interpreted even if rotary button has invalid step position (i.e. 100%). Misleading display information is shown "STEP: 1.0". **condider this as FW bug** |   |
+| 0x03  | [0:1]   | display indicator flags: step mode                                   | See [A1, A2](#display-examples): If set step mode, continuous mode otherwise. Caution: Step mode is interpreted even if rotary button has an invalid step position (i.e. 100%). A misleading display information is shown as "STEP: 1.0" and **we consider this as FW bug**. |   |
 | 0x03  | [2:5]   | display indicator flags: **unknown**                                 |                     | [\*](#display-examples) |
 | 0x03  | [6:6]   | display indicator flags: reset                                       | see [C2](#display-examples)|   |
 | 0x03  | [7:7]   | display indicator flags: machine coordinate                          | see [C3, D1](#display-examples), if set workpiece coordinates, machine coordinates otherwise|   |
