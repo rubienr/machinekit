@@ -78,20 +78,12 @@ public:
         //! to be connected to \ref stepgen.05.position-scale
         hal_float_t* stepgenCPositionScale;
 
-        //! to be connected to \ref halui.feed-override.value
-        hal_float_t* feedOverrideValue;
-
         //! to be connected to \ref halui.spindle.is-on
         hal_bit_t  * spindleIsOn;
         //! to be connected to \ref halui.spindle-override.value
         hal_float_t* spindleOverrideValue;
-        //// TODO: where should it be connected to
-        //hal_float_t* spindleRps;
-        //! to be connected to \ref halui.max-velocity.value
-        //hal_float_t* jogMaxVelocity;
-        // TODO: where should it be connected to
-        //hal_bit_t  * stepsizeUp;
-        //! to be connected to \ref halui.program.is-running// system includes
+
+        //! to be connected to \ref halui.program.is-running
         hal_bit_t  * isProgramRunning;
         //! to be connected to \ref halui.program.is-paused
         hal_bit_t  * isProgramPaused;
@@ -174,19 +166,27 @@ public:
         //! to be connected to \ref axis.5.jog-vel-mode
         hal_bit_t* axisCSetVelocityMode;
 
-        //! Incremental jog counter. Counts will be consumed by icomp.
-        //hal_s32_t* jogCount;
-        //hal_s32_t* jogCountNeg;
-        //hal_float_t* jogVelocity;
-
         //! to be connected to \ref halui.spindle.start
         hal_bit_t *spindleStart;
         //! to be connected to \ref halui.spindle.stop
         hal_bit_t *spindleStop;
+
+        hal_bit_t* feedValueSelected0_001;
+        hal_bit_t* feedValueSelected0_01;
+        hal_bit_t* feedValueSelected0_1;
+        hal_bit_t* feedValueSelected1_0;
+
+        //! to be connected to \ref  \ref halui.feed-override.scale
+        hal_float_t* feedOverrideScale;
+        //! to be connected to \ref halui.feed-override.direct-value
+        hal_bit_t* feedOverrideDirectValue;
+        //! to be connected to \ref halui.feed-override.counts
+        hal_s32_t* feedOverrideCounts;
         //! to be connected to \ref halui.feed-override.decrease
         hal_bit_t* feedOverrideDecrease;
         //! to be connected to \ref halui.feed-override.increase
         hal_bit_t* feedOverrideIncrease;
+
         //! to be connected to halui.spindle.decrease
         hal_bit_t* spindleDoDecrease;
         //! to be connected to halui.spindle.increase
@@ -226,14 +226,10 @@ public:
         //!to be connected to \ref halui.joint.N.select
         hal_bit_t  * jointCSelect;
 
-        //// TODO: where should it be connected to
-        //hal_s32_t* stepsize;
         //! reflects the pendandt's idle state
         hal_bit_t* isPendantSleeping;
         //! reflects pendant's connectivity
         hal_bit_t* isPendantConnected;
-        //// TODO: remove since this is not needed to be exposed
-        //hal_bit_t* isPendantRequired;
 
         //! to be connected to \ref halui.program.run
         hal_bit_t* doRunProgram;
@@ -350,6 +346,19 @@ public:
     void setFeedPlus(bool enabled);
     //! \sa setReset(bool, size_t)
     void setFeedMinus(bool enabled);
+
+    // \xrefitem HalMemory::Out::feedOverrideCounts setter
+    void setFeedOverrideCounts(hal_s32_t counts);
+    // \xrefitem HalMemory::Out::feedOverrideScale setter
+    void setFeedOverrideScale(hal_float_t scale);
+    // \xrefitem HalMemory::Out::feedOverrideDirectValue setter
+    void setFeedOverrideDirectValue(bool enabled);
+
+    void setFeedValueSelected0_001(bool selected);
+    void setFeedValueSelected0_01(bool selected);
+    void setFeedValueSelected0_1(bool selected);
+    void setFeedValueSelected1_0(bool selected);
+
     //! \sa setReset(bool, size_t)
     void setSpindlePlus(bool enabled);
     //! \sa setReset(bool, size_t)

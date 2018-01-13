@@ -65,7 +65,6 @@ WhbHalMemory::In::In() :
     stepgenAPositionScale(nullptr),
     stepgenBPositionScale(nullptr),
     stepgenCPositionScale(nullptr),
-    feedOverrideValue(nullptr),
     spindleIsOn(nullptr),
     spindleOverrideValue(nullptr),
     //spindleRps(nullptr),
@@ -120,6 +119,13 @@ WhbHalMemory::Out::Out() :
     //jogVelocity(nullptr),
         spindleStart(nullptr),
         spindleStop(nullptr),
+        feedValueSelected0_001(nullptr),
+        feedValueSelected0_01(nullptr),
+        feedValueSelected0_1(nullptr),
+        feedValueSelected1_0(nullptr),
+        feedOverrideScale(nullptr),
+        feedOverrideDirectValue(nullptr),
+        feedOverrideCounts(nullptr),
         feedOverrideDecrease(nullptr),
         feedOverrideIncrease(nullptr),
         spindleDoDecrease(nullptr),
@@ -214,8 +220,14 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->in.stepgenAPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenBPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenCPositionScale));
+    freeSimulatedPin((void**)(&memory->out.feedOverrideScale));
 
-    freeSimulatedPin((void**)(&memory->in.feedOverrideValue));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_001));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_01));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_1));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected1_0));
+
+
 
     freeSimulatedPin((void**)(&memory->in.spindleIsOn));
     freeSimulatedPin((void**)(&memory->in.spindleOverrideValue));
@@ -253,9 +265,8 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->out.axisBSetVelocityMode));
     freeSimulatedPin((void**)(&memory->out.axisCSetVelocityMode));
 
-    //freeSimulatedPin((void**)(&memory->out.jogCount));
-    //freeSimulatedPin((void**)(&memory->out.jogCountNeg));
-    //freeSimulatedPin((void**)(&memory->out.jogVelocity));
+    freeSimulatedPin((void**)(&memory->out.feedOverrideDirectValue));
+    freeSimulatedPin((void**)(&memory->out.feedOverrideCounts));
     freeSimulatedPin((void**)(&memory->out.feedOverrideDecrease));
     freeSimulatedPin((void**)(&memory->out.feedOverrideIncrease));
     freeSimulatedPin((void**)(&memory->out.spindleStart));
@@ -320,6 +331,8 @@ int WhbHal::newHalFloat(hal_pin_dir_t direction, hal_float_t** ptr, int componen
     vsprintf(pin_name, fmt, args);
     va_end(args);
 
+    assert(strlen(pin_name) < HAL_NAME_LEN);
+
     *mHalCout << "hal   float ";
     if (direction == HAL_OUT)
     {
@@ -356,6 +369,8 @@ int WhbHal::newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int compone
     vsprintf(pin_name, fmt, args);
     va_end(args);
 
+    assert(strlen(pin_name) < HAL_NAME_LEN);
+
     *mHalCout << "hal   s32   ";
     if (direction == HAL_OUT)
     {
@@ -391,6 +406,8 @@ int WhbHal::newHalBit(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId,
     va_start(args, fmt);
     vsprintf(pin_name, fmt, args);
     va_end(args);
+
+    assert(strlen(pin_name) < HAL_NAME_LEN);
 
     *mHalCout << "hal   bit   ";
     if (direction == HAL_OUT)
@@ -549,7 +566,16 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalFloat(HAL_IN, &(memory->in.stepgenCMaxVelocity), mHalCompId, "%s.stepgen.05.maxvel", mComponentPrefix);
     newHalFloat(HAL_IN, &(memory->in.stepgenCPositionScale), mHalCompId, "%s.stepgen.05.position-scale", mComponentPrefix);
 
-    newHalFloat(HAL_IN, &(memory->in.feedOverrideValue), mHalCompId, "%s.halui.feed-override.value", mComponentPrefix);
+
+
+    newHalBit(HAL_OUT, &(memory->out.feedValueSelected0_001), mHalCompId, "%s.halui.feed.selected-0.001", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.feedValueSelected0_01), mHalCompId, "%s.halui.feed.selected-0.01", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.feedValueSelected0_1), mHalCompId, "%s.halui.feed.selected-0.1", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.feedValueSelected1_0), mHalCompId, "%s.halui.feed.selected-1.0", mComponentPrefix);
+
+    newHalFloat(HAL_OUT, &(memory->out.feedOverrideScale), mHalCompId, "%s.halui.feed-override.scale", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.feedOverrideDirectValue), mHalCompId, "%s.halui.feed-override.direct-val", mComponentPrefix);
+    newHalSigned32(HAL_OUT, &(memory->out.feedOverrideCounts), mHalCompId, "%s.halui.feed-override.counts", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedOverrideDecrease), mHalCompId, "%s.halui.feed-override.decrease", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedOverrideIncrease), mHalCompId, "%s.halui.feed-override.increase",
               mComponentPrefix);
@@ -835,6 +861,55 @@ void WhbHal::setFeedMinus(bool enabled)
 
 // ----------------------------------------------------------------------
 
+void WhbHal::setFeedOverrideDirectValue(bool enabled)
+{
+    *memory->out.feedOverrideDirectValue = enabled;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setFeedOverrideCounts(hal_s32_t counts)
+{
+    *memory->out.feedOverrideCounts = counts;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setFeedValueSelected0_001(bool selected)
+{
+    *memory->out.feedValueSelected0_001 = selected;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setFeedValueSelected0_01(bool selected)
+{
+    *memory->out.feedValueSelected0_01 = selected;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setFeedValueSelected0_1(bool selected)
+{
+    *memory->out.feedValueSelected0_1 = selected;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setFeedValueSelected1_0(bool selected)
+{
+    *memory->out.feedValueSelected1_0 = selected;
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::setFeedOverrideScale(hal_float_t  scale)
+{
+    *memory->out.feedOverrideScale = scale;
+}
+
+// ----------------------------------------------------------------------
+
 void WhbHal::setSpindlePlus(bool enabled)
 {
     if (enabled)
@@ -1112,7 +1187,7 @@ void WhbHal::setPin(bool enabled, const char* pinName)
 
 void WhbHal::newJogDialDelta(int8_t delta)
 {
-    //*memory->out.jogCount += delta;
+    // *memory->out.jogCount += delta;
 
     std::ios init(NULL);
     init.copyfmt(*mHalCout);

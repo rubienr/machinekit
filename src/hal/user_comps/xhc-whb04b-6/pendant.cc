@@ -1539,14 +1539,14 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
     {
         mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::CONTINUOUS);
         mHal.setContinuousMode(true);
-        dispatchFeedToHal();
+        dispatchFeedValueToHal();
         return true;
     }
     else if (metaButton == KeyCodes::Meta.step_continuous)
     {
         mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::STEP);
         mHal.setStepMode(true);
-        dispatchFeedToHal();
+        dispatchFeedValueToHal();
         return true;
     }
     else if (metaButton == KeyCodes::Meta.macro11)
@@ -1815,31 +1815,73 @@ void Pendant::onFeedActiveEvent(const KeyCode& feed)
 {
     (*mPendantCout) << mPrefix << "feed   active   event feed=" << feed
                   << " feedButton=" << mCurrentButtonsState.feedButton() << endl;
-    dispatchFeedToHal();
+    dispatchFeedValueToHal();
+    dispatchActiveFeedToHal(feed, true);
     mDisplay.onFeedActiveEvent(feed);
 }
 
 // ----------------------------------------------------------------------
 
-void Pendant::dispatchFeedToHal()
+void Pendant::dispatchActiveFeedToHal(const KeyCode& feed, bool isActive)
+{
+    if (feed.code == KeyCodes::Feed.speed_0_001.code)
+    {
+        mHal.setFeedValueSelected0_001(isActive);
+    }
+    else if (feed.code == KeyCodes::Feed.speed_0_01.code)
+    {
+        mHal.setFeedValueSelected0_01(isActive);
+    }
+    else if (feed.code == KeyCodes::Feed.speed_0_1.code)
+    {
+        mHal.setFeedValueSelected0_1(isActive);
+    }
+    else if (feed.code == KeyCodes::Feed.speed_1.code)
+    {
+        mHal.setFeedValueSelected1_0(isActive);
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void Pendant::dispatchFeedValueToHal()
 {
     FeedRotaryButton& feedButton = mCurrentButtonsState.feedButton();
     if (feedButton.isPermitted()) {
         mHal.setJogWheelStepMode(feedButton.stepMode());
 
-        float stepSize = 0;
+        float axisJogStepSize = 0;
 
         if (feedButton.stepMode() == HandwheelStepmodes::Mode::STEP)
         {
-            stepSize = feedButton.stepSize();
+            hal_float_t scale = 0.1;
+            mHal.setFeedOverrideScale(scale);
+            mHal.setFeedOverrideDirectValue(false);
+            axisJogStepSize = feedButton.stepSize();
         }
         else if (feedButton.stepMode() == HandwheelStepmodes::Mode::CONTINUOUS)
         {
-            //stepSize = 0.1;
-            stepSize = 2;
-            //TODO: set max-velocity or feed-override to the percentage value
+            // On velocity mode set feed-override value to absolute percentage value: counts*scale.
+            axisJogStepSize = 2;
+            mHal.setFeedOverrideDirectValue(true);
+            float feedButtonStepSize  = feedButton.stepSize();
+            if (feedButtonStepSize >= 10)
+            {
+                // on velocity >= 10%: set a coarse grained scale,
+                // this also affects the Feed+/- increment
+                mHal.setFeedOverrideScale(0.1);
+                mHal.setFeedOverrideCounts(feedButtonStepSize * 0.1);
+            }
+            else
+            {
+                // on velocity < 10%: set a fine grained scale,
+                // this also affects the Feed+/- increment
+                mHal.setFeedOverrideScale(0.01);
+                mHal.setFeedOverrideCounts(feedButtonStepSize * 1);
+            }
+
         }
-        mHal.setStepSize(stepSize);
+        mHal.setStepSize(axisJogStepSize);
     }
     else
     {
@@ -1853,6 +1895,7 @@ void Pendant::onFeedInactiveEvent(const KeyCode& feed)
 {
     *mPendantCout << mPrefix << "feed   inactive event feed=" << feed
                   << " feedButton=" << mCurrentButtonsState.feedButton() << endl;
+    dispatchActiveFeedToHal(feed, false);
     mDisplay.onFeedInactiveEvent(feed);
 }
 

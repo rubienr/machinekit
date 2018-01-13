@@ -880,7 +880,8 @@ private:
                       const KeyCode& rotaryButtonFeedKeyCode,
                       int8_t handWheelStepCount);
     void dispatchAxisEventToHal(const KeyCode& axis, bool isActive);
-    void dispatchFeedToHal();
+    void dispatchActiveFeedToHal(const KeyCode& feed, bool isActive);
+    void dispatchFeedValueToHal();
 };
 
 // ----------------------------------------------------------------------
