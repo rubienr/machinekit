@@ -1,4 +1,4 @@
-# XHC WHB04B-6 pendant HAL component
+# XHC WHB04B-6 Pendant Component - Developer Information
 
 * [Introduction](#introduction)
 * [Pendant layout](#pendant-layout)
