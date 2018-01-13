@@ -211,12 +211,12 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 |:------|:--------|:---------------------------------------------------------------------|:--------------------|:-:|
 | 0x00  | [0:15]  | header, **unclear if different headers (commands) can be sent**      | constant 0xfdfe     | * |
 | 0x02  | [0:7]   | seed                                                                 |                     | * |
-| 0x03  | [0:1]   | display indicator flags: step mode                                   | see [A1](#display-examples)|   |
+| 0x03  | [0:1]   | display indicator flags: step mode                                   | see [A1](#display-examples), Caution: Step mode is interpreted even if rotary button has invalid step position (i.e. 100%). Misleading display information is shown "STEP: 1.0". **condider this as FW bug** |   |
 | 0x03  | [2:5]   | display indicator flags: **unknown**                                 |                     | [\*](#display-examples) |
 | 0x03  | [6:6]   | display indicator flags: reset                                       | see [C2](#display-examples)|   |
-| 0x03  | [7:7]   | display indicator flags: machine coordinate                          | see [C3, D1](#display-examples)|   |
+| 0x03  | [7:7]   | display indicator flags: machine coordinate                          | see [C3, D1](#display-examples), if set workpiece coordinates, machine coordinates otherwise|   |
 | 0x04  | [0:15]  | axis coordinate on display line 1: integer value                     |                     |   |
-| 0x06  | [0:14]  | axis coordinate on display line 1: fraction value                    | 15bit width but device cuts off to 4 digits, **seems to be a firmware bug** | |
+| 0x06  | [0:14]  | axis coordinate on display line 1: fraction value                    | 15bit width but device cuts off to 4 digits, **we consider this as FW bug** | |
 | 0x06  | [15:15] | axis coordinate on display line 1: sign                              |                     |   |
 | 0x08  | [0:15]  | axis coordinate on display line 2: integer value                     |                     |   |
 | 0x10  | [0:14]  | axis coordinate on display line 2: fraction value                    | **same as axis 1**  |   |
@@ -226,7 +226,6 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | 0x14  | [15:15] | axis coordinate on display line 3: sign                              | **same as axis 1**  |   |
 | 0x16  | [0:15]  | feed rate                                                            | see [B2](#display-examples)|   |
 | 0x18  | [0:15]  | spindle speed                                                        | see [B3, C1](#display-examples)|   |
-| 0x20  | [0:x]   | **unclear if axis A, B, C, X1, Y1, Z1, A1, B1, C1 are also transmitted or just coordinates for lines 1-3**   |                     | * |
 | 0x20  | [0:x]   | unclear if the device interprets subsequent bytes                    |                     | * |
 | 0xn   | [0:x]   | the **maximum length** is also **unclear**                           |                     | * |
 
@@ -283,7 +282,7 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | lead                        | 0x1c     | Lead        | &lt;NA&gt;              |
 | &lt;no button pressed&gt;   | 0x00     | &lt;NA&gt;  | &lt;NA&gt;              |
 
-|  Feed Rotary Button Name    | Key Code | Button Text | Button Alternative Text |
+|  Axis Rotary Button Name    | Key Code | Button Text | Button Alternative Text |
 |:----------------------------|:---------|:------------|:------------------------|
 | off                         | 0x06     | OFF         | &lt;NA&gt;              |
 | x                           | 0x11     | X           | &lt;NA&gt;              |
