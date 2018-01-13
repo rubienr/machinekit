@@ -53,6 +53,32 @@ public:
     {
     public:
 
+        //! to be connected to \ref halui.axis.0.pos-feedback
+        hal_float_t* axisXPosition;
+        //! to be connected to \ref halui.axis.1.pos-feedback
+        hal_float_t* axisYPosition;
+        //! to be connected to \ref halui.axis.2.pos-feedback
+        hal_float_t* axisZPosition;
+        //! to be connected to \ref halui.axis.3.pos-feedback
+        hal_float_t* axisAPosition;
+        //! to be connected to \ref halui.axis.4.pos-feedback
+        hal_float_t* axisBPosition;
+        //! to be connected to \ref halui.axis.5.pos-feedback
+        hal_float_t* axisCPosition;
+
+        //! to be connected to \ref halui.axis.0.pos-relative
+        hal_float_t* axisXPositionRelative;
+        //! to be connected to \ref halui.axis.1.pos-relative
+        hal_float_t* axisYPositionRelative;
+        //! to be connected to \ref halui.axis.2.pos-relative
+        hal_float_t* axisZPositionRelative;
+        //! to be connected to \ref halui.axis.3.pos-relative
+        hal_float_t* axisAPositionRelative;
+        //! to be connected to \ref halui.axis.4.pos-relative
+        hal_float_t* axisBPositionRelative;
+        //! to be connected to \ref halui.axis.5.pos-relative
+        hal_float_t* axisCPositionRelative;
+
         //! to be connected to \ref stepge.00.maxvel
         hal_float_t* stepgenXMaxVelocity;
         //! to be connected to \ref stepge.01.maxvel
@@ -430,6 +456,21 @@ public:
     bool jogStep(int8_t direction);
 */
     void doJogCounts(int32_t counts);
+
+    //! Returns the axis position.
+    //! \param absolute true absolute, false relative
+    //! \return the absolute or relative position in machine units
+    hal_float_t getAxisXPosition(bool absolute) const;
+    //! \xrefitem getAxisXPosition(bool)
+    hal_float_t getAxisYPosition(bool absolute) const;
+    //! \xrefitem getAxisXPosition(bool)
+    hal_float_t getAxisZPosition(bool absolute) const;
+    //! \xrefitem getAxisXPosition(bool)
+    hal_float_t getAxisAPosition(bool absolute) const;
+    //! \xrefitem getAxisXPosition(bool)
+    hal_float_t getAxisBPosition(bool absolute) const;
+    //! \xrefitem getAxisXPosition(bool)
+    hal_float_t getAxisCPosition(bool absolute) const;
 
 private:
     bool mIsSimulationMode;

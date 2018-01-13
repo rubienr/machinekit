@@ -85,7 +85,7 @@ public:
     //! if flag set displays "RESET", \ref stepMode otherwise
     uint8_t isReset             : 1;
     //! if flag set axis names are "X1" "X1" ... "C1", "X" "Y" ... "C" otherwise
-    uint8_t isMachineCoordinate : 1;
+    uint8_t isRelatvieCoordinate : 1;
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------

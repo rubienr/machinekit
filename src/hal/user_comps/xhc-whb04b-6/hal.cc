@@ -53,6 +53,18 @@ WhbHalMemory::~WhbHalMemory()
 
 
 WhbHalMemory::In::In() :
+    axisXPosition(nullptr),
+    axisYPosition(nullptr),
+    axisZPosition(nullptr),
+    axisAPosition(nullptr),
+    axisBPosition(nullptr),
+    axisCPosition(nullptr),
+    axisXPositionRelative(nullptr),
+    axisYPositionRelative(nullptr),
+    axisZPositionRelative(nullptr),
+    axisAPositionRelative(nullptr),
+    axisBPositionRelative(nullptr),
+    axisCPositionRelative(nullptr),
     stepgenXMaxVelocity(nullptr),
     stepgenYMaxVelocity(nullptr),
     stepgenZMaxVelocity(nullptr),
@@ -206,6 +218,20 @@ WhbHal::~WhbHal()
     {
         return;
     }
+
+
+    freeSimulatedPin((void**)(&memory->in.axisXPosition));
+    freeSimulatedPin((void**)(&memory->in.axisYPosition));
+    freeSimulatedPin((void**)(&memory->in.axisZPosition));
+    freeSimulatedPin((void**)(&memory->in.axisAPosition));
+    freeSimulatedPin((void**)(&memory->in.axisBPosition));
+    freeSimulatedPin((void**)(&memory->in.axisCPosition));
+    freeSimulatedPin((void**)(&memory->in.axisXPositionRelative));
+    freeSimulatedPin((void**)(&memory->in.axisYPositionRelative));
+    freeSimulatedPin((void**)(&memory->in.axisZPositionRelative));
+    freeSimulatedPin((void**)(&memory->in.axisAPositionRelative));
+    freeSimulatedPin((void**)(&memory->in.axisBPositionRelative));
+    freeSimulatedPin((void**)(&memory->in.axisCPositionRelative));
 
     freeSimulatedPin((void**)(&memory->in.stepgenXMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenYMaxVelocity));
@@ -548,6 +574,20 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_OUT, &(memory->out.isPendantConnected), mHalCompId, "%s.pendant.is-connected", mComponentPrefix);
     //newHalBit(HAL_OUT, &(memory->out.isPendantRequired), mHalCompId, "%s.pendant.is-required", mComponentPrefix);
 
+    newHalFloat(HAL_IN, &(memory->in.axisXPosition), mHalCompId, "%s.halui.axis.0.pos-feedback", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisYPosition), mHalCompId, "%s.halui.axis.1.pos-feedback", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisZPosition), mHalCompId, "%s.halui.axis.2.pos-feedback", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisAPosition), mHalCompId, "%s.halui.axis.3.pos-feedback", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisBPosition), mHalCompId, "%s.halui.axis.4.pos-feedback", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisCPosition), mHalCompId, "%s.halui.axis.5.pos-feedback", mComponentPrefix);
+
+    newHalFloat(HAL_IN, &(memory->in.axisXPositionRelative), mHalCompId, "%s.halui.axis.0.pos-relative", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisYPositionRelative), mHalCompId, "%s.halui.axis.1.pos-relative", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisZPositionRelative), mHalCompId, "%s.halui.axis.2.pos-relative", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisAPositionRelative), mHalCompId, "%s.halui.axis.3.pos-relative", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisBPositionRelative), mHalCompId, "%s.halui.axis.4.pos-relative", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisCPositionRelative), mHalCompId, "%s.halui.axis.5.pos-relative", mComponentPrefix);
+
     newHalFloat(HAL_IN, &(memory->in.stepgenXMaxVelocity), mHalCompId, "%s.stepgen.00.maxvel", mComponentPrefix);
     newHalFloat(HAL_IN, &(memory->in.stepgenXPositionScale), mHalCompId, "%s.stepgen.00.position-scale", mComponentPrefix);
 
@@ -565,8 +605,6 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
 
     newHalFloat(HAL_IN, &(memory->in.stepgenCMaxVelocity), mHalCompId, "%s.stepgen.05.maxvel", mComponentPrefix);
     newHalFloat(HAL_IN, &(memory->in.stepgenCPositionScale), mHalCompId, "%s.stepgen.05.position-scale", mComponentPrefix);
-
-
 
     newHalBit(HAL_OUT, &(memory->out.feedValueSelected0_001), mHalCompId, "%s.halui.feed.selected-0.001", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedValueSelected0_01), mHalCompId, "%s.halui.feed.selected-0.01", mComponentPrefix);
@@ -645,6 +683,71 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
 
     newHalBit(HAL_OUT, &(memory->out.homeAll), mHalCompId, "%s.halui.home-all", mComponentPrefix);
 }
+
+// ----------------------------------------------------------------------
+
+hal_float_t WhbHal::getAxisXPosition(bool absolute) const
+{
+    if (absolute)
+    {
+        return *memory->in.axisXPosition;
+    }
+    return *memory->in.axisXPositionRelative;
+}
+
+// ----------------------------------------------------------------------
+
+hal_float_t WhbHal::getAxisYPosition(bool absolute) const
+{
+    if (absolute)
+    {
+        return *memory->in.axisYPosition;
+    }
+    return *memory->in.axisYPositionRelative;
+}
+
+// ----------------------------------------------------------------------
+
+hal_float_t WhbHal::getAxisZPosition(bool absolute) const
+{
+    if (absolute)
+    {
+        return *memory->in.axisZPosition;
+    }
+    return *memory->in.axisZPositionRelative;
+}
+
+// ----------------------------------------------------------------------
+
+hal_float_t WhbHal::getAxisAPosition(bool absolute) const
+{
+    if (absolute)
+    {
+        return *memory->in.axisAPosition;
+    }
+    return *memory->in.axisAPositionRelative;
+}
+
+// ----------------------------------------------------------------------
+hal_float_t WhbHal::getAxisBPosition(bool absolute) const
+{
+    if (absolute)
+    {
+        return *memory->in.axisBPosition;
+    }
+    return *memory->in.axisBPositionRelative;
+}
+
+// ----------------------------------------------------------------------
+hal_float_t WhbHal::getAxisCPosition(bool absolute) const
+{
+    if (absolute)
+    {
+        return *memory->in.axisCPosition;
+    }
+    return *memory->in.axisCPositionRelative;
+}
+
 
 // ----------------------------------------------------------------------
 

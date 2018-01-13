@@ -803,7 +803,11 @@ std::ostream& operator<<(std::ostream& os, const ButtonsState& data);
 
     class Display : public KeyEventListener {
     public:
-        Display(WhbHal &hal, WhbUsbOutPackageData &displayData);
+
+        enum class AxisPositionMethod { RELATIVE, ABSOLUTE};
+        enum class AxisGroup { XYZ, ABC };
+
+        Display(const ButtonsState &currentButtonsState, WhbHal &hal, WhbUsbOutPackageData &displayData);
 
         Display();
 
@@ -826,8 +830,11 @@ std::ostream& operator<<(std::ostream& os, const ButtonsState& data);
         void updateData();
 
     private:
+        const ButtonsState &mCurrentButtonsState;
         WhbHal &mHal;
         WhbUsbOutPackageData &mDisplayData;
+        AxisPositionMethod mAxisPositionMethod;
+        AxisGroup mActiveAxisGroup;
     };
 
 // ----------------------------------------------------------------------

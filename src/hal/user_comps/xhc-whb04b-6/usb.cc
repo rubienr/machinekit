@@ -268,9 +268,6 @@ void WhbUsb::sendDisplayData()
 {
     outputPackageBuffer.asBlocks.init(&outputPackageData);
 
-    static uint16_t u = 0;
-    outputPackageData.row1Coordinate.setCoordinate(++u);
-
     if (mIsSimulationMode)
     {
         *verboseTxOut << "out   0x" << outputPackageBuffer.asBlocks << endl <<

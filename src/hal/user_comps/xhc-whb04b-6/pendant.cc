@@ -1349,7 +1349,7 @@ FeedRotaryButton& ButtonsState::feedButton()
             mPreviousButtonsState(this),
             mCurrentButtonsState(this, &mPreviousButtonsState),
             mHandWheel(mCurrentButtonsState.feedButton(), this),
-            mDisplay(hal, displayOutData),
+            mDisplay(mCurrentButtonsState, hal, displayOutData),
             mPrefix("pndnt "),
             mPendantCout(&std::cout)
 {
@@ -1469,164 +1469,164 @@ Handwheel& Pendant::handWheel()
 bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
 {
     *mPendantCout << mPrefix << "button pressed  event metaButton=" << metaButton << endl;
-
+    bool isHandled = false;
     if (metaButton == KeyCodes::Meta.reset)
     {
         mHal.setReset(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.stop)
     {
         mHal.setStop(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.start)
     {
         mHal.setStart(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.feed_plus)
     {
         mHal.setFeedPlus(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.feed_minus)
     {
         mHal.setFeedMinus(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.spindle_plus)
     {
         mHal.setSpindlePlus(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.spindle_minus)
     {
         mHal.setSpindleMinus(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.machine_home)
     {
         mHal.setMachineHome(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.safe_z)
     {
         mHal.setSafeZ(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.workpiece_home)
     {
         mHal.setWorkpieceHome(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.spindle_on_off)
     {
         mHal.setSpindleOn(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.probe_z)
     {
         mHal.setProbeZ(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro10)
     {
         mHal.setMacro10(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.manual_pulse_generator)
     {
         mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::CONTINUOUS);
         mHal.setContinuousMode(true);
         dispatchFeedValueToHal();
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.step_continuous)
     {
         mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::STEP);
         mHal.setStepMode(true);
         dispatchFeedValueToHal();
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro11)
     {
         mHal.setMacro11(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro12)
     {
         mHal.setMacro12(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro13)
     {
         mHal.setMacro13(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro1)
     {
         mHal.setMacro1(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro2)
     {
         mHal.setMacro2(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro3)
     {
         mHal.setMacro3(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro4)
     {
         mHal.setMacro4(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro5)
     {
         mHal.setMacro5(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro6)
     {
         mHal.setMacro6(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro7)
     {
         mHal.setMacro7(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro8)
     {
         mHal.setMacro8(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro9)
     {
         mHal.setMacro9(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro14)
     {
         mHal.setMacro14(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro15)
     {
         mHal.setMacro15(true);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro16)
     {
         mHal.setMacro16(true);
-        return true;
+        isHandled = true;
     }
 
     mDisplay.onButtonPressedEvent(metaButton);
-    return false;
+    return isHandled;
 }
 
 // ----------------------------------------------------------------------
@@ -1634,159 +1634,160 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
 bool Pendant::onButtonReleasedEvent(const MetaButtonCodes& metaButton)
 {
     *mPendantCout << mPrefix << "button released event metaButton=" << metaButton << endl;
+    bool isHandled = false;
     if (metaButton == KeyCodes::Meta.reset)
     {
         mHal.setReset(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.stop)
     {
         mHal.setStop(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.start)
     {
         mHal.setStart(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.feed_plus)
     {
         mHal.setFeedPlus(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.feed_minus)
     {
         mHal.setFeedMinus(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.spindle_plus)
     {
         mHal.setSpindlePlus(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.spindle_minus)
     {
         mHal.setSpindleMinus(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.machine_home)
     {
         mHal.setMachineHome(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.safe_z)
     {
         mHal.setSafeZ(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.workpiece_home)
     {
         mHal.setWorkpieceHome(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.spindle_on_off)
     {
         mHal.setSpindleOn(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.probe_z)
     {
         mHal.setProbeZ(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro10)
     {
         mHal.setMacro10(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.manual_pulse_generator)
     {
         mHal.setContinuousMode(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.step_continuous)
     {
         mHal.setStepMode(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro11)
     {
         mHal.setMacro11(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro12)
     {
         mHal.setMacro12(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro13)
     {
         mHal.setMacro13(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro1)
     {
         mHal.setMacro1(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro2)
     {
         mHal.setMacro2(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro3)
     {
         mHal.setMacro3(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro4)
     {
         mHal.setMacro4(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro5)
     {
         mHal.setMacro5(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro6)
     {
         mHal.setMacro6(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro7)
     {
         mHal.setMacro7(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro8)
     {
         mHal.setMacro8(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro9)
     {
         mHal.setMacro9(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro14)
     {
         mHal.setMacro14(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro15)
     {
         mHal.setMacro15(false);
-        return true;
+        isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro16)
     {
         mHal.setMacro16(false);
-        return true;
+        isHandled = true;
     }
 
     mDisplay.onButtonReleasedEvent(metaButton);
-    return false;
+    return isHandled;
 }
 
 // ----------------------------------------------------------------------
@@ -1952,48 +1953,107 @@ void Pendant::dispatchAxisEventToHal(const KeyCode& axis, bool isActive)
 
 // ----------------------------------------------------------------------
 
-    Display::Display(WhbHal &hal, WhbUsbOutPackageData &displayData) :
-            mHal(hal),
-            mDisplayData(displayData) {
+Display::Display(const ButtonsState &currentButtonsState, WhbHal& hal, WhbUsbOutPackageData& displayData) :
+    mCurrentButtonsState(currentButtonsState),
+    mHal(hal),
+    mDisplayData(displayData),
+    mAxisPositionMethod(AxisPositionMethod::ABSOLUTE),
+    mActiveAxisGroup(AxisGroup::XYZ)
+{
+}
+
+// ----------------------------------------------------------------------
+
+Display::~Display()
+{
+}
+
+// ----------------------------------------------------------------------
+
+bool Display::onButtonPressedEvent(const MetaButtonCodes& metaButton)
+{
+    if (metaButton == KeyCodes::Meta.macro5)
+    {
+        mAxisPositionMethod = AxisPositionMethod::ABSOLUTE;
+        return true;
     }
-
-// ----------------------------------------------------------------------
-
-    Display::~Display() {}
-
-// ----------------------------------------------------------------------
-
-    bool Display::onButtonPressedEvent(const MetaButtonCodes &metaButton) { return false; }
-
-// ----------------------------------------------------------------------
-
-    bool Display::onButtonReleasedEvent(const MetaButtonCodes &metaButton) { return false; }
-
-// ----------------------------------------------------------------------
-
-    void Display::onAxisActiveEvent(const KeyCode &axis) {}
-
-// ----------------------------------------------------------------------
-
-    void Display::onAxisInactiveEvent(const KeyCode &axis) {}
-
-// ----------------------------------------------------------------------
-
-    void Display::onFeedActiveEvent(const KeyCode &axis) {}
-
-// ----------------------------------------------------------------------
-
-    void Display::onFeedInactiveEvent(const KeyCode &axis) {}
-
-// ----------------------------------------------------------------------
-
-    bool Display::onJogDialEvent(int32_t counts) { return false; }
-
-// ----------------------------------------------------------------------
-
-    void Display::updateData() {
-        mDisplayData.displayModeFlags.asBitFields.isReset = !(*mHal.memory->in.isMachineOn);
+    else if (metaButton == KeyCodes::Meta.macro7)
+    {
+        mAxisPositionMethod = AxisPositionMethod::RELATIVE;
+        return true;
     }
+    return false;
+}
 
+// ----------------------------------------------------------------------
+
+bool Display::onButtonReleasedEvent(const MetaButtonCodes& metaButton)
+{
+    return false;
+}
+
+// ----------------------------------------------------------------------
+
+void Display::onAxisActiveEvent(const KeyCode& axis)
+{
+    if ((axis.code == KeyCodes::Axis.x.code) ||
+        (axis.code == KeyCodes::Axis.y.code) ||
+        (axis.code == KeyCodes::Axis.z.code))
+    {
+        mActiveAxisGroup = AxisGroup::XYZ;
+    }
+    else { // a || b || c
+        mActiveAxisGroup = AxisGroup::ABC;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void Display::onAxisInactiveEvent(const KeyCode& axis)
+{
+}
+
+// ----------------------------------------------------------------------
+
+void Display::onFeedActiveEvent(const KeyCode& axis)
+{
+    mDisplayData.displayModeFlags.asBitFields.stepMode =
+        (mCurrentButtonsState.feedButton().stepMode() == HandwheelStepmodes::Mode::STEP);
+}
+
+// ----------------------------------------------------------------------
+
+void Display::onFeedInactiveEvent(const KeyCode& axis)
+{
+}
+
+// ----------------------------------------------------------------------
+
+bool Display::onJogDialEvent(int32_t counts)
+{
+    return false;
+}
+
+// ----------------------------------------------------------------------
+
+void Display::updateData()
+{
+    mDisplayData.displayModeFlags.asBitFields.isReset = !(*mHal.memory->in.isMachineOn);
+
+    bool isAbsolutePositionRequest = (mAxisPositionMethod == AxisPositionMethod::ABSOLUTE);
+    mDisplayData.displayModeFlags.asBitFields.isRelatvieCoordinate = !isAbsolutePositionRequest;
+    if (mActiveAxisGroup == AxisGroup::XYZ)
+    {
+        mDisplayData.row1Coordinate.setCoordinate(static_cast<float>(mHal.getAxisXPosition(isAbsolutePositionRequest)));
+        mDisplayData.row2Coordinate.setCoordinate(static_cast<float>(mHal.getAxisYPosition(isAbsolutePositionRequest)));
+        mDisplayData.row3Coordinate.setCoordinate(static_cast<float>(mHal.getAxisZPosition(isAbsolutePositionRequest)));
+    }
+    else
+    {
+        mDisplayData.row1Coordinate.setCoordinate(static_cast<float>(mHal.getAxisAPosition(isAbsolutePositionRequest)));
+        mDisplayData.row2Coordinate.setCoordinate(static_cast<float>(mHal.getAxisBPosition(isAbsolutePositionRequest)));
+        mDisplayData.row3Coordinate.setCoordinate(static_cast<float>(mHal.getAxisCPosition(isAbsolutePositionRequest)));
+    }
+}
 }
 
