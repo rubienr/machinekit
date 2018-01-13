@@ -4,7 +4,7 @@
 {#
 | . | 1 | 2 | 3 
 | A | {
- .|. | <&signal>| <&battery-empty>  <&media-stop>|  STP: 1.234 
+ .|. | <&signal>| <&battery-empty>  <&media-stop>|  STP: 1.0 
   . | <&star>|X:|+1234|.4561
   .      |.|Y:|-1470|.9632
   .      |. |Z:|+0|.0000   |.
@@ -69,8 +69,8 @@
   .      |.|B1:|-1470|.9632
   .      |<&star> |C1:|+0|.0000   
 } {
-<&signal> ... signal strength | X1,Y1-C1 ... machine coord.
-<&star> ... selected axis     | X,Y-C ... workpiece coord.
+<&signal> ... signal strength | X,Y-C ... machine coord.
+<&star> ... selected axis     | X1,Y1-C1 ... workpiece coord.
 <&battery-empty> ... battery level
 <&media-stop> ... tx indicator
 } |* |
