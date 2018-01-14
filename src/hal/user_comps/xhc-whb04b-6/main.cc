@@ -40,7 +40,7 @@ using std::endl;
 
 // globals
 //! object link for signal handler
-XhcWhb04b6::WhbContext *Whb = nullptr;
+XhcWhb04b6::WhbContext* Whb = nullptr;
 
 // ----------------------------------------------------------------------
 
@@ -126,7 +126,8 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
 //! called on program termination requested
 static void quit(int signal)
 {
-    if (Whb != nullptr) {
+    if (Whb != nullptr)
+    {
         Whb->requestTermination(signal);
     }
 }

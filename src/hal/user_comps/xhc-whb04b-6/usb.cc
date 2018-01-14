@@ -47,7 +47,7 @@ namespace XhcWhb04b6 {
 void usbInputResponseCallback(struct libusb_transfer* transfer)
 {
     assert(transfer->user_data != nullptr);
-    UsbRawInputListener *receiver = reinterpret_cast<UsbRawInputListener *>(transfer->user_data);
+    UsbRawInputListener* receiver = reinterpret_cast<UsbRawInputListener*>(transfer->user_data);
     receiver->onUsbDataReceived(transfer);
 }
 
@@ -560,7 +560,7 @@ bool WhbUsb::setupAsyncTransfer()
                               (0x1 | LIBUSB_ENDPOINT_IN), inputPackageBuffer.asBuffer,
                               sizeof(inputPackageBuffer.asBuffer), mRawDataCallback,
         //! pass this object as callback data
-                              static_cast<void *>(this),
+                              static_cast<void*>(this),
         //! timeout[ms]
                               750);
     int r = libusb_submit_transfer(inTransfer);
@@ -839,7 +839,7 @@ void WhbUsb::setWaitWithTimeout(uint8_t waitSecs)
 
 // ----------------------------------------------------------------------
 
-    WhbUsbOutPackageData &WhbUsb::getOutputPackageData()
+WhbUsbOutPackageData& WhbUsb::getOutputPackageData()
 {
     return outputPackageData;
 }

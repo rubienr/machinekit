@@ -343,7 +343,7 @@ public:
     bool init();
     void setWaitWithTimeout(uint8_t waitSecs);
 
-    WhbUsbOutPackageData &getOutputPackageData();
+    WhbUsbOutPackageData& getOutputPackageData();
     void takeHalMemoryReference(WhbHalMemory* memory);
 
 private:

@@ -175,9 +175,9 @@ private:
     WhbKeyEventListener       & keyEventReceiver;
     UsbInputPackageListener   & packageReceivedEventReceiver;
     UsbInputPackageInterpreted& packageInterpretedEventReceiver;
-    bool                 mIsCrcDebuggingEnabled;
+    bool    mIsCrcDebuggingEnabled;
     //MachineConfiguration mMachineConfig;
-    Pendant              mPendant;
+    Pendant mPendant;
 
     //! prints human readable output of the push buttons state
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out);

@@ -97,82 +97,82 @@ WhbHalMemory::In::In() :
 // ----------------------------------------------------------------------
 
 WhbHalMemory::Out::Out() :
-        button_pin{0},
-        axisXJogCounts(nullptr),
-        axisYJogCounts(nullptr),
-        axisZJogCounts(nullptr),
-        axisAJogCounts(nullptr),
-        axisBJogCounts(nullptr),
-        axisCJogCounts(nullptr),
+    button_pin{0},
+    axisXJogCounts(nullptr),
+    axisYJogCounts(nullptr),
+    axisZJogCounts(nullptr),
+    axisAJogCounts(nullptr),
+    axisBJogCounts(nullptr),
+    axisCJogCounts(nullptr),
 
-        axisXJogEnable(nullptr),
-        axisYJogEnable(nullptr),
-        axisZJogEnable(nullptr),
-        axisAJogEnable(nullptr),
-        axisBJogEnable(nullptr),
-        axisCJogEnable(nullptr),
+    axisXJogEnable(nullptr),
+    axisYJogEnable(nullptr),
+    axisZJogEnable(nullptr),
+    axisAJogEnable(nullptr),
+    axisBJogEnable(nullptr),
+    axisCJogEnable(nullptr),
 
-        axisXJogScale(nullptr),
-        axisYJogScale(nullptr),
-        axisZJogScale(nullptr),
-        axisAJogScale(nullptr),
-        axisBJogScale(nullptr),
-        axisCJogScale(nullptr),
+    axisXJogScale(nullptr),
+    axisYJogScale(nullptr),
+    axisZJogScale(nullptr),
+    axisAJogScale(nullptr),
+    axisBJogScale(nullptr),
+    axisCJogScale(nullptr),
 
-        axisXSetVelocityMode(nullptr),
-        axisYSetVelocityMode(nullptr),
-        axisZSetVelocityMode(nullptr),
-        axisASetVelocityMode(nullptr),
-        axisBSetVelocityMode(nullptr),
-        axisCSetVelocityMode(nullptr),
+    axisXSetVelocityMode(nullptr),
+    axisYSetVelocityMode(nullptr),
+    axisZSetVelocityMode(nullptr),
+    axisASetVelocityMode(nullptr),
+    axisBSetVelocityMode(nullptr),
+    axisCSetVelocityMode(nullptr),
 
     //jogCount(nullptr),
     //jogCountNeg(nullptr),
     //jogVelocity(nullptr),
-        spindleStart(nullptr),
-        spindleStop(nullptr),
-        feedValueSelected0_001(nullptr),
-        feedValueSelected0_01(nullptr),
-        feedValueSelected0_1(nullptr),
-        feedValueSelected1_0(nullptr),
-        feedOverrideScale(nullptr),
-        feedOverrideDirectValue(nullptr),
-        feedOverrideCounts(nullptr),
-        feedOverrideDecrease(nullptr),
-        feedOverrideIncrease(nullptr),
-        spindleDoDecrease(nullptr),
-        spindleDoIncrease(nullptr),
-        spindleOverrideDoDecrease(nullptr),
-        spindleOverrideDoIncrease(nullptr),
-        jogSpeedValue(nullptr),
-        homeAll(nullptr),
+    spindleStart(nullptr),
+    spindleStop(nullptr),
+    feedValueSelected0_001(nullptr),
+    feedValueSelected0_01(nullptr),
+    feedValueSelected0_1(nullptr),
+    feedValueSelected1_0(nullptr),
+    feedOverrideScale(nullptr),
+    feedOverrideDirectValue(nullptr),
+    feedOverrideCounts(nullptr),
+    feedOverrideDecrease(nullptr),
+    feedOverrideIncrease(nullptr),
+    spindleDoDecrease(nullptr),
+    spindleDoIncrease(nullptr),
+    spindleOverrideDoDecrease(nullptr),
+    spindleOverrideDoIncrease(nullptr),
+    jogSpeedValue(nullptr),
+    homeAll(nullptr),
     //jogIncrement(nullptr),
     //jogIncrementPlus(nullptr),
     //jogIncrementMinus(nullptr),
     //jogPlus(nullptr),
     //jogMinus(nullptr),
     jointXSelect(nullptr),
-        jointYSelect(nullptr),
-        jointZSelect(nullptr),
-        jointASelect(nullptr),
-        jointBSelect(nullptr),
-        jointCSelect(nullptr),
+    jointYSelect(nullptr),
+    jointZSelect(nullptr),
+    jointASelect(nullptr),
+    jointBSelect(nullptr),
+    jointCSelect(nullptr),
     //stepsize(nullptr),
     isPendantSleeping(nullptr),
-        isPendantConnected(nullptr),
+    isPendantConnected(nullptr),
     //isPendantRequired(nullptr),
     doRunProgram(nullptr),
-        doPauseProgram(nullptr),
-        doResumeProgram(nullptr),
-        doStopProgram(nullptr),
-        doModeAuto(nullptr),
-        doModeJoint(nullptr),
-        doModeManual(nullptr),
-        doModeMdi(nullptr),
-        doEmergencyStop(nullptr),
-        resetEmergencyStop(nullptr),
-        doMachineOn(nullptr),
-        doMachineOff(nullptr)
+    doPauseProgram(nullptr),
+    doResumeProgram(nullptr),
+    doStopProgram(nullptr),
+    doModeAuto(nullptr),
+    doModeJoint(nullptr),
+    doModeManual(nullptr),
+    doModeMdi(nullptr),
+    doEmergencyStop(nullptr),
+    resetEmergencyStop(nullptr),
+    doMachineOn(nullptr),
+    doMachineOff(nullptr)
 {
 }
 
@@ -219,7 +219,6 @@ WhbHal::~WhbHal()
         return;
     }
 
-
     freeSimulatedPin((void**)(&memory->in.axisXPosition));
     freeSimulatedPin((void**)(&memory->in.axisYPosition));
     freeSimulatedPin((void**)(&memory->in.axisZPosition));
@@ -253,12 +252,10 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->out.feedValueSelected0_1));
     freeSimulatedPin((void**)(&memory->out.feedValueSelected1_0));
 
-
-
     freeSimulatedPin((void**)(&memory->in.spindleIsOn));
     freeSimulatedPin((void**)(&memory->in.spindleOverrideValue));
     //freeSimulatedPin((void**)(&memory->in.spindleRps));
-    for (size_t idx = 0; (idx < (sizeof(memory->out.button_pin) / sizeof(hal_bit_t *))); idx++)
+    for (size_t idx = 0; (idx < (sizeof(memory->out.button_pin) / sizeof(hal_bit_t * ))); idx++)
     {
         freeSimulatedPin((void**)(&memory->out.button_pin[idx]));
     }
@@ -332,8 +329,8 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->out.resetEmergencyStop));
     freeSimulatedPin((void**)(&memory->in.isEmergencyStop));
     freeSimulatedPin((void**)(&memory->in.isMachineOn));
-    freeSimulatedPin((void **) (&memory->out.doMachineOn));
-    freeSimulatedPin((void **) (&memory->out.doMachineOff));
+    freeSimulatedPin((void**)(&memory->out.doMachineOn));
+    freeSimulatedPin((void**)(&memory->out.doMachineOff));
     delete memory;
 }
 
@@ -581,40 +578,58 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalFloat(HAL_IN, &(memory->in.axisBPosition), mHalCompId, "%s.halui.axis.4.pos-feedback", mComponentPrefix);
     newHalFloat(HAL_IN, &(memory->in.axisCPosition), mHalCompId, "%s.halui.axis.5.pos-feedback", mComponentPrefix);
 
-    newHalFloat(HAL_IN, &(memory->in.axisXPositionRelative), mHalCompId, "%s.halui.axis.0.pos-relative", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.axisYPositionRelative), mHalCompId, "%s.halui.axis.1.pos-relative", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.axisZPositionRelative), mHalCompId, "%s.halui.axis.2.pos-relative", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.axisAPositionRelative), mHalCompId, "%s.halui.axis.3.pos-relative", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.axisBPositionRelative), mHalCompId, "%s.halui.axis.4.pos-relative", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.axisCPositionRelative), mHalCompId, "%s.halui.axis.5.pos-relative", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisXPositionRelative), mHalCompId, "%s.halui.axis.0.pos-relative",
+                mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisYPositionRelative), mHalCompId, "%s.halui.axis.1.pos-relative",
+                mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisZPositionRelative), mHalCompId, "%s.halui.axis.2.pos-relative",
+                mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisAPositionRelative), mHalCompId, "%s.halui.axis.3.pos-relative",
+                mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisBPositionRelative), mHalCompId, "%s.halui.axis.4.pos-relative",
+                mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.axisCPositionRelative), mHalCompId, "%s.halui.axis.5.pos-relative",
+                mComponentPrefix);
 
     newHalFloat(HAL_IN, &(memory->in.stepgenXMaxVelocity), mHalCompId, "%s.stepgen.00.maxvel", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.stepgenXPositionScale), mHalCompId, "%s.stepgen.00.position-scale", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.stepgenXPositionScale), mHalCompId, "%s.stepgen.00.position-scale",
+                mComponentPrefix);
 
     newHalFloat(HAL_IN, &(memory->in.stepgenYMaxVelocity), mHalCompId, "%s.stepgen.01.maxvel", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.stepgenYPositionScale), mHalCompId, "%s.stepgen.01.position-scale", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.stepgenYPositionScale), mHalCompId, "%s.stepgen.01.position-scale",
+                mComponentPrefix);
 
     newHalFloat(HAL_IN, &(memory->in.stepgenZMaxVelocity), mHalCompId, "%s.stepgen.02.maxvel", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.stepgenZPositionScale), mHalCompId, "%s.stepgen.02.position-scale", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.stepgenZPositionScale), mHalCompId, "%s.stepgen.02.position-scale",
+                mComponentPrefix);
 
     newHalFloat(HAL_IN, &(memory->in.stepgenAMaxVelocity), mHalCompId, "%s.stepgen.03.maxvel", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.stepgenAPositionScale), mHalCompId, "%s.stepgen.03.position-scale", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.stepgenAPositionScale), mHalCompId, "%s.stepgen.03.position-scale",
+                mComponentPrefix);
 
     newHalFloat(HAL_IN, &(memory->in.stepgenBMaxVelocity), mHalCompId, "%s.stepgen.04.maxvel", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.stepgenBPositionScale), mHalCompId, "%s.stepgen.04.position-scale", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.stepgenBPositionScale), mHalCompId, "%s.stepgen.04.position-scale",
+                mComponentPrefix);
 
     newHalFloat(HAL_IN, &(memory->in.stepgenCMaxVelocity), mHalCompId, "%s.stepgen.05.maxvel", mComponentPrefix);
-    newHalFloat(HAL_IN, &(memory->in.stepgenCPositionScale), mHalCompId, "%s.stepgen.05.position-scale", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.stepgenCPositionScale), mHalCompId, "%s.stepgen.05.position-scale",
+                mComponentPrefix);
 
-    newHalBit(HAL_OUT, &(memory->out.feedValueSelected0_001), mHalCompId, "%s.halui.feed.selected-0.001", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.feedValueSelected0_01), mHalCompId, "%s.halui.feed.selected-0.01", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.feedValueSelected0_001), mHalCompId, "%s.halui.feed.selected-0.001",
+              mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.feedValueSelected0_01), mHalCompId, "%s.halui.feed.selected-0.01",
+              mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedValueSelected0_1), mHalCompId, "%s.halui.feed.selected-0.1", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedValueSelected1_0), mHalCompId, "%s.halui.feed.selected-1.0", mComponentPrefix);
 
-    newHalFloat(HAL_OUT, &(memory->out.feedOverrideScale), mHalCompId, "%s.halui.feed-override.scale", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.feedOverrideDirectValue), mHalCompId, "%s.halui.feed-override.direct-val", mComponentPrefix);
-    newHalSigned32(HAL_OUT, &(memory->out.feedOverrideCounts), mHalCompId, "%s.halui.feed-override.counts", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.feedOverrideDecrease), mHalCompId, "%s.halui.feed-override.decrease", mComponentPrefix);
+    newHalFloat(HAL_OUT, &(memory->out.feedOverrideScale), mHalCompId, "%s.halui.feed-override.scale",
+                mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.feedOverrideDirectValue), mHalCompId, "%s.halui.feed-override.direct-val",
+              mComponentPrefix);
+    newHalSigned32(HAL_OUT, &(memory->out.feedOverrideCounts), mHalCompId, "%s.halui.feed-override.counts",
+                   mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.feedOverrideDecrease), mHalCompId, "%s.halui.feed-override.decrease",
+              mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedOverrideIncrease), mHalCompId, "%s.halui.feed-override.increase",
               mComponentPrefix);
 
@@ -774,7 +789,7 @@ void WhbHal::setNoAxisActive(bool enabled)
 
 void WhbHal::setAxisXActive(bool enabled)
 {
-    *memory->out.jointXSelect = enabled;
+    *memory->out.jointXSelect   = enabled;
     *memory->out.axisXJogEnable = enabled;
     *mHalCout << "hal   X axis active" << endl;
 }
@@ -783,7 +798,7 @@ void WhbHal::setAxisXActive(bool enabled)
 
 void WhbHal::setAxisYActive(bool enabled)
 {
-    *memory->out.jointYSelect = enabled;
+    *memory->out.jointYSelect   = enabled;
     *memory->out.axisYJogEnable = enabled;
     *mHalCout << "hal   Y axis active" << endl;
 }
@@ -792,7 +807,7 @@ void WhbHal::setAxisYActive(bool enabled)
 
 void WhbHal::setAxisZActive(bool enabled)
 {
-    *memory->out.jointZSelect = enabled;
+    *memory->out.jointZSelect   = enabled;
     *memory->out.axisZJogEnable = enabled;
     *mHalCout << "hal   Z axis active" << endl;
 }
@@ -801,7 +816,7 @@ void WhbHal::setAxisZActive(bool enabled)
 
 void WhbHal::setAxisAActive(bool enabled)
 {
-    *memory->out.jointASelect = enabled;
+    *memory->out.jointASelect   = enabled;
     *memory->out.axisAJogEnable = enabled;
     *mHalCout << "hal   A axis active" << endl;
 }
@@ -810,7 +825,7 @@ void WhbHal::setAxisAActive(bool enabled)
 
 void WhbHal::setAxisBActive(bool enabled)
 {
-    *memory->out.jointBSelect = enabled;
+    *memory->out.jointBSelect   = enabled;
     *memory->out.axisBJogEnable = enabled;
     *mHalCout << "hal   B axis active" << endl;
 }
@@ -819,7 +834,7 @@ void WhbHal::setAxisBActive(bool enabled)
 
 void WhbHal::setAxisCActive(bool enabled)
 {
-    *memory->out.jointCSelect = enabled;
+    *memory->out.jointCSelect   = enabled;
     *memory->out.axisCJogEnable = enabled;
     *mHalCout << "hal   C axis active" << endl;
 }
@@ -864,17 +879,20 @@ void WhbHal::setLead()
 
 void WhbHal::setReset(bool enabled)
 {
-    if (*memory->in.isMachineOn) { // disable machine
+    if (*memory->in.isMachineOn)
+    { // disable machine
         clearStartResumeProgramStates();
         *memory->out.doMachineOff = true;
     }
-    else { // enable machine
+    else
+    { // enable machine
         *memory->out.doMachineOn = true;
     }
 
-    if (!enabled) {
+    if (!enabled)
+    {
         *memory->out.doMachineOff = false;
-        *memory->out.doMachineOn = false;
+        *memory->out.doMachineOn  = false;
     }
     setPin(enabled, KeyCodes::Buttons.reset.text);
 }
@@ -900,11 +918,13 @@ void WhbHal::setStop(bool enabled)
 
 void WhbHal::setStart(bool enabled)
 {
-    if (!enabled) {
+    if (!enabled)
+    {
         // clear auto mode
         *memory->out.doModeAuto = false;
     }
-    else {
+    else
+    {
         // request auto mode
         *memory->out.doModeAuto = true;
         toggleStartResumeProgram();
@@ -1006,7 +1026,7 @@ void WhbHal::setFeedValueSelected1_0(bool selected)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedOverrideScale(hal_float_t  scale)
+void WhbHal::setFeedOverrideScale(hal_float_t scale)
 {
     *memory->out.feedOverrideScale = scale;
 }
@@ -1287,18 +1307,18 @@ void WhbHal::setPin(bool enabled, const char* pinName)
     setPin(enabled, pinNumber, pinName);
 }
 
-    /*
+/*
 // ----------------------------------------------------------------------
 
 void WhbHal::newJogDialDelta(int8_t delta)
 {
-    // *memory->out.jogCount += delta;
+// *memory->out.jogCount += delta;
 
-    std::ios init(NULL);
-    init.copyfmt(*mHalCout);
-    *mHalCout << std::setfill(' ')
-              << "hal   new jog dial delta " << std::setw(3) << static_cast<signed short>(delta) << endl;
-    mHalCout->copyfmt(init);
+std::ios init(NULL);
+init.copyfmt(*mHalCout);
+*mHalCout << std::setfill(' ')
+          << "hal   new jog dial delta " << std::setw(3) << static_cast<signed short>(delta) << endl;
+mHalCout->copyfmt(init);
 }
 */
 /*

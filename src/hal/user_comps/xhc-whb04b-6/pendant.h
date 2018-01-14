@@ -42,8 +42,7 @@ namespace XhcWhb04b6 {
 class WhbContext;
 class WhbButtonsState;
 class WhbHal;
-
-    class WhbUsbOutPackageData;
+class WhbUsbOutPackageData;
 
 // ----------------------------------------------------------------------
 
@@ -801,48 +800,57 @@ std::ostream& operator<<(std::ostream& os, const ButtonsState& data);
 
 // ----------------------------------------------------------------------
 
-    class Display : public KeyEventListener {
-    public:
+class Display : public KeyEventListener
+{
+public:
 
-        enum class AxisPositionMethod { RELATIVE, ABSOLUTE};
-        enum class AxisGroup { XYZ, ABC };
-
-        Display(const ButtonsState &currentButtonsState, WhbHal &hal, WhbUsbOutPackageData &displayData);
-
-        Display();
-
-        ~Display();
-
-        virtual bool onButtonPressedEvent(const MetaButtonCodes &metaButton) override;
-
-        virtual bool onButtonReleasedEvent(const MetaButtonCodes &metaButton) override;
-
-        virtual void onAxisActiveEvent(const KeyCode &axis) override;
-
-        virtual void onAxisInactiveEvent(const KeyCode &axis) override;
-
-        virtual void onFeedActiveEvent(const KeyCode &axis) override;
-
-        virtual void onFeedInactiveEvent(const KeyCode &axis) override;
-
-        virtual bool onJogDialEvent(int32_t counts) override;
-
-        void updateData();
-
-    private:
-        const ButtonsState &mCurrentButtonsState;
-        WhbHal &mHal;
-        WhbUsbOutPackageData &mDisplayData;
-        AxisPositionMethod mAxisPositionMethod;
-        AxisGroup mActiveAxisGroup;
+    enum class AxisPositionMethod
+    {
+        RELATIVE,
+        ABSOLUTE
     };
+    enum class AxisGroup
+    {
+        XYZ,
+        ABC
+    };
+
+    Display(const ButtonsState& currentButtonsState, WhbHal& hal, WhbUsbOutPackageData& displayData);
+
+    Display();
+
+    ~Display();
+
+    virtual bool onButtonPressedEvent(const MetaButtonCodes& metaButton) override;
+
+    virtual bool onButtonReleasedEvent(const MetaButtonCodes& metaButton) override;
+
+    virtual void onAxisActiveEvent(const KeyCode& axis) override;
+
+    virtual void onAxisInactiveEvent(const KeyCode& axis) override;
+
+    virtual void onFeedActiveEvent(const KeyCode& axis) override;
+
+    virtual void onFeedInactiveEvent(const KeyCode& axis) override;
+
+    virtual bool onJogDialEvent(int32_t counts) override;
+
+    void updateData();
+
+private:
+    const ButtonsState  & mCurrentButtonsState;
+    WhbHal              & mHal;
+    WhbUsbOutPackageData& mDisplayData;
+    AxisPositionMethod  mAxisPositionMethod;
+    AxisGroup           mActiveAxisGroup;
+};
 
 // ----------------------------------------------------------------------
 
 class Pendant : public KeyEventListener
 {
 public:
-    Pendant(WhbHal &hal, WhbUsbOutPackageData &displayOutData);
+    Pendant(WhbHal& hal, WhbUsbOutPackageData& displayOutData);
     ~Pendant();
 
     void processEvent(uint8_t keyCode,
@@ -867,11 +875,11 @@ public:
     virtual bool onJogDialEvent(int32_t counts) override;
 
 private:
-    WhbHal&      mHal;
+    WhbHal& mHal;
     ButtonsState mPreviousButtonsState;
     ButtonsState mCurrentButtonsState;
     Handwheel    mHandWheel;
-    Display mDisplay;
+    Display      mDisplay;
 
     float mScale;
     float mMaxVelocity;
@@ -881,7 +889,7 @@ private:
 
     void shiftButtonState();
 
-    void processEvent(const KeyCode &keyCode,
+    void processEvent(const KeyCode& keyCode,
                       const KeyCode& modifierCode,
                       const KeyCode& rotaryButtonAxisKeyCode,
                       const KeyCode& rotaryButtonFeedKeyCode,
@@ -894,5 +902,4 @@ private:
 // ----------------------------------------------------------------------
 
 std::ostream& operator<<(std::ostream& os, const Pendant& data);
-
 }

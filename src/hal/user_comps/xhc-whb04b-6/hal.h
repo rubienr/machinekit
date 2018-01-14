@@ -52,7 +52,6 @@ public:
     struct In
     {
     public:
-
         //! to be connected to \ref halui.axis.0.pos-feedback
         hal_float_t* axisXPosition;
         //! to be connected to \ref halui.axis.1.pos-feedback
@@ -110,11 +109,11 @@ public:
         hal_float_t* spindleOverrideValue;
 
         //! to be connected to \ref halui.program.is-running
-        hal_bit_t  * isProgramRunning;
+        hal_bit_t* isProgramRunning;
         //! to be connected to \ref halui.program.is-paused
-        hal_bit_t  * isProgramPaused;
+        hal_bit_t* isProgramPaused;
         //! to be connected to \ref halui.program.is-idle
-        hal_bit_t  * isProgramIdle;
+        hal_bit_t* isProgramIdle;
 
         //! to be connected to \ref halui.mode.is-auto
         hal_bit_t* isModeAuto;
@@ -124,7 +123,6 @@ public:
         hal_bit_t* isModeManual;
         //! to be connected to \ref halui.mode.is-madi
         hal_bit_t* isModeMdi;
-
 
         //! to be connected to \ref halui.estop.is-activated
         hal_bit_t* isEmergencyStop;
@@ -193,9 +191,9 @@ public:
         hal_bit_t* axisCSetVelocityMode;
 
         //! to be connected to \ref halui.spindle.start
-        hal_bit_t *spindleStart;
+        hal_bit_t* spindleStart;
         //! to be connected to \ref halui.spindle.stop
-        hal_bit_t *spindleStop;
+        hal_bit_t* spindleStop;
 
         hal_bit_t* feedValueSelected0_001;
         hal_bit_t* feedValueSelected0_01;
@@ -205,13 +203,13 @@ public:
         //! to be connected to \ref  \ref halui.feed-override.scale
         hal_float_t* feedOverrideScale;
         //! to be connected to \ref halui.feed-override.direct-value
-        hal_bit_t* feedOverrideDirectValue;
+        hal_bit_t  * feedOverrideDirectValue;
         //! to be connected to \ref halui.feed-override.counts
-        hal_s32_t* feedOverrideCounts;
+        hal_s32_t  * feedOverrideCounts;
         //! to be connected to \ref halui.feed-override.decrease
-        hal_bit_t* feedOverrideDecrease;
+        hal_bit_t  * feedOverrideDecrease;
         //! to be connected to \ref halui.feed-override.increase
-        hal_bit_t* feedOverrideIncrease;
+        hal_bit_t  * feedOverrideIncrease;
 
         //! to be connected to halui.spindle.decrease
         hal_bit_t* spindleDoDecrease;
@@ -240,17 +238,17 @@ public:
         //hal_bit_t* jogMinus; // jogging with jog-speed
 
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t  * jointXSelect;
+        hal_bit_t* jointXSelect;
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t  * jointYSelect;
+        hal_bit_t* jointYSelect;
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t  * jointZSelect;
+        hal_bit_t* jointZSelect;
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t  * jointASelect;
+        hal_bit_t* jointASelect;
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t  * jointBSelect;
+        hal_bit_t* jointBSelect;
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t  * jointCSelect;
+        hal_bit_t* jointCSelect;
 
         //! reflects the pendandt's idle state
         hal_bit_t* isPendantSleeping;
@@ -312,8 +310,8 @@ class WhbHal
 {
 public:
     WhbHalMemory* memory;
-    std::map<std::string, size_t> mButtonNameToIdx;
-    WhbVelocityComputation velocityComputation;
+    std::map <std::string, size_t> mButtonNameToIdx;
+    WhbVelocityComputation         velocityComputation;
 
     WhbHal();
     ~WhbHal();
@@ -451,18 +449,18 @@ public:
     void newJogDialDelta(int8_t delta);
      */
 
-   /* //! Toggles true/false on the corresponding halui.jog.jog{increment|}Plus according to the \xrefitem mStepMode.
-    //! \param direction positive if > 0, negative if < 0, jo jog but reset signals to false otherwise
-    //! \return true if the step was consumed (on false to true transition)
-    bool jogStep(int8_t direction);
+    /* //! Toggles true/false on the corresponding halui.jog.jog{increment|}Plus according to the \xrefitem mStepMode.
+     //! \param direction positive if > 0, negative if < 0, jo jog but reset signals to false otherwise
+     //! \return true if the step was consumed (on false to true transition)
+     bool jogStep(int8_t direction);
 
-    void doJogCounts(int32_t counts);
-*/
-   /**
-    * Writes counts to each axis' count.
-    * \param counts value to propagate to each axis
-    */
-   void setJogCounts(int32_t counts);
+     void doJogCounts(int32_t counts);
+ */
+    /**
+     * Writes counts to each axis' count.
+     * \param counts value to propagate to each axis
+     */
+    void setJogCounts(int32_t counts);
 
     //! Returns the axis position.
     //! \param absolute true absolute, false relative

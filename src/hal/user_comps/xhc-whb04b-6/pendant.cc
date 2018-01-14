@@ -1344,14 +1344,14 @@ FeedRotaryButton& ButtonsState::feedButton()
 
 // ----------------------------------------------------------------------
 
-    Pendant::Pendant(WhbHal &hal, WhbUsbOutPackageData &displayOutData) :
-            mHal(hal),
-            mPreviousButtonsState(this),
-            mCurrentButtonsState(this, &mPreviousButtonsState),
-            mHandWheel(mCurrentButtonsState.feedButton(), this),
-            mDisplay(mCurrentButtonsState, hal, displayOutData),
-            mPrefix("pndnt "),
-            mPendantCout(&std::cout)
+Pendant::Pendant(WhbHal& hal, WhbUsbOutPackageData& displayOutData) :
+    mHal(hal),
+    mPreviousButtonsState(this),
+    mCurrentButtonsState(this, &mPreviousButtonsState),
+    mHandWheel(mCurrentButtonsState.feedButton(), this),
+    mDisplay(mCurrentButtonsState, hal, displayOutData),
+    mPrefix("pndnt "),
+    mPendantCout(&std::cout)
 {
 }
 
@@ -1376,11 +1376,11 @@ std::ostream& operator<<(std::ostream& os, const Pendant& data)
 
 // ----------------------------------------------------------------------
 // TODO: remove
-    void Pendant::processEvent(uint8_t keyCode,
-                               uint8_t modifierCode,
-                               uint8_t rotaryButtonAxisKeyCode,
-                               uint8_t rotaryButtonFeedKeyCode,
-                               int8_t handWheelStepCount)
+void Pendant::processEvent(uint8_t keyCode,
+                           uint8_t modifierCode,
+                           uint8_t rotaryButtonAxisKeyCode,
+                           uint8_t rotaryButtonFeedKeyCode,
+                           int8_t handWheelStepCount)
 {
     shiftButtonState();
 
@@ -1411,11 +1411,11 @@ std::ostream& operator<<(std::ostream& os, const Pendant& data)
 
 // ----------------------------------------------------------------------
 
-    void Pendant::processEvent(const KeyCode &keyCode,
-                               const KeyCode& modifierCode,
-                               const KeyCode& rotaryButtonAxisKeyCode,
-                               const KeyCode& rotaryButtonFeedKeyCode,
-                               int8_t handWheelStepCount)
+void Pendant::processEvent(const KeyCode& keyCode,
+                           const KeyCode& modifierCode,
+                           const KeyCode& rotaryButtonAxisKeyCode,
+                           const KeyCode& rotaryButtonFeedKeyCode,
+                           int8_t handWheelStepCount)
 {
     mCurrentButtonsState.update(keyCode, modifierCode, rotaryButtonAxisKeyCode, rotaryButtonFeedKeyCode);
     mHandWheel.count(handWheelStepCount);
@@ -1424,9 +1424,10 @@ std::ostream& operator<<(std::ostream& os, const Pendant& data)
 
 // ----------------------------------------------------------------------
 
-    void Pendant::updateDisplay() {
-        mDisplay.updateData();
-    }
+void Pendant::updateDisplay()
+{
+    mDisplay.updateData();
+}
 
 // ----------------------------------------------------------------------
 
@@ -1815,7 +1816,7 @@ void Pendant::onAxisInactiveEvent(const KeyCode& axis)
 void Pendant::onFeedActiveEvent(const KeyCode& feed)
 {
     (*mPendantCout) << mPrefix << "feed   active   event feed=" << feed
-                  << " feedButton=" << mCurrentButtonsState.feedButton() << endl;
+                    << " feedButton=" << mCurrentButtonsState.feedButton() << endl;
     dispatchFeedValueToHal();
     dispatchActiveFeedToHal(feed, true);
     mDisplay.onFeedActiveEvent(feed);
@@ -1848,8 +1849,8 @@ void Pendant::dispatchActiveFeedToHal(const KeyCode& feed, bool isActive)
 void Pendant::dispatchFeedValueToHal()
 {
     FeedRotaryButton& feedButton = mCurrentButtonsState.feedButton();
-    if (feedButton.isPermitted()) {
-
+    if (feedButton.isPermitted())
+    {
 
         float axisJogStepSize = 0;
 
@@ -1867,7 +1868,7 @@ void Pendant::dispatchFeedValueToHal()
             // On velocity mode set feed-override value to absolute percentage value: counts*scale.
             axisJogStepSize = 2;
             mHal.setFeedOverrideDirectValue(true);
-            float feedButtonStepSize  = feedButton.stepSize();
+            float feedButtonStepSize = feedButton.stepSize();
             if (feedButtonStepSize >= 10)
             {
                 // on velocity >= 10%: set a coarse grained scale,
@@ -1882,7 +1883,6 @@ void Pendant::dispatchFeedValueToHal()
                 mHal.setFeedOverrideScale(0.01);
                 mHal.setFeedOverrideCounts(feedButtonStepSize * 1);
             }
-
         }
         mHal.setStepSize(axisJogStepSize);
     }
@@ -1955,7 +1955,7 @@ void Pendant::dispatchAxisEventToHal(const KeyCode& axis, bool isActive)
 
 // ----------------------------------------------------------------------
 
-Display::Display(const ButtonsState &currentButtonsState, WhbHal& hal, WhbUsbOutPackageData& displayData) :
+Display::Display(const ButtonsState& currentButtonsState, WhbHal& hal, WhbUsbOutPackageData& displayData) :
     mCurrentButtonsState(currentButtonsState),
     mHal(hal),
     mDisplayData(displayData),
@@ -2004,7 +2004,8 @@ void Display::onAxisActiveEvent(const KeyCode& axis)
     {
         mActiveAxisGroup = AxisGroup::XYZ;
     }
-    else { // a || b || c
+    else
+    { // a || b || c
         mActiveAxisGroup = AxisGroup::ABC;
     }
 }
