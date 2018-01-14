@@ -569,7 +569,6 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
 
     newHalBit(HAL_OUT, &(memory->out.isPendantSleeping), mHalCompId, "%s.pendant.is-sleeping", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.isPendantConnected), mHalCompId, "%s.pendant.is-connected", mComponentPrefix);
-    //newHalBit(HAL_OUT, &(memory->out.isPendantRequired), mHalCompId, "%s.pendant.is-required", mComponentPrefix);
 
     newHalFloat(HAL_IN, &(memory->in.axisXPosition), mHalCompId, "%s.halui.axis.0.pos-feedback", mComponentPrefix);
     newHalFloat(HAL_IN, &(memory->in.axisYPosition), mHalCompId, "%s.halui.axis.1.pos-feedback", mComponentPrefix);
@@ -633,10 +632,6 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_OUT, &(memory->out.feedOverrideIncrease), mHalCompId, "%s.halui.feed-override.increase",
               mComponentPrefix);
 
-    //newHalSigned32(HAL_OUT, &(memory->out.stepsize), mHalCompId, "%s.stepsize", mComponentPrefix);
-    //newHalBit(HAL_IN, &(memory->in.stepsizeUp), mHalCompId, "%s.stepsize-up", mComponentPrefix);
-
-    //newHalFloat(HAL_IN, &(memory->in.spindleRps), mHalCompId, "%s.spindle-rps", mComponentPrefix);
     newHalFloat(HAL_IN, &(memory->in.spindleOverrideValue), mHalCompId, "%s.halui.spindle-override.value",
                 mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.spindleDoIncrease), mHalCompId, "%s.halui.spindle.increase",
@@ -684,17 +679,6 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_OUT, &(memory->out.jointCSelect), mHalCompId, "%s.halui.joint.c.select", mComponentPrefix);
 
     newHalFloat(HAL_OUT, &(memory->out.jogSpeedValue), mHalCompId, "%s.halui.jog-speed", mComponentPrefix);
-
-    //newHalSigned32(HAL_OUT, &(memory->out.jogCount), mHalCompId, "%s.jog.counts", mComponentPrefix);
-    //newHalSigned32(HAL_OUT, &(memory->out.jogCountNeg), mHalCompId, "%s.jog.counts-neg", mComponentPrefix);
-
-    //newHalFloat(HAL_OUT, &(memory->out.jogVelocity), mHalCompId, "%s.jog.velocity", mComponentPrefix);
-    //newHalFloat(HAL_IN, &(memory->in.jogMaxVelocity), mHalCompId, "%s.halui.max-velocity.value", mComponentPrefix);
-    //newHalFloat(HAL_OUT, &(memory->out.jogIncrement), mHalCompId, "%s.halui.jog.selected.increment", mComponentPrefix);
-    //newHalBit(HAL_OUT, &(memory->out.jogIncrementPlus), mHalCompId, "%s.halui.jog.selected.increment-plus", mComponentPrefix);
-    //newHalBit(HAL_OUT, &(memory->out.jogIncrementMinus), mHalCompId, "%s.halui.jog.selected.increment-minus", mComponentPrefix);
-    //newHalBit(HAL_OUT, &(memory->out.jogPlus), mHalCompId, "%s.halui.jog.selected.plus", mComponentPrefix);
-    //newHalBit(HAL_OUT, &(memory->out.jogMinus), mHalCompId, "%s.halui.jog.selected.minus", mComponentPrefix);
 
     newHalBit(HAL_OUT, &(memory->out.homeAll), mHalCompId, "%s.halui.home-all", mComponentPrefix);
 }
@@ -849,19 +833,6 @@ void WhbHal::setStepSize(const hal_float_t& stepSize)
     *memory->out.axisAJogScale = stepSize;
     *memory->out.axisBJogScale = stepSize;
     *memory->out.axisCJogScale = stepSize;
-
-    /*
-    if (mStepMode == HandwheelStepmodes::Mode::STEP)
-    {
-        *memory->out.jogIncrement  = stepSize;
-        *memory->out.jogSpeedValue = 0;
-    }
-    else // CONTINUOUS (speed)
-    {
-        *memory->out.jogIncrement  = 0;
-        *memory->out.jogSpeedValue = stepSize;
-    }
-     */
     *mHalCout << "hal   step size " << stepSize << endl;
 }
 
@@ -1286,8 +1257,6 @@ void WhbHal::setMacro16(bool enabled)
     setPin(enabled, KeyCodes::Buttons.step_continuous.altText);
 }
 
-
-
 // ----------------------------------------------------------------------
 
 void WhbHal::setPin(bool enabled, size_t pinNumber, const char* pinName)
@@ -1307,50 +1276,6 @@ void WhbHal::setPin(bool enabled, const char* pinName)
     setPin(enabled, pinNumber, pinName);
 }
 
-/*
-// ----------------------------------------------------------------------
-
-void WhbHal::newJogDialDelta(int8_t delta)
-{
-// *memory->out.jogCount += delta;
-
-std::ios init(NULL);
-init.copyfmt(*mHalCout);
-*mHalCout << std::setfill(' ')
-          << "hal   new jog dial delta " << std::setw(3) << static_cast<signed short>(delta) << endl;
-mHalCout->copyfmt(init);
-}
-*/
-/*
-// ----------------------------------------------------------------------
-
-bool WhbHal::doJogToggleAndReset(hal_bit_t* jogPlus,
-                   hal_bit_t* jogMinus,
-                   hal_bit_t* otherJogPlus,
-                   hal_bit_t* otherJogMinus,
-                   int8_t direction)
-{
-    if (direction == 0)
-    {
-        *jogPlus       = false;
-        *jogMinus      = false;
-        *otherJogPlus  = false;
-        *otherJogMinus = false;
-        return false;
-    }
-
-    hal_bit_t* jogToToggle    = (direction > 0) ? jogPlus : jogMinus;
-    hal_bit_t* jogNotToToggle = (direction > 0) ? jogMinus : jogPlus;
-
-    bool hasConsumed = (*jogToToggle == false);
-    *jogToToggle     = !*jogToToggle;
-    *jogNotToToggle  = false;
-    *otherJogPlus    = false;
-    *otherJogMinus   = false;
-    return hasConsumed;
-}
-*/
-
 // ----------------------------------------------------------------------
 
 void WhbHal::setJogCounts(int32_t counts)
@@ -1363,27 +1288,6 @@ void WhbHal::setJogCounts(int32_t counts)
     *memory->out.axisCJogCounts = counts;
 }
 
-/*
-// ----------------------------------------------------------------------
-// TODO: remove, deprecated, use setStepMode(bool) setContinuousMode(bool)
-void WhbHal::setJogWheelStepMode(HandwheelStepmodes::Mode stepMode)
-{
-    mStepMode = stepMode;
-
-    if (stepMode == HandwheelStepmodes::Mode::STEP)
-    {
-        setStepMode(true);
-    }
-    else if (stepMode == HandwheelStepmodes::Mode::CONTINUOUS)
-    {
-        setContinuousMode(true);
-    }
-    else
-    {
-        assert(false);
-    }
-}
-*/
 // ----------------------------------------------------------------------
 
 void WhbHal::setFunction(bool enabled)

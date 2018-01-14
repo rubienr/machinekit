@@ -39,7 +39,7 @@ using std::endl;
 // forward declarations
 
 // globals
-//! object link for signal handler
+//! link object for signal handler
 XhcWhb04b6::WhbContext* Whb = nullptr;
 
 // ----------------------------------------------------------------------

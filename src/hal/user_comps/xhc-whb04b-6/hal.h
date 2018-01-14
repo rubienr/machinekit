@@ -226,17 +226,6 @@ public:
         //! to be connected to \ref halui.home-all
         hal_bit_t* homeAll;
 
-        //! to be connected to \ref halui.jog.selected.increment
-        //hal_float_t* jogIncrement;
-        //! to be connected to \ref halui.jog.selected.increment-plus
-        //hal_bit_t* jogIncrementPlus;
-        //! to be connected to \ref halui.jog.selected.increment-minus
-        //hal_bit_t* jogIncrementMinus;
-        //! to be connected to \ref halui.jog.selected.plus
-        //hal_bit_t* jogPlus; //jogging with jog-speed
-        //! to be connected to \ref halui.jog.selected.minus
-        //hal_bit_t* jogMinus; // jogging with jog-speed
-
         //!to be connected to \ref halui.joint.N.select
         hal_bit_t* jointXSelect;
         //!to be connected to \ref halui.joint.N.select
@@ -250,7 +239,7 @@ public:
         //!to be connected to \ref halui.joint.N.select
         hal_bit_t* jointCSelect;
 
-        //! reflects the pendandt's idle state
+        //! reflects the pendant's idle state
         hal_bit_t* isPendantSleeping;
         //! reflects pendant's connectivity
         hal_bit_t* isPendantConnected;
@@ -345,10 +334,6 @@ public:
     //! \sa setAxisXActive(bool)
     void setAxisCActive(bool enabled);
 
-    /*
-    //! Set the new jog wheel step mode. The mode affects the pins chosen to generate jog movements.
-    void setJogWheelStepMode(HandwheelStepmodes::Mode stepMode);
-*/
     //! Sets the new feed rate. The step mode must be set accordingly.
     //! \param feedRate the new feed rate independent of step mode
     void setStepSize(const hal_float_t& feedRate);
@@ -442,20 +427,6 @@ public:
     //! \sa setMacro1(bool, size_t)
     void setMacro16(bool enabled);
 
-    /*
-    //! This method cumulates new jog dial delta. In other words it produces counts
-    //! to be consumed by an icomp component.
-    //! \param delta new jog dial delta
-    void newJogDialDelta(int8_t delta);
-     */
-
-    /* //! Toggles true/false on the corresponding halui.jog.jog{increment|}Plus according to the \xrefitem mStepMode.
-     //! \param direction positive if > 0, negative if < 0, jo jog but reset signals to false otherwise
-     //! \return true if the step was consumed (on false to true transition)
-     bool jogStep(int8_t direction);
-
-     void doJogCounts(int32_t counts);
- */
     /**
      * Writes counts to each axis' count.
      * \param counts value to propagate to each axis
@@ -485,8 +456,6 @@ private:
     std::ostream mDevNull;
     std::ostream* mHalCout;
     HandwheelStepmodes::Mode mStepMode;
-    //int16_t                    mPendingStepsContinuousMode;
-    //int16_t                    mPendingStepsStepMode;
 
     //! //! Allocates new hal_bit_t pin according to \ref mIsSimulationMode. If \ref mIsSimulationMode then
     //! mallocs memory, hal_pin_bit_new allocation otherwise.
@@ -525,22 +494,5 @@ private:
     void enableManualMode(bool isRisingEdge);
 
     void enableMdiMode(bool isRisingEdge);
-
-    /*
-    //! Jogs (toggles) one of the first two given arguments according to the given direction.
-    //! Sets each other argument to false/0.
-    //! \param jogPlus first jog candidate
-    //! \param jogMinus second jog candidate
-    //! \param otherJogPlus other candidate that will be set to false
-    //! \param otherJogMinus another candidate that will be set to false
-    //! \param direction jog direction plus if > 0, minus if < 0, reset signals but no jog otherwise
-    //! \return true on positive transition (false to true), false otherwise
-    bool doJogToggleAndReset(hal_bit_t* jogPlus,
-                             hal_bit_t* jogMinus,
-                             hal_bit_t* otherJogPlus,
-                             hal_bit_t* otherJogMinus,
-                             int8_t direction);
-                             */
-
 };
 }

@@ -71,28 +71,6 @@ public:
     virtual ~UsbInputPackageInterpreted();
 };
 
-/*
-// ----------------------------------------------------------------------
-
-class MachineConfiguration
-{
-public:
-    MachineConfiguration(float scale = 80, float maxVelocity = 800);
-    float getScale() const;
-    void setScale(float scale);
-    void setMaxVelocity(float maxVelocity);
-    float getMaxVelocity() const;
-
-    MachineConfiguration& operator=(const MachineConfiguration other);
-
-private:
-    //! Specifies the number of pulses that corresponds to a move of one unit [mm] or [inch].
-    float mScale;
-    //! The maximum velocity for any axis in machine units per second (same unit as \ref mScale).
-    float mMaxVelocity;
-};
-*/
-
 // ----------------------------------------------------------------------
 
 //! program context
@@ -132,28 +110,8 @@ public:
     void enableVerboseInit(bool enable);
     void enableCrcDebugging(bool enable);
     void setWaitWithTimeout(uint8_t waitSecs = 3);
-    //bool onButtonPressedEvent(const WhbSoftwareButton& softwareButton) override;
-    //bool onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) override;
-    //void onAxisActiveEvent(const WhbKeyCode& axis) override;
-    //void onAxisInactiveEvent(const WhbKeyCode& axis) override;
-    //void onDataInterpreted() override;
-    //void onFeedActiveEvent(const WhbKeyCode& axis) override;
-    //void onFeedInactiveEvent(const WhbKeyCode& axis) override;
-    //void onJogDialEvent(int8_t delta) override;
-    //void updateAxisRotaryButton(const WhbUsbInPackage& inPackage);
-    //! update all buttons' state to hal and detect button pressed/released event
-    //! \param inPackage input package to interpret
-    //! \param keyCode pressed button
-    //! \param modifierCode Optional pressed modifier button. Usually "Fn", but could be any button.
-    //! \return \ref WhbKeyEventListener::onButtonPressedEvent
-    //bool updateHalButtons(const WhbUsbInPackage& inPackage, uint8_t keyCode, uint8_t modifierCode);
-    //void updateJogDial(const WhbUsbInPackage& inPackage);
-    //void updateStepRotaryButton(const WhbUsbInPackage& inPackage, bool forceEvents = false);
     void printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOutPackageData& outPackageBuffer) const;
-    //size_t getHalPinNumber(const WhbSoftwareButton& button);
     void offerHalMemory();
-
-    //void setMachineConfig(const MachineConfiguration& machineConfig);
 
 private:
     const char* mName;
@@ -164,8 +122,6 @@ private:
     WhbUsb                  mUsb;
     bool                    mIsRunning;
     bool                    mIsSimulationMode;
-    //WhbButtonsState         mPreviousButtonCodes;
-    //WhbButtonsState         mCurrentButtonCodes;
     std::ostream            mDevNull;
     std::ostream              * mTxCout;
     std::ostream              * mRxCout;
@@ -176,7 +132,6 @@ private:
     UsbInputPackageListener   & packageReceivedEventReceiver;
     UsbInputPackageInterpreted& packageInterpretedEventReceiver;
     bool    mIsCrcDebuggingEnabled;
-    //MachineConfiguration mMachineConfig;
     Pendant mPendant;
 
     //! prints human readable output of the push buttons state
@@ -195,7 +150,5 @@ private:
     void printHexdump(const WhbUsbInPackage& inPackage, std::ostream& out);
     //! prints a hexdump of the input package to \ref verboseRxOut stream
     void printHexdump(const WhbUsbInPackage& inPackage);
-    //bool dispatchButtonEventToHal(const WhbSoftwareButton& softwareButton, bool isButtonPressed);
-    //void dispatchAxisEventToHal(const WhbKeyCode& axis, bool isActive);
 };
 }

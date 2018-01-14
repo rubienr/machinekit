@@ -234,8 +234,6 @@ void WhbUsb::setDoReconnect(bool doReconnect)
 
 WhbUsb::WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback)
     :
-// usbVendorId(0x10ce), // xhc-whb04-4
-// usbProductId(0xeb70),// xhc-whb04-4
     usbVendorId(0x10ce), // xhc-whb04-6
     usbProductId(0xeb93), // xhc-whb04-6
     context(nullptr),
