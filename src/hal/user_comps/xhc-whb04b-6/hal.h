@@ -347,9 +347,10 @@ public:
     //! \sa setAxisXActive(bool)
     void setAxisCActive(bool enabled);
 
+    /*
     //! Set the new jog wheel step mode. The mode affects the pins chosen to generate jog movements.
     void setJogWheelStepMode(HandwheelStepmodes::Mode stepMode);
-
+*/
     //! Sets the new feed rate. The step mode must be set accordingly.
     //! \param feedRate the new feed rate independent of step mode
     void setStepSize(const hal_float_t& feedRate);
@@ -454,8 +455,14 @@ public:
     //! \param direction positive if > 0, negative if < 0, jo jog but reset signals to false otherwise
     //! \return true if the step was consumed (on false to true transition)
     bool jogStep(int8_t direction);
-*/
+
     void doJogCounts(int32_t counts);
+*/
+   /**
+    * Writes counts to each axis' count.
+    * \param counts value to propagate to each axis
+    */
+   void setJogCounts(int32_t counts);
 
     //! Returns the axis position.
     //! \param absolute true absolute, false relative
@@ -521,6 +528,7 @@ private:
 
     void enableMdiMode(bool isRisingEdge);
 
+    /*
     //! Jogs (toggles) one of the first two given arguments according to the given direction.
     //! Sets each other argument to false/0.
     //! \param jogPlus first jog candidate
@@ -534,6 +542,7 @@ private:
                              hal_bit_t* otherJogPlus,
                              hal_bit_t* otherJogMinus,
                              int8_t direction);
+                             */
 
 };
 }

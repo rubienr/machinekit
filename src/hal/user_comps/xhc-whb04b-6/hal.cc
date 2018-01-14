@@ -1109,6 +1109,7 @@ void WhbHal::setContinuousMode(bool enabled)
         *memory->out.axisASetVelocityMode = true;
         *memory->out.axisBSetVelocityMode = true;
         *memory->out.axisCSetVelocityMode = true;
+        *mHalCout << "hal   step mode is continuous" << endl;
     }
     setPin(enabled, KeyCodes::Buttons.manual_pulse_generator.text);
 }
@@ -1125,6 +1126,7 @@ void WhbHal::setStepMode(bool enabled)
         *memory->out.axisASetVelocityMode = false;
         *memory->out.axisBSetVelocityMode = false;
         *memory->out.axisCSetVelocityMode = false;
+        *mHalCout << "hal   step mode is step" << endl;
     }
     setPin(enabled, KeyCodes::Buttons.step_continuous.text);
 }
@@ -1299,6 +1301,7 @@ void WhbHal::newJogDialDelta(int8_t delta)
     mHalCout->copyfmt(init);
 }
 */
+/*
 // ----------------------------------------------------------------------
 
 bool WhbHal::doJogToggleAndReset(hal_bit_t* jogPlus,
@@ -1326,10 +1329,11 @@ bool WhbHal::doJogToggleAndReset(hal_bit_t* jogPlus,
     *otherJogMinus   = false;
     return hasConsumed;
 }
+*/
 
 // ----------------------------------------------------------------------
 
-void WhbHal::doJogCounts(int32_t counts)
+void WhbHal::setJogCounts(int32_t counts)
 {
     *memory->out.axisXJogCounts = counts;
     *memory->out.axisYJogCounts = counts;
@@ -1339,22 +1343,27 @@ void WhbHal::doJogCounts(int32_t counts)
     *memory->out.axisCJogCounts = counts;
 }
 
+/*
 // ----------------------------------------------------------------------
-
+// TODO: remove, deprecated, use setStepMode(bool) setContinuousMode(bool)
 void WhbHal::setJogWheelStepMode(HandwheelStepmodes::Mode stepMode)
 {
     mStepMode = stepMode;
 
     if (stepMode == HandwheelStepmodes::Mode::STEP)
     {
-        *mHalCout << "hal   step mode is step" << endl;
+        setStepMode(true);
+    }
+    else if (stepMode == HandwheelStepmodes::Mode::CONTINUOUS)
+    {
+        setContinuousMode(true);
     }
     else
     {
-        *mHalCout << "hal   step mode is continuous" << endl;
+        assert(false);
     }
 }
-
+*/
 // ----------------------------------------------------------------------
 
 void WhbHal::setFunction(bool enabled)

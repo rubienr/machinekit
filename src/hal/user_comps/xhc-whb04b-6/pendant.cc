@@ -1849,12 +1849,13 @@ void Pendant::dispatchFeedValueToHal()
 {
     FeedRotaryButton& feedButton = mCurrentButtonsState.feedButton();
     if (feedButton.isPermitted()) {
-        mHal.setJogWheelStepMode(feedButton.stepMode());
+
 
         float axisJogStepSize = 0;
 
         if (feedButton.stepMode() == HandwheelStepmodes::Mode::STEP)
         {
+            mHal.setStepMode(true);
             hal_float_t scale = 0.1;
             mHal.setFeedOverrideScale(scale);
             mHal.setFeedOverrideDirectValue(false);
@@ -1862,6 +1863,7 @@ void Pendant::dispatchFeedValueToHal()
         }
         else if (feedButton.stepMode() == HandwheelStepmodes::Mode::CONTINUOUS)
         {
+            mHal.setContinuousMode(true);
             // On velocity mode set feed-override value to absolute percentage value: counts*scale.
             axisJogStepSize = 2;
             mHal.setFeedOverrideDirectValue(true);
@@ -1908,7 +1910,7 @@ bool Pendant::onJogDialEvent(int32_t counts)
     {
         *mPendantCout << mPrefix << "wheel  event " << static_cast<int16_t>(counts) << endl;
     }
-    mHal.doJogCounts(counts);
+    mHal.setJogCounts(counts);
     mDisplay.onJogDialEvent(counts);
     return true;
 }
