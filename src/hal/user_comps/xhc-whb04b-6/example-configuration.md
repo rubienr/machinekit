@@ -1,23 +1,27 @@
 
 ## INI Example
 
+Define section XHC_WHB04B_6_CONFIG section HAL:
+
 ```
 [XHC_WHB04B_6_CONFIG]
-PENDANT_REQUIRED    = yes
-COMPONENT_ARGUMENTS = -a
+# -a to enable debug output
+#COMPONENT_ARGUMENTS = -a
+# normal operation mode
+COMPONENT_ARGUMENTS = 
 
 [HAL]
-# xhc jogdial script:
-# load before *.hal file to provide jogdial signals beforehand
-HALFILE = xhc-whb04b-6.tcl
-...
-HALFILE = <your-axis>.hal
+HALFILE = <your-machine-hal>.hal
+HALFILE = xhc-whb04b-6.hal
 ...
 ```
 
-## Hal Example
+## Hal File xhc_whb04b_6.hal Example
 
 ```
+# load the user space component
+loadusr -W xhc-whb04b-6 -H [XHC_WHB04B_6_CONFIG]COMPONENT_ARGUMENTS
+
 # Connect emergency stop signals
 net  pdnt.machine.is-on             halui.machine.is-on           whb.halui.machine.is-on
 net  pdnt.machine.on                whb.halui.machine.on          halui.machine.on
