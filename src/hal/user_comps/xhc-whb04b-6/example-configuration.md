@@ -103,7 +103,9 @@ net  pdnt.home-all                  whb.button.macro-10           halui.home-all
 # Connect reset, stop, start/pause/resume buttons to halui
 # toggles whb.halui.estop.{activate, reset} which are
 # already connected to halui.estop.{activate, reset} via whb.halui.estop.{activate, reset}
-net  pdnt.button.reset              whb.button.reset
+net  pdnt.button.reset              whb.button.reset              axisui.notifications-clear
+# clear notifications on reset button pressed/released
+net  pdnt.button.reset              axisui.notifications-clear
 # already linked to halui.program.stop via whb.program.stop
 net  pdnt.button.stop               whb.button.stop
 # toggles whb.halui.program{run, pause, resume} which are 
