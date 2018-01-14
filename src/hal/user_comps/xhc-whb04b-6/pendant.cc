@@ -25,6 +25,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <functional>
+#include <limits>
 
 // 3rd party includes
 
@@ -2053,8 +2054,14 @@ void Display::updateData()
 {
     mDisplayData.displayModeFlags.asBitFields.isReset = !(*mHal.memory->in.isMachineOn);
 
-    mDisplayData.spindleSpeed = 123;
-    mDisplayData.feedRate     = 456;
+    uint32_t spindleSpeed = static_cast<uint32_t>(mHal.getSpindleSpeedAbsRpm());
+    uint32_t feedRate     = static_cast<uint32_t>(mHal.getFeedUps() * 60);
+
+    assert(spindleSpeed <= std::numeric_limits<uint16_t>::max());
+    assert(feedRate <= std::numeric_limits<uint16_t>::max());
+
+    mDisplayData.spindleSpeed = spindleSpeed;
+    mDisplayData.feedRate     = feedRate;
 
     bool isAbsolutePositionRequest = (mAxisPositionMethod == AxisPositionMethod::ABSOLUTE);
     mDisplayData.displayModeFlags.asBitFields.isRelatvieCoordinate = !isAbsolutePositionRequest;

@@ -107,6 +107,11 @@ public:
         hal_bit_t  * spindleIsOn          = nullptr;
         //! to be connected to \ref halui.spindle-override.value
         hal_float_t* spindleOverrideValue = nullptr;
+        // to be connected to \ref motion.spindle-speed-in
+        hal_float_t* spindleSpeedAbsRpm   = nullptr;
+
+        // to be connected to \ref motion.current-vel
+        hal_float_t* feedSpeedUps = nullptr;
 
         //! to be connected to \ref halui.program.is-running
         hal_bit_t* isProgramRunning = nullptr;
@@ -352,23 +357,29 @@ public:
     //! \param enabled true if start/resume is requested, false otherwise
     //! \param pinNumber \sa setReset(bool, size_t)
     void setStart(bool enabled);
+
     //! \sa setReset(bool, size_t)
     void setFeedPlus(bool enabled);
     //! \sa setReset(bool, size_t)
     void setFeedMinus(bool enabled);
-
     // \xrefitem HalMemory::Out::feedOverrideCounts setter
     void setFeedOverrideCounts(hal_s32_t counts);
     // \xrefitem HalMemory::Out::feedOverrideScale setter
     void setFeedOverrideScale(hal_float_t scale);
     // \xrefitem HalMemory::Out::feedOverrideDirectValue setter
     void setFeedOverrideDirectValue(bool enabled);
+    //! Returns the feed speed.
+    //! \return the feed speed in unis per second
+    hal_float_t getFeedUps();
 
     void setFeedValueSelected0_001(bool selected);
     void setFeedValueSelected0_01(bool selected);
     void setFeedValueSelected0_1(bool selected);
     void setFeedValueSelected1_0(bool selected);
 
+    //! Returns the spindle speed.
+    //! \return the spindle speed in rounds per second
+    hal_float_t getSpindleSpeedAbsRpm();
     //! \sa setReset(bool, size_t)
     void setSpindlePlus(bool enabled);
     //! \sa setReset(bool, size_t)
@@ -468,6 +479,8 @@ private:
     int newHalFloat(hal_pin_dir_t direction, hal_float_t** ptr, int componentId, const char* fmt, ...);
     //! \sa  newBitHalPin(hal_pin_dir_t, hal_bit_t**, int, const char*, ...)
     int newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int componentId, const char* fmt, ...);
+    //! \sa  newBitHalPin(hal_pin_dir_t, hal_bit_t**, int, const char*, ...)
+    int newHalUnsigned32(hal_pin_dir_t direction, hal_u32_t** ptr, int componentId, const char* fmt, ...);
     //! \param direction module input or output
     //! \param ptr will point to the allocated memory
     //! \param componentId hal id

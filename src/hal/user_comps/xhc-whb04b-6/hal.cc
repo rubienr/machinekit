@@ -140,7 +140,9 @@ WhbHal::~WhbHal()
 
     freeSimulatedPin((void**)(&memory->in.spindleIsOn));
     freeSimulatedPin((void**)(&memory->in.spindleOverrideValue));
-    //freeSimulatedPin((void**)(&memory->in.spindleRps));
+    freeSimulatedPin((void**)(&memory->in.spindleSpeedAbsRpm));
+    freeSimulatedPin((void**)(&memory->in.feedSpeedUps));
+
     for (size_t idx = 0; (idx < (sizeof(memory->out.button_pin) / sizeof(hal_bit_t * ))); idx++)
     {
         freeSimulatedPin((void**)(&memory->out.button_pin[idx]));
@@ -301,6 +303,44 @@ int WhbHal::newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int compone
     else
     {
         int r = hal_pin_s32_new(pin_name, direction, ptr, componentId);
+        assert(r == 0);
+        return r;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+int WhbHal::newHalUnsigned32(hal_pin_dir_t direction, hal_u32_t** ptr, int componentId, const char* fmt, ...)
+{
+    char    pin_name[256];
+    va_list args;
+    va_start(args, fmt);
+    vsprintf(pin_name, fmt, args);
+    va_end(args);
+
+    assert(strlen(pin_name) < HAL_NAME_LEN);
+
+    *mHalCout << "hal   u32   ";
+    if (direction == HAL_OUT)
+    {
+        *mHalCout << "out ";
+    }
+    else
+    {
+        *mHalCout << "in  ";
+    }
+    *mHalCout << pin_name << endl;
+
+    assert(ptr != nullptr);
+    assert(*ptr == nullptr);
+
+    if (mIsSimulationMode)
+    {
+        return newSimulatedHalPin(pin_name, (void**)ptr, sizeof(hal_u32_t));
+    }
+    else
+    {
+        int r = hal_pin_u32_new(pin_name, direction, ptr, componentId);
         assert(r == 0);
         return r;
     }
@@ -517,13 +557,14 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
               mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedOverrideIncrease), mHalCompId, "%s.halui.feed-override.increase",
               mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.feedSpeedUps), mHalCompId, "%s.motion.current-vel", mComponentPrefix);
 
     newHalFloat(HAL_IN, &(memory->in.spindleOverrideValue), mHalCompId, "%s.halui.spindle-override.value",
                 mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.spindleDoIncrease), mHalCompId, "%s.halui.spindle.increase",
-              mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.spindleDoDecrease), mHalCompId, "%s.halui.spindle.decrease",
-              mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.spindleSpeedAbsRpm), mHalCompId, "%s.motion.spindle-speed-abs", mComponentPrefix);
+
+    newHalBit(HAL_OUT, &(memory->out.spindleDoIncrease), mHalCompId, "%s.halui.spindle.increase", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.spindleDoDecrease), mHalCompId, "%s.halui.spindle.decrease", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.spindleOverrideDoIncrease), mHalCompId, "%s.halui.spindle-override.increase",
               mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.spindleOverrideDoDecrease), mHalCompId, "%s.halui.spindle-override.decrease",
@@ -886,6 +927,20 @@ void WhbHal::setFeedValueSelected1_0(bool selected)
 void WhbHal::setFeedOverrideScale(hal_float_t scale)
 {
     *memory->out.feedOverrideScale = scale;
+}
+
+// ----------------------------------------------------------------------
+
+hal_float_t WhbHal::getSpindleSpeedAbsRpm()
+{
+    return *memory->in.spindleSpeedAbsRpm;
+}
+
+// ----------------------------------------------------------------------
+
+hal_float_t WhbHal::getFeedUps()
+{
+    return *memory->in.feedSpeedUps;
 }
 
 // ----------------------------------------------------------------------
