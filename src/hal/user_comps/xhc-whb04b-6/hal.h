@@ -107,11 +107,14 @@ public:
         hal_bit_t  * spindleIsOn          = nullptr;
         //! to be connected to \ref halui.spindle-override.value
         hal_float_t* spindleOverrideValue = nullptr;
-        // to be connected to \ref motion.spindle-speed-in
+        //! To be connected to an encoded and correctly scaled value of an spindle feedback signal.
+        //! See also \ref encoder and \ref scale.
         hal_float_t* spindleSpeedAbsRpm   = nullptr;
 
         // to be connected to \ref motion.current-vel
         hal_float_t* feedSpeedUps = nullptr;
+        //! to be connected to \ref halui.feed-override.value
+        hal_float_t * feedOverrideValue      = nullptr;
 
         //! to be connected to \ref halui.program.is-running
         hal_bit_t* isProgramRunning = nullptr;
@@ -209,6 +212,8 @@ public:
         hal_float_t* feedOverrideScale       = nullptr;
         //! to be connected to \ref halui.feed-override.direct-value
         hal_bit_t  * feedOverrideDirectValue = nullptr;
+        //! to be connected to \ref halui.feed-override.count-enable
+        hal_bit_t  * feedOverrideCountEnable = nullptr;
         //! to be connected to \ref halui.feed-override.counts
         hal_s32_t  * feedOverrideCounts      = nullptr;
         //! to be connected to \ref halui.feed-override.decrease
@@ -362,11 +367,17 @@ public:
     void setFeedPlus(bool enabled);
     //! \sa setReset(bool, size_t)
     void setFeedMinus(bool enabled);
-    // \xrefitem HalMemory::Out::feedOverrideCounts setter
+    //! Returns the current feed override value.
+    //! \return the current feed override value v: 0 <= v <= 1
+    hal_float_t getFeedOverrideValue();
+    // TODO: fix doygen
+    //! \xrefitem HalMemory::Out::feedOverrideCounts setter
     void setFeedOverrideCounts(hal_s32_t counts);
-    // \xrefitem HalMemory::Out::feedOverrideScale setter
+    //! \xrefitem HalMemory::Out::feedOverrideScale setter
     void setFeedOverrideScale(hal_float_t scale);
-    // \xrefitem HalMemory::Out::feedOverrideDirectValue setter
+    //! \xrefitem HalMemory::Out::feedOverrideDirectValue setter
+    void setFeedOverrideCountEnable(bool enabled);
+    //! \xrefitem HalMemory::Out::feedOverrideDirectValue setter
     void setFeedOverrideDirectValue(bool enabled);
     //! Returns the feed speed.
     //! \return the feed speed in unis per second
@@ -442,7 +453,7 @@ public:
      * Writes counts to each axis' count.
      * \param counts value to propagate to each axis
      */
-    void setJogCounts(int32_t counts);
+    void setJogCounts(int32_t counts, int32_t delta);
 
     //! Returns the axis position.
     //! \param absolute true absolute, false relative

@@ -213,8 +213,8 @@ which is the report ID. The data **exclusive report ID** reads as follows:
 | 0x02  | [0:7]   | seed                                                                 |                     | * |
 | 0x03  | [0:1]   | display indicator flags: step mode                                   | 0x00 "CONT xx%", 0x01 "STEP: xx", 0x02 "MPG xx%", 0x03 "xxx%", 0x04 unknown. See [A1, A2](#display-examples): If set step mode, continuous mode otherwise. Caution: Step mode is interpreted even if rotary button has an invalid step position (i.e. 100%). A misleading display information is shown as "STEP: 1.0" and **we consider this as FW bug**. |   |
 | 0x03  | [2:5]   | display indicator flags: **unknown**                                 |                     | [\*](#display-examples) |
-| 0x03  | [6:6]   | display indicator flags: reset                                       | see [C2](#display-examples)|   |
-| 0x03  | [7:7]   | display indicator flags: machine coordinate                          | see [C3, D1](#display-examples), if set workpiece coordinates, machine coordinates otherwise|   |
+| 0x03  | [6:6]   | display indicator flags: reset                                       | See [C2](#display-examples). On reset the asterisk indicating selected X-axis is rendered erroneous. Also flickering of the same area can be observed. **We consider this as FW bug.**|   |
+| 0x03  | [7:7]   | display indicator flags: machine coordinate                          | See [C3, D1](#display-examples). If set workpiece coordinates, machine coordinates otherwise|   |
 | 0x04  | [0:15]  | axis coordinate on display line 1: integer value                     |                     |   |
 | 0x06  | [0:14]  | axis coordinate on display line 1: fraction value                    | 15bit width but device cuts off to 4 digits, **we consider this as FW bug** | |
 | 0x06  | [15:15] | axis coordinate on display line 1: sign                              |                     |   |

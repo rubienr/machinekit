@@ -117,37 +117,36 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->in.axisAPositionRelative));
     freeSimulatedPin((void**)(&memory->in.axisBPositionRelative));
     freeSimulatedPin((void**)(&memory->in.axisCPositionRelative));
-
     freeSimulatedPin((void**)(&memory->in.stepgenXMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenYMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenZMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenAMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenBMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenCMaxVelocity));
-
     freeSimulatedPin((void**)(&memory->in.stepgenXPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenYPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenZPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenAPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenBPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenCPositionScale));
-    freeSimulatedPin((void**)(&memory->out.feedOverrideScale));
-
-    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_001));
-    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_01));
-    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_1));
-    freeSimulatedPin((void**)(&memory->out.feedValueSelected1_0));
-
     freeSimulatedPin((void**)(&memory->in.spindleIsOn));
     freeSimulatedPin((void**)(&memory->in.spindleOverrideValue));
     freeSimulatedPin((void**)(&memory->in.spindleSpeedAbsRpm));
     freeSimulatedPin((void**)(&memory->in.feedSpeedUps));
+    freeSimulatedPin((void**)(&memory->in.feedOverrideValue));
+    freeSimulatedPin((void**)(&memory->in.isEmergencyStop));
+    freeSimulatedPin((void**)(&memory->in.isMachineOn));
 
     for (size_t idx = 0; (idx < (sizeof(memory->out.button_pin) / sizeof(hal_bit_t * ))); idx++)
     {
         freeSimulatedPin((void**)(&memory->out.button_pin[idx]));
     }
 
+    freeSimulatedPin((void**)(&memory->out.feedOverrideScale));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_001));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_01));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_1));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected1_0));
     freeSimulatedPin((void**)(&memory->out.axisXJogCounts));
     freeSimulatedPin((void**)(&memory->out.axisYJogCounts));
     freeSimulatedPin((void**)(&memory->out.axisZJogCounts));
@@ -175,7 +174,7 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->out.axisASetVelocityMode));
     freeSimulatedPin((void**)(&memory->out.axisBSetVelocityMode));
     freeSimulatedPin((void**)(&memory->out.axisCSetVelocityMode));
-
+    freeSimulatedPin((void**)(&memory->out.feedOverrideCountEnable));
     freeSimulatedPin((void**)(&memory->out.feedOverrideDirectValue));
     freeSimulatedPin((void**)(&memory->out.feedOverrideCounts));
     freeSimulatedPin((void**)(&memory->out.feedOverrideDecrease));
@@ -186,25 +185,15 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->out.spindleDoIncrease));
     freeSimulatedPin((void**)(&memory->out.spindleOverrideDoDecrease));
     freeSimulatedPin((void**)(&memory->out.spindleOverrideDoIncrease));
-    //freeSimulatedPin((void**)(&memory->in.jogMaxVelocity));
-    //freeSimulatedPin((void**)(&memory->out.jogIncrement));
-    //freeSimulatedPin((void**)(&memory->out.jogIncrementPlus));
-    //freeSimulatedPin((void**)(&memory->out.jogIncrementMinus));
-    //freeSimulatedPin((void**)(&memory->out.jogPlus));
-    //freeSimulatedPin((void**)(&memory->out.jogMinus));
-    //freeSimulatedPin((void**)(&memory->out.jogSpeedValue));
     freeSimulatedPin((void**)(&memory->out.homeAll));
-    //freeSimulatedPin((void**)(&memory->in.stepsizeUp));
     freeSimulatedPin((void**)(&memory->out.jointXSelect));
     freeSimulatedPin((void**)(&memory->out.jointYSelect));
     freeSimulatedPin((void**)(&memory->out.jointZSelect));
     freeSimulatedPin((void**)(&memory->out.jointASelect));
     freeSimulatedPin((void**)(&memory->out.jointBSelect));
     freeSimulatedPin((void**)(&memory->out.jointCSelect));
-    //freeSimulatedPin((void**)(&memory->out.stepsize));
     freeSimulatedPin((void**)(&memory->out.isPendantSleeping));
     freeSimulatedPin((void**)(&memory->out.isPendantConnected));
-    //freeSimulatedPin((void**)(&memory->out.isPendantRequired));
     freeSimulatedPin((void**)(&memory->out.doRunProgram));
     freeSimulatedPin((void**)(&memory->out.doPauseProgram));
     freeSimulatedPin((void**)(&memory->out.doResumeProgram));
@@ -215,8 +204,6 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->out.doModeMdi));
     freeSimulatedPin((void**)(&memory->out.doEmergencyStop));
     freeSimulatedPin((void**)(&memory->out.resetEmergencyStop));
-    freeSimulatedPin((void**)(&memory->in.isEmergencyStop));
-    freeSimulatedPin((void**)(&memory->in.isMachineOn));
     freeSimulatedPin((void**)(&memory->out.doMachineOn));
     freeSimulatedPin((void**)(&memory->out.doMachineOff));
     delete memory;
@@ -551,6 +538,9 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
                 mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedOverrideDirectValue), mHalCompId, "%s.halui.feed-override.direct-val",
               mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.feedOverrideCountEnable), mHalCompId, "%s.halui.feed-override.count-enable",
+              mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.feedOverrideValue), mHalCompId, "%s.halui.feed-override.value", mComponentPrefix);
     newHalSigned32(HAL_OUT, &(memory->out.feedOverrideCounts), mHalCompId, "%s.halui.feed-override.counts",
                    mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedOverrideDecrease), mHalCompId, "%s.halui.feed-override.decrease",
@@ -882,9 +872,23 @@ void WhbHal::setFeedMinus(bool enabled)
 
 // ----------------------------------------------------------------------
 
+void WhbHal::setFeedOverrideCountEnable(bool enabled)
+{
+    *memory->out.feedOverrideCountEnable = enabled;
+}
+
+// ----------------------------------------------------------------------
+
 void WhbHal::setFeedOverrideDirectValue(bool enabled)
 {
     *memory->out.feedOverrideDirectValue = enabled;
+}
+
+// ----------------------------------------------------------------------
+
+hal_float_t WhbHal::getFeedOverrideValue()
+{
+    return *memory->in.feedOverrideValue;
 }
 
 // ----------------------------------------------------------------------
@@ -1219,14 +1223,22 @@ void WhbHal::setPin(bool enabled, const char* pinName)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setJogCounts(int32_t counts)
+void WhbHal::setJogCounts(int32_t counts, int32_t delta)
 {
-    *memory->out.axisXJogCounts = counts;
-    *memory->out.axisYJogCounts = counts;
-    *memory->out.axisZJogCounts = counts;
-    *memory->out.axisAJogCounts = counts;
-    *memory->out.axisBJogCounts = counts;
-    *memory->out.axisCJogCounts = counts;
+    /*if (*memory->out.feedOverrideCountEnable)
+    {
+        *memory->out.feedOverrideCounts = counts;
+
+    }
+    else*/
+    {
+        *memory->out.axisXJogCounts = counts;
+        *memory->out.axisYJogCounts = counts;
+        *memory->out.axisZJogCounts = counts;
+        *memory->out.axisAJogCounts = counts;
+        *memory->out.axisBJogCounts = counts;
+        *memory->out.axisCJogCounts = counts;
+    }
 }
 
 // ----------------------------------------------------------------------

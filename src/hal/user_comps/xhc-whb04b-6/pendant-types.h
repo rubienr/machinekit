@@ -39,7 +39,8 @@ public:
     {
         CONTINUOUS  = 0,
         STEP        = 1,
-        MODES_COUNT = 2
+        FEED        = 2,
+        MODES_COUNT = 3
     };
 };
 }

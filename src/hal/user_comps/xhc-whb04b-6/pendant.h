@@ -490,6 +490,7 @@ public:
     const KeyCode                           speed_1;
     const KeyCode                           percent_60;
     const KeyCode                           percent_100;
+    // TODO: inherit lead and re-implement == operator which checks for key-code only
     const KeyCode                           lead;
     const KeyCode                           undefined;
     const std::map<uint8_t, const KeyCode*> codeMap;
@@ -549,7 +550,7 @@ public:
     virtual void onAxisInactiveEvent(const KeyCode& axis) = 0;
     virtual void onFeedActiveEvent(const KeyCode& axis) = 0;
     virtual void onFeedInactiveEvent(const KeyCode& axis) = 0;
-    virtual bool onJogDialEvent(int32_t delta) = 0;
+    virtual bool onJogDialEvent(int32_t counts, int32_t delta) = 0;
     virtual ~KeyEventListener();
 };
 
@@ -731,7 +732,7 @@ class Handwheel
 public:
     Handwheel(const FeedRotaryButton& feedButton, KeyEventListener* listener = nullptr);
     ~Handwheel();
-    void count(int8_t counts);
+    void count(int8_t delta);
     int32_t counts() const;
 
 private:
@@ -817,7 +818,7 @@ public:
 
     virtual void onFeedInactiveEvent(const KeyCode& axis) override;
 
-    virtual bool onJogDialEvent(int32_t counts) override;
+    virtual bool onJogDialEvent(int32_t counts, int32_t delta) override;
 
     void updateData();
 
@@ -859,7 +860,7 @@ public:
     virtual void onAxisInactiveEvent(const KeyCode& axis) override;
     virtual void onFeedActiveEvent(const KeyCode& axis) override;
     virtual void onFeedInactiveEvent(const KeyCode& axis) override;
-    virtual bool onJogDialEvent(int32_t counts) override;
+    virtual bool onJogDialEvent(int32_t counts, int32_t delta) override;
 
 private:
     WhbHal& mHal;
@@ -883,7 +884,7 @@ private:
                       int8_t handWheelStepCount);
     void dispatchAxisEventToHal(const KeyCode& axis, bool isActive);
     void dispatchActiveFeedToHal(const KeyCode& feed, bool isActive);
-    void dispatchFeedValueToHal();
+    void dispatchFeedValueToHal(const KeyCode* feed);
 };
 
 // ----------------------------------------------------------------------
