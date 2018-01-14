@@ -63,12 +63,16 @@ public:
     //! \see DisplayIndicatorBitFields::stepMode
     enum class StepMode : uint8_t
     {
-        //! displays "CONT <xx>%"
+        //! displays "CONT: <xx>%"
             CONTINUOUS             = 0x00,
         //! displays "STP: <x.xxxx>"
             STEP                   = 0x01,
         //! displays "MPG <xx>%"
-            MANUAL_PULSE_GENERATOR = 0x02
+            MANUAL_PULSE_GENERATOR = 0x02,
+        //! displays <xxx%>
+            FEED= 0x03,
+        //! unknown flags
+            UNKNOWN = 0x04
     };
 };
 
@@ -114,9 +118,9 @@ public:
     WhbUsbOutPackageAxisCoordinate row1Coordinate;
     WhbUsbOutPackageAxisCoordinate row2Coordinate;
     WhbUsbOutPackageAxisCoordinate row3Coordinate;
-    //! printed on feed+/- button pressed
+    //! on feed+/- button pressed shown on display
     uint16_t                       feedRate;
-    //! printed on spindle+/- button pressed
+    //! on spindle+/- button pressed shown on display
     uint16_t                       spindleSpeed;
     WhbUsbOutPackageData();
     void clear();

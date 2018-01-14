@@ -356,7 +356,14 @@ WhbContext::~WhbContext()
 
 void WhbContext::updateDisplay()
 {
-    mPendant.updateDisplay();
+    if (mIsRunning)
+    {
+        mPendant.updateDisplayData();
+    }
+    else
+    {
+        mPendant.clearDisplayData();
+    }
     mUsb.sendDisplayData();
 }
 
@@ -586,6 +593,7 @@ void WhbContext::process()
             }
             updateDisplay();
         }
+        updateDisplay();
 
         *(mHal.memory->out.isPendantConnected) = 0;
         *mInitCout << "connection lost, cleaning up" << endl;

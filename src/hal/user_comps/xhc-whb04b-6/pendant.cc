@@ -1403,9 +1403,16 @@ void Pendant::processEvent(const KeyCode& keyCode,
 
 // ----------------------------------------------------------------------
 
-void Pendant::updateDisplay()
+void Pendant::updateDisplayData()
 {
     mDisplay.updateData();
+}
+
+// ----------------------------------------------------------------------
+
+void Pendant::clearDisplayData()
+{
+    mDisplay.clearData();
 }
 
 // ----------------------------------------------------------------------
@@ -1953,7 +1960,21 @@ Display::~Display()
 
 bool Display::onButtonPressedEvent(const MetaButtonCodes& metaButton)
 {
-    if (metaButton == KeyCodes::Meta.macro5)
+    if (metaButton == KeyCodes::Meta.manual_pulse_generator)
+    {
+        mDisplayData.displayModeFlags.asBitFields.stepMode =
+            static_cast<typename std::underlying_type<DisplayIndicatorStepMode::StepMode>::type>(
+                DisplayIndicatorStepMode::StepMode::MANUAL_PULSE_GENERATOR);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.step_continuous)
+    {
+        mDisplayData.displayModeFlags.asBitFields.stepMode =
+            static_cast<typename std::underlying_type<DisplayIndicatorStepMode::StepMode>::type>(
+                DisplayIndicatorStepMode::StepMode::STEP);
+        return true;
+    }
+    else if (metaButton == KeyCodes::Meta.macro5)
     {
         mAxisPositionMethod = AxisPositionMethod::ABSOLUTE;
         return true;
@@ -1999,8 +2020,18 @@ void Display::onAxisInactiveEvent(const KeyCode& axis)
 
 void Display::onFeedActiveEvent(const KeyCode& axis)
 {
-    mDisplayData.displayModeFlags.asBitFields.stepMode =
-        (mCurrentButtonsState.feedButton().stepMode() == HandwheelStepmodes::Mode::STEP);
+    if (mCurrentButtonsState.feedButton().stepMode() == HandwheelStepmodes::Mode::STEP)
+    {
+        mDisplayData.displayModeFlags.asBitFields.stepMode =
+            static_cast<typename std::underlying_type<DisplayIndicatorStepMode::StepMode>::type>(
+                DisplayIndicatorStepMode::StepMode::CONTINUOUS);
+    }
+    else
+    {
+        mDisplayData.displayModeFlags.asBitFields.stepMode =
+            static_cast<typename std::underlying_type<DisplayIndicatorStepMode::StepMode>::type>(
+                DisplayIndicatorStepMode::StepMode::MANUAL_PULSE_GENERATOR);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -2022,6 +2053,9 @@ void Display::updateData()
 {
     mDisplayData.displayModeFlags.asBitFields.isReset = !(*mHal.memory->in.isMachineOn);
 
+    mDisplayData.spindleSpeed = 123;
+    mDisplayData.feedRate     = 456;
+
     bool isAbsolutePositionRequest = (mAxisPositionMethod == AxisPositionMethod::ABSOLUTE);
     mDisplayData.displayModeFlags.asBitFields.isRelatvieCoordinate = !isAbsolutePositionRequest;
     if (mActiveAxisGroup == AxisGroup::XYZ)
@@ -2036,6 +2070,20 @@ void Display::updateData()
         mDisplayData.row2Coordinate.setCoordinate(static_cast<float>(mHal.getAxisBPosition(isAbsolutePositionRequest)));
         mDisplayData.row3Coordinate.setCoordinate(static_cast<float>(mHal.getAxisCPosition(isAbsolutePositionRequest)));
     }
+}
+
+void Display::clearData()
+{
+    mDisplayData.feedRate     = 0;
+    mDisplayData.spindleSpeed = 0;
+    mDisplayData.displayModeFlags.asBitFields.stepMode =
+        static_cast<typename std::underlying_type<DisplayIndicatorStepMode::StepMode>::type>(
+            DisplayIndicatorStepMode::StepMode::FEED);
+    mDisplayData.displayModeFlags.asBitFields.isReset              = true;
+    mDisplayData.displayModeFlags.asBitFields.isRelatvieCoordinate = false;
+    mDisplayData.row1Coordinate.clear();
+    mDisplayData.row2Coordinate.clear();
+    mDisplayData.row3Coordinate.clear();
 }
 }
 

@@ -821,6 +821,8 @@ public:
 
     void updateData();
 
+    void clearData();
+
 private:
     const ButtonsState  & mCurrentButtonsState;
     WhbHal              & mHal;
@@ -843,7 +845,8 @@ public:
                       uint8_t rotaryButtonFeedKeyCode,
                       int8_t handWheelStepCount);
 
-    void updateDisplay();
+    void updateDisplayData();
+    void clearDisplayData();
 
     const ButtonsState& currentButtonsState() const;
     const ButtonsState& previousButtonsState() const;
