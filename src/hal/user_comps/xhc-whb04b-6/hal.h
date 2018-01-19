@@ -53,90 +53,90 @@ public:
     {
     public:
         //! to be connected to \ref halui.axis.0.pos-feedback
-        hal_float_t* axisXPosition = nullptr;
+        hal_float_t* axisXPosition{nullptr};
         //! to be connected to \ref halui.axis.1.pos-feedback
-        hal_float_t* axisYPosition = nullptr;
+        hal_float_t* axisYPosition{nullptr};
         //! to be connected to \ref halui.axis.2.pos-feedback
-        hal_float_t* axisZPosition = nullptr;
+        hal_float_t* axisZPosition{nullptr};
         //! to be connected to \ref halui.axis.3.pos-feedback
-        hal_float_t* axisAPosition = nullptr;
+        hal_float_t* axisAPosition{nullptr};
         //! to be connected to \ref halui.axis.4.pos-feedback
-        hal_float_t* axisBPosition = nullptr;
+        hal_float_t* axisBPosition{nullptr};
         //! to be connected to \ref halui.axis.5.pos-feedback
-        hal_float_t* axisCPosition = nullptr;
+        hal_float_t* axisCPosition{nullptr};
 
         //! to be connected to \ref halui.axis.0.pos-relative
-        hal_float_t* axisXPositionRelative = nullptr;
+        hal_float_t* axisXPositionRelative{nullptr};
         //! to be connected to \ref halui.axis.1.pos-relative
-        hal_float_t* axisYPositionRelative = nullptr;
+        hal_float_t* axisYPositionRelative{nullptr};
         //! to be connected to \ref halui.axis.2.pos-relative
-        hal_float_t* axisZPositionRelative = nullptr;
+        hal_float_t* axisZPositionRelative{nullptr};
         //! to be connected to \ref halui.axis.3.pos-relative
-        hal_float_t* axisAPositionRelative = nullptr;
+        hal_float_t* axisAPositionRelative{nullptr};
         //! to be connected to \ref halui.axis.4.pos-relative
-        hal_float_t* axisBPositionRelative = nullptr;
+        hal_float_t* axisBPositionRelative{nullptr};
         //! to be connected to \ref halui.axis.5.pos-relative
-        hal_float_t* axisCPositionRelative = nullptr;
+        hal_float_t* axisCPositionRelative{nullptr};
 
         //! to be connected to \ref stepge.00.maxvel
-        hal_float_t* stepgenXMaxVelocity   = nullptr;
+        hal_float_t* stepgenXMaxVelocity{nullptr};
         //! to be connected to \ref stepge.01.maxvel
-        hal_float_t* stepgenYMaxVelocity   = nullptr;
+        hal_float_t* stepgenYMaxVelocity{nullptr};
         //! to be connected to \ref stepge.02.maxvel
-        hal_float_t* stepgenZMaxVelocity   = nullptr;
+        hal_float_t* stepgenZMaxVelocity{nullptr};
         //! to be connected to \ref stepge.03.maxvel
-        hal_float_t* stepgenAMaxVelocity   = nullptr;
+        hal_float_t* stepgenAMaxVelocity{nullptr};
         //! to be connected to \ref stepge.04.maxvel
-        hal_float_t* stepgenBMaxVelocity   = nullptr;
+        hal_float_t* stepgenBMaxVelocity{nullptr};
         //! to be connected to \ref stepge.05.maxvel
-        hal_float_t* stepgenCMaxVelocity   = nullptr;
+        hal_float_t* stepgenCMaxVelocity{nullptr};
         //! to be connected to \ref stepgen.00.position-scale
-        hal_float_t* stepgenXPositionScale = nullptr;
+        hal_float_t* stepgenXPositionScale{nullptr};
         //! to be connected to \ref stepgen.01.position-scale
-        hal_float_t* stepgenYPositionScale = nullptr;
+        hal_float_t* stepgenYPositionScale{nullptr};
         //! to be connected to \ref stepgen.02.position-scale
-        hal_float_t* stepgenZPositionScale = nullptr;
+        hal_float_t* stepgenZPositionScale{nullptr};
         //! to be connected to \ref stepgen.03.position-scale
-        hal_float_t* stepgenAPositionScale = nullptr;
+        hal_float_t* stepgenAPositionScale{nullptr};
         //! to be connected to \ref stepgen.04.position-scale
-        hal_float_t* stepgenBPositionScale = nullptr;
+        hal_float_t* stepgenBPositionScale{nullptr};
         //! to be connected to \ref stepgen.05.position-scale
-        hal_float_t* stepgenCPositionScale = nullptr;
+        hal_float_t* stepgenCPositionScale{nullptr};
 
         //! to be connected to \ref halui.spindle.is-on
-        hal_bit_t  * spindleIsOn          = nullptr;
+        hal_bit_t  * spindleIsOn{nullptr};
         //! to be connected to \ref halui.spindle-override.value
-        hal_float_t* spindleOverrideValue = nullptr;
+        hal_float_t* spindleOverrideValue{nullptr};
         //! To be connected to an encoded and correctly scaled value of an spindle feedback signal.
         //! See also \ref encoder and \ref scale.
-        hal_float_t* spindleSpeedAbsRpm   = nullptr;
+        hal_float_t* spindleSpeedAbsRpm{nullptr};
 
         // to be connected to \ref motion.current-vel
-        hal_float_t* feedSpeedUps = nullptr;
+        hal_float_t* feedSpeedUps{nullptr};
         //! to be connected to \ref halui.feed-override.value
-        hal_float_t * feedOverrideValue      = nullptr;
+        hal_float_t* feedOverrideValue{nullptr};
 
         //! to be connected to \ref halui.program.is-running
-        hal_bit_t* isProgramRunning = nullptr;
+        hal_bit_t* isProgramRunning{nullptr};
         //! to be connected to \ref halui.program.is-paused
-        hal_bit_t* isProgramPaused  = nullptr;
+        hal_bit_t* isProgramPaused{nullptr};
         //! to be connected to \ref halui.program.is-idle
-        hal_bit_t* isProgramIdle    = nullptr;
+        hal_bit_t* isProgramIdle{nullptr};
 
         //! to be connected to \ref halui.mode.is-auto
-        hal_bit_t* isModeAuto   = nullptr;
+        hal_bit_t* isModeAuto{nullptr};
         //! to be connected to \ref halui.mode.is-joint
-        hal_bit_t* isModeJoint  = nullptr;
+        hal_bit_t* isModeJoint{nullptr};
         //! to be connected to \ref halui.mode.is-manual
-        hal_bit_t* isModeManual = nullptr;
+        hal_bit_t* isModeManual{nullptr};
         //! to be connected to \ref halui.mode.is-madi
-        hal_bit_t* isModeMdi    = nullptr;
+        hal_bit_t* isModeMdi{nullptr};
 
         //! to be connected to \ref halui.estop.is-activated
-        hal_bit_t* isEmergencyStop = nullptr;
+        hal_bit_t* isEmergencyStop{nullptr};
 
         //! to be connected to \ref halui.machine.is-on
-        hal_bit_t* isMachineOn = nullptr;
+        hal_bit_t* isMachineOn{nullptr};
 
         In();
     };
@@ -147,140 +147,140 @@ public:
         hal_bit_t* button_pin[64] = {0};
 
         //! to be connected to \ref axis.0.jog-counts
-        hal_s32_t* axisXJogCounts = nullptr;
+        hal_s32_t* axisXJogCounts{nullptr};
         //! to be connected to \ref axis.1.jog-counts
-        hal_s32_t* axisYJogCounts = nullptr;
+        hal_s32_t* axisYJogCounts{nullptr};
         //! to be connected to \ref axis.2.jog-counts
-        hal_s32_t* axisZJogCounts = nullptr;
+        hal_s32_t* axisZJogCounts{nullptr};
         //! to be connected to \ref axis.3.jog-counts
-        hal_s32_t* axisAJogCounts = nullptr;
+        hal_s32_t* axisAJogCounts{nullptr};
         //! to be connected to \ref axis.4.jog-counts
-        hal_s32_t* axisBJogCounts = nullptr;
+        hal_s32_t* axisBJogCounts{nullptr};
         //! to be connected to \ref axis.5.jog-counts
-        hal_s32_t* axisCJogCounts = nullptr;
+        hal_s32_t* axisCJogCounts{nullptr};
 
         //! to be connected to \ref axis.0.jog-enable
-        hal_bit_t* axisXJogEnable = nullptr;
+        hal_bit_t* axisXJogEnable{nullptr};
         //! to be connected to \ref axis.1.jog-enable
-        hal_bit_t* axisYJogEnable = nullptr;
+        hal_bit_t* axisYJogEnable{nullptr};
         //! to be connected to \ref axis.2.jog-enable
-        hal_bit_t* axisZJogEnable = nullptr;
+        hal_bit_t* axisZJogEnable{nullptr};
         //! to be connected to \ref axis.3.jog-enable
-        hal_bit_t* axisAJogEnable = nullptr;
+        hal_bit_t* axisAJogEnable{nullptr};
         //! to be connected to \ref axis.4.jog-enable
-        hal_bit_t* axisBJogEnable = nullptr;
+        hal_bit_t* axisBJogEnable{nullptr};
         //! to be connected to \ref axis.5.jog-enable
-        hal_bit_t* axisCJogEnable = nullptr;
+        hal_bit_t* axisCJogEnable{nullptr};
 
         //! to be connected to \ref axis.0.jog-scale
-        hal_float_t* axisXJogScale = nullptr;
+        hal_float_t* axisXJogScale{nullptr};
         //! to be connected to \ref axis.1.jog-scale
-        hal_float_t* axisYJogScale = nullptr;
+        hal_float_t* axisYJogScale{nullptr};
         //! to be connected to \ref axis.2.jog-scale
-        hal_float_t* axisZJogScale = nullptr;
+        hal_float_t* axisZJogScale{nullptr};
         //! to be connected to \ref axis.3.jog-scale
-        hal_float_t* axisAJogScale = nullptr;
+        hal_float_t* axisAJogScale{nullptr};
         //! to be connected to \ref axis.4.jog-scale
-        hal_float_t* axisBJogScale = nullptr;
+        hal_float_t* axisBJogScale{nullptr};
         //! to be connected to \ref axis.5.jog-scale
-        hal_float_t* axisCJogScale = nullptr;
+        hal_float_t* axisCJogScale{nullptr};
 
         //! to be connected to \ref axis.0.jog-vel-mode
-        hal_bit_t* axisXSetVelocityMode = nullptr;
+        hal_bit_t* axisXSetVelocityMode{nullptr};
         //! to be connected to \ref axis.1.jog-vel-mode
-        hal_bit_t* axisYSetVelocityMode = nullptr;
+        hal_bit_t* axisYSetVelocityMode{nullptr};
         //! to be connected to \ref axis.2.jog-vel-mode
-        hal_bit_t* axisZSetVelocityMode = nullptr;
+        hal_bit_t* axisZSetVelocityMode{nullptr};
         //! to be connected to \ref axis.3.jog-vel-mode
-        hal_bit_t* axisASetVelocityMode = nullptr;
+        hal_bit_t* axisASetVelocityMode{nullptr};
         //! to be connected to \ref axis.4.jog-vel-mode
-        hal_bit_t* axisBSetVelocityMode = nullptr;
+        hal_bit_t* axisBSetVelocityMode{nullptr};
         //! to be connected to \ref axis.5.jog-vel-mode
-        hal_bit_t* axisCSetVelocityMode = nullptr;
+        hal_bit_t* axisCSetVelocityMode{nullptr};
 
         //! to be connected to \ref halui.spindle.start
-        hal_bit_t* spindleStart = nullptr;
+        hal_bit_t* spindleStart{nullptr};
         //! to be connected to \ref halui.spindle.stop
-        hal_bit_t* spindleStop  = nullptr;
+        hal_bit_t* spindleStop{nullptr};
 
-        hal_bit_t* feedValueSelected0_001 = nullptr;
-        hal_bit_t* feedValueSelected0_01  = nullptr;
-        hal_bit_t* feedValueSelected0_1   = nullptr;
-        hal_bit_t* feedValueSelected1_0   = nullptr;
+        hal_bit_t* feedValueSelected0_001{nullptr};
+        hal_bit_t* feedValueSelected0_01{nullptr};
+        hal_bit_t* feedValueSelected0_1{nullptr};
+        hal_bit_t* feedValueSelected1_0{nullptr};
 
         //! to be connected to \ref  \ref halui.feed-override.scale
-        hal_float_t* feedOverrideScale       = nullptr;
+        hal_float_t* feedOverrideScale{nullptr};
         //! to be connected to \ref halui.feed-override.direct-value
-        hal_bit_t  * feedOverrideDirectValue = nullptr;
+        hal_bit_t  * feedOverrideDirectValue{nullptr};
         //! to be connected to \ref halui.feed-override.count-enable
-        hal_bit_t  * feedOverrideCountEnable = nullptr;
+        hal_bit_t  * feedOverrideCountEnable{nullptr};
         //! to be connected to \ref halui.feed-override.counts
-        hal_s32_t  * feedOverrideCounts      = nullptr;
+        hal_s32_t  * feedOverrideCounts{nullptr};
         //! to be connected to \ref halui.feed-override.decrease
-        hal_bit_t  * feedOverrideDecrease    = nullptr;
+        hal_bit_t  * feedOverrideDecrease{nullptr};
         //! to be connected to \ref halui.feed-override.increase
-        hal_bit_t  * feedOverrideIncrease    = nullptr;
+        hal_bit_t  * feedOverrideIncrease{nullptr};
 
         //! to be connected to halui.spindle.decrease
-        hal_bit_t* spindleDoDecrease         = nullptr;
+        hal_bit_t* spindleDoDecrease{nullptr};
         //! to be connected to halui.spindle.increase
-        hal_bit_t* spindleDoIncrease         = nullptr;
+        hal_bit_t* spindleDoIncrease{nullptr};
         //! to be connected to halui.spindle-override.decrease
-        hal_bit_t* spindleOverrideDoDecrease = nullptr;
+        hal_bit_t* spindleOverrideDoDecrease{nullptr};
         //! to be connected to halui.spindle-override.increase
-        hal_bit_t* spindleOverrideDoIncrease = nullptr;
+        hal_bit_t* spindleOverrideDoIncrease{nullptr};
 
         //! to be connected to \ref halui.jog-speed
-        hal_float_t* jogSpeedValue = nullptr;
+        hal_float_t* jogSpeedValue{nullptr};
 
         //! to be connected to \ref halui.home-all
-        hal_bit_t* homeAll = nullptr;
+        hal_bit_t* homeAll{nullptr};
 
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t* jointXSelect = nullptr;
+        hal_bit_t* jointXSelect{nullptr};
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t* jointYSelect = nullptr;
+        hal_bit_t* jointYSelect{nullptr};
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t* jointZSelect = nullptr;
+        hal_bit_t* jointZSelect{nullptr};
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t* jointASelect = nullptr;
+        hal_bit_t* jointASelect{nullptr};
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t* jointBSelect = nullptr;
+        hal_bit_t* jointBSelect{nullptr};
         //!to be connected to \ref halui.joint.N.select
-        hal_bit_t* jointCSelect = nullptr;
+        hal_bit_t* jointCSelect{nullptr};
 
         //! reflects the pendant's idle state
-        hal_bit_t* isPendantSleeping  = nullptr;
+        hal_bit_t* isPendantSleeping{nullptr};
         //! reflects pendant's connectivity
-        hal_bit_t* isPendantConnected = nullptr;
+        hal_bit_t* isPendantConnected{nullptr};
 
         //! to be connected to \ref halui.program.run
-        hal_bit_t* doRunProgram    = nullptr;
+        hal_bit_t* doRunProgram{nullptr};
         //! to be connected to \ref halui.program.pause
-        hal_bit_t* doPauseProgram  = nullptr;
+        hal_bit_t* doPauseProgram{nullptr};
         //! to be connected to \ref halui.program.resume
-        hal_bit_t* doResumeProgram = nullptr;
+        hal_bit_t* doResumeProgram{nullptr};
         //! to be connected to \ref halui.program.stop
-        hal_bit_t* doStopProgram   = nullptr;
+        hal_bit_t* doStopProgram{nullptr};
 
         //! to be connected to \ref halui.mode.auto
-        hal_bit_t* doModeAuto   = nullptr;
+        hal_bit_t* doModeAuto{nullptr};
         //! to be connected to \ref halui.mode.joint
-        hal_bit_t* doModeJoint  = nullptr;
+        hal_bit_t* doModeJoint{nullptr};
         //! to be connected to \ref halui.mode.manual
-        hal_bit_t* doModeManual = nullptr;
+        hal_bit_t* doModeManual{nullptr};
         //! to be connected to \ref halui.mode.mdi
-        hal_bit_t* doModeMdi    = nullptr;
+        hal_bit_t* doModeMdi{nullptr};
 
         //! to be connected to \ref halui.estop.activate
-        hal_bit_t* doEmergencyStop    = nullptr;
+        hal_bit_t* doEmergencyStop{nullptr};
         //! to be connected to \ref halui.estop.reset
-        hal_bit_t* resetEmergencyStop = nullptr;
+        hal_bit_t* resetEmergencyStop{nullptr};
 
         //! to be connected to \ref halui.machine.on
-        hal_bit_t* doMachineOn  = nullptr;
+        hal_bit_t* doMachineOn{nullptr};
         //! to be connected to \ref halui.machine.off
-        hal_bit_t* doMachineOff = nullptr;
+        hal_bit_t* doMachineOff{nullptr};
 
         Out();
     };
@@ -453,7 +453,7 @@ public:
      * Writes counts to each axis' count.
      * \param counts value to propagate to each axis
      */
-    void setJogCounts(int32_t counts, int32_t delta);
+    void setJogCounts(const HandWheelCounters& counters);
 
     //! Returns the axis position.
     //! \param absolute true absolute, false relative

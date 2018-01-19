@@ -21,6 +21,8 @@
 
 // system includes
 #include <stdint.h>
+#include <type_traits>
+#include <iosfwd>
 
 // 3rd party includes
 
@@ -30,6 +32,7 @@
 
 
 namespace XhcWhb04b6 {
+
 // ----------------------------------------------------------------------
 
 class HandwheelStepmodes
@@ -39,8 +42,52 @@ public:
     {
         CONTINUOUS  = 0,
         STEP        = 1,
-        FEED        = 2,
+        LEAD        = 2,
         MODES_COUNT = 3
     };
 };
+
+// ----------------------------------------------------------------------
+
+class HandWheelCounters
+{
+public:
+    enum class CounterNameToIndex : uint8_t
+    {
+        AXIS_X,
+        AXIS_Y,
+        AXIS_Z,
+        AXIS_A,
+        AXIS_B,
+        AXIS_C,
+        LEAD,
+        COUNTERS_COUNT,
+        UNDEFINED
+    };
+
+    void count(int8_t delta);
+    //! Return the currently active counter which is in-/decreased by \xrefitem count(uint8_t).
+    //! The current counter mode is set via \xrefitem setModeActive(CounterNameToIndex).
+    //! \return the accumulated counter
+    int32_t counts() const;
+    //! Returns the counter which is in-/decreased by \xrefitem count(uint8_t).
+    //! \param counterName the counter value to return
+    //! \return the accumulated counter
+    int32_t counts(CounterNameToIndex counterName) const;
+    void setActiveCounter(CounterNameToIndex activeMode);
+    CounterNameToIndex activeCounter() const;
+    bool isLeadCounterActive() const;
+    void enableLeadCounter(bool isEnabled);
+
+protected:
+    bool               mIsLeadCounterActive{false};
+    CounterNameToIndex mActiveAxisCounter{HandWheelCounters::CounterNameToIndex::UNDEFINED};
+    int32_t            mCounters[static_cast<typename std::underlying_type<CounterNameToIndex>::type>(CounterNameToIndex::COUNTERS_COUNT)]{
+        0
+    };
+
+private:
+};
+
+std::ostream& operator<<(std::ostream& os, const HandWheelCounters& data);
 }

@@ -1223,21 +1223,17 @@ void WhbHal::setPin(bool enabled, const char* pinName)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setJogCounts(int32_t counts, int32_t delta)
+void WhbHal::setJogCounts(const HandWheelCounters& counters)
 {
-    /*if (*memory->out.feedOverrideCountEnable)
+    *memory->out.axisXJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_X);
+    *memory->out.axisYJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_Y);
+    *memory->out.axisZJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_Z);
+    *memory->out.axisAJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_A);
+    *memory->out.axisBJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_B);
+    *memory->out.axisCJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_C);
+    if (counters.isLeadCounterActive())
     {
-        *memory->out.feedOverrideCounts = counts;
-
-    }
-    else*/
-    {
-        *memory->out.axisXJogCounts = counts;
-        *memory->out.axisYJogCounts = counts;
-        *memory->out.axisZJogCounts = counts;
-        *memory->out.axisAJogCounts = counts;
-        *memory->out.axisBJogCounts = counts;
-        *memory->out.axisCJogCounts = counts;
+        *memory->out.feedOverrideCounts = counters.counts(HandWheelCounters::CounterNameToIndex::LEAD);
     }
 }
 

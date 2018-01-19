@@ -499,7 +499,7 @@ bool HandwheelContinuousModeStepSize::isPermitted(PositionNameIndex buttonPositi
 // ----------------------------------------------------------------------
 
 HandwheelLeadModeStepSize::HandwheelLeadModeStepSize() :
-    mSequence{0, 0, 0, 0, 0, 0, 0}
+    mSequence{0, 0, 0, 0, 0, 0, 0.01}
 {
 }
 
@@ -1061,7 +1061,12 @@ void FeedRotaryButton::update()
         return;
     }
 
-    if (mStepMode == HandwheelStepmodes::Mode::CONTINUOUS)
+    if (*mKey == KeyCodes::Feed.lead)
+    {
+        mStepSize    = mLeadStepSizeMapper.getStepSize(HandwheelLeadModeStepSize::PositionNameIndex::LEAD);
+        mIsPermitted = mLeadStepSizeMapper.isPermitted(HandwheelLeadModeStepSize::PositionNameIndex::LEAD);
+    }
+    else if (mStepMode == HandwheelStepmodes::Mode::CONTINUOUS)
     {
         auto enumValue = mContinuousKeycodeLut.find(mKey);
         assert(enumValue != mContinuousKeycodeLut.end());
@@ -1076,19 +1081,6 @@ void FeedRotaryButton::update()
         auto second = enumValue->second;
         mStepSize    = mStepStepSizeMapper.getStepSize(second);
         mIsPermitted = mStepStepSizeMapper.isPermitted(second);
-    }
-        /*else if (mStepMode == HandwheelStepmodes::Mode::FEED)
-        {
-            auto enumValue = mLeadKeycodeLut.find(mKey);
-            assert(enumValue != mLeadKeycodeLut.end());
-            auto second = enumValue->second;
-            mStepSize    = mLeadStepSizeMapper.getStepSize(second);
-            mIsPermitted = mLeadStepSizeMapper.isPermitted(second);
-        }*/
-    else if (*mKey == KeyCodes::Feed.lead)
-    {
-        mStepSize    = 0.1;
-        mIsPermitted = false;
     }
     else
     {
@@ -1147,7 +1139,6 @@ bool AxisRotaryButton::isPermitted() const
 // ----------------------------------------------------------------------
 
 Handwheel::Handwheel(const FeedRotaryButton& feedButton, KeyEventListener* listener) :
-    mCounts(0),
     mFeedButton(feedButton),
     mEventListener(listener),
     mWheelCout(&std::cout),
@@ -1167,16 +1158,31 @@ std::ostream& operator<<(std::ostream& os, const Handwheel& data)
 {
     std::ios init(NULL);
     init.copyfmt(os);
-
-    os << "{counts=" << data.counts() << "}";
+    os << "{counters=" << data.counters() << "}";
     return os;
 }
 
 // ----------------------------------------------------------------------
 
-int32_t Handwheel::counts() const
+const HandWheelCounters& Handwheel::counters() const
 {
-    return mCounts;
+    return static_cast<const HandWheelCounters& >(
+        static_cast<Handwheel>(*this).counters()
+    );
+}
+
+// ----------------------------------------------------------------------
+
+HandWheelCounters& Handwheel::counters()
+{
+    return mCounters;
+}
+
+// ----------------------------------------------------------------------
+
+void Handwheel::setMode(HandWheelCounters::CounterNameToIndex activeCounterMode)
+{
+    mCounters.setActiveCounter(activeCounterMode);
 }
 
 // ----------------------------------------------------------------------
@@ -1184,12 +1190,13 @@ int32_t Handwheel::counts() const
 void Handwheel::count(int8_t delta)
 {
     assert(mEventListener != nullptr);
-    mCounts += delta;
-    mEventListener->onJogDialEvent(mCounts, delta);
+    mCounters.count(delta);
+    mEventListener->onJogDialEvent(mCounters, delta);
 
     std::ios init(NULL);
     init.copyfmt(*mWheelCout);
-    *mWheelCout << mPrefix << "handwheel total counts " << std::setfill(' ') << std::setw(5) << mCounts << endl;
+    *mWheelCout << mPrefix << "handwheel total counts " << std::setfill(' ') << std::setw(5) << mCounters
+                << endl;
     mWheelCout->copyfmt(init);
 }
 
@@ -1535,14 +1542,14 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
     {
         mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::CONTINUOUS);
         mHal.setContinuousMode(true);
-        dispatchFeedValueToHal(nullptr);
+        dispatchFeedValueToHal();
         isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.step_continuous)
     {
         mCurrentButtonsState.feedButton().setStepMode(HandwheelStepmodes::Mode::STEP);
         mHal.setStepMode(true);
-        dispatchFeedValueToHal(nullptr);
+        dispatchFeedValueToHal();
         isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro11)
@@ -1792,6 +1799,7 @@ void Pendant::onAxisActiveEvent(const KeyCode& axis)
 {
     *mPendantCout << mPrefix << "axis   active   event axis=" << axis
                   << " axisButton=" << mCurrentButtonsState.axisButton() << endl;
+    dispatchAxisEventToHandwheel(axis, true);
     dispatchAxisEventToHal(axis, true);
     mDisplay.onAxisActiveEvent(axis);
 }
@@ -1802,6 +1810,7 @@ void Pendant::onAxisInactiveEvent(const KeyCode& axis)
 {
     *mPendantCout << mPrefix << "axis   inactive event axis=" << axis
                   << " axisButton=" << mCurrentButtonsState.axisButton() << endl;
+    dispatchAxisEventToHandwheel(axis, false);
     dispatchAxisEventToHal(axis, false);
     mDisplay.onAxisInactiveEvent(axis);
 }
@@ -1812,9 +1821,21 @@ void Pendant::onFeedActiveEvent(const KeyCode& feed)
 {
     (*mPendantCout) << mPrefix << "feed   active   event feed=" << feed
                     << " feedButton=" << mCurrentButtonsState.feedButton() << endl;
+
+    dispatchFeedEventToHandwheel(feed, true);
     dispatchFeedValueToHal(&feed);
     dispatchActiveFeedToHal(feed, true);
     mDisplay.onFeedActiveEvent(feed);
+}
+
+// ----------------------------------------------------------------------
+
+void Pendant::dispatchFeedEventToHandwheel(const KeyCode& feed, bool isActive)
+{
+    if (feed.code == KeyCodes::Feed.lead.code)
+    {
+        mHandWheel.counters().enableLeadCounter(isActive);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -1840,26 +1861,28 @@ void Pendant::dispatchActiveFeedToHal(const KeyCode& feed, bool isActive)
 }
 
 // ----------------------------------------------------------------------
-// TODO: refactor into two signatures: () and (const KeyCode&)
+
 void Pendant::dispatchFeedValueToHal(const KeyCode* keyCode)
 {
-    /*
-    // TODO: refactoring needed
     // on feed rotary button change and leed active
     if (keyCode != nullptr && keyCode->code == KeyCodes::Feed.lead.code)
     {
         mHal.setFeedOverrideCountEnable(true);
-        mHal.setFeedOverrideScale(0.01);
-        mHal.setFeedOverrideCounts(false);
+        mHal.setFeedOverrideScale(mCurrentButtonsState.feedButton().stepSize());
         return;
     }
-    // on feed rotary button change and leed inactive
-    else if (keyCode != nullptr && keyCode->code != KeyCodes::Feed.lead.code)
+        // on feed rotary button change and leed inactive
+    else //if (keyCode != nullptr && keyCode->code != KeyCodes::Feed.lead.code)
     {
         mHal.setFeedOverrideCountEnable(false);
     }
-     */
+    dispatchFeedValueToHal();
+}
 
+// ----------------------------------------------------------------------
+
+void Pendant::dispatchFeedValueToHal()
+{
     // on feed rotary button change
     FeedRotaryButton& feedButton = mCurrentButtonsState.feedButton();
     if (feedButton.isPermitted())
@@ -1867,7 +1890,7 @@ void Pendant::dispatchFeedValueToHal(const KeyCode* keyCode)
         float axisJogStepSize = 0;
         if (feedButton.stepMode() == HandwheelStepmodes::Mode::STEP)
         {
-            //mHal.setFeedOverrideCountEnable(false);
+            mHal.setFeedOverrideCountEnable(false);
             mHal.setStepMode(true);
             mHal.setFeedOverrideScale(0.1);
             mHal.setFeedOverrideDirectValue(false);
@@ -1875,10 +1898,10 @@ void Pendant::dispatchFeedValueToHal(const KeyCode* keyCode)
         }
         else if (feedButton.stepMode() == HandwheelStepmodes::Mode::CONTINUOUS)
         {
-            //mHal.setFeedOverrideCountEnable(false);
+            mHal.setFeedOverrideCountEnable(false);
             mHal.setContinuousMode(true);
             // On velocity mode set feed-override value to absolute percentage value: counts*scale.
-            axisJogStepSize = 2;
+            axisJogStepSize          = 2;
             mHal.setFeedOverrideDirectValue(true);
             float feedButtonStepSize = feedButton.stepSize();
             if (feedButtonStepSize >= 10)
@@ -1896,6 +1919,9 @@ void Pendant::dispatchFeedValueToHal(const KeyCode* keyCode)
                 mHal.setFeedOverrideCounts(feedButtonStepSize * 1);
             }
         }
+        else
+        {
+        }
         mHal.setStepSize(axisJogStepSize);
     }
     else
@@ -1910,21 +1936,68 @@ void Pendant::onFeedInactiveEvent(const KeyCode& feed)
 {
     *mPendantCout << mPrefix << "feed   inactive event feed=" << feed
                   << " feedButton=" << mCurrentButtonsState.feedButton() << endl;
+    dispatchFeedEventToHandwheel(feed, false);
     dispatchActiveFeedToHal(feed, false);
     mDisplay.onFeedInactiveEvent(feed);
 }
 
 // ----------------------------------------------------------------------
 
-bool Pendant::onJogDialEvent(int32_t counts, int32_t delta)
+bool Pendant::onJogDialEvent(const HandWheelCounters& counters, int8_t delta)
 {
-    if (counts != 0)
+
+    if (HandWheelCounters::CounterNameToIndex::UNDEFINED != counters.activeCounter() &&
+        counters.counts() != 0)
     {
-        *mPendantCout << mPrefix << "wheel  event " << static_cast<int16_t>(counts) << endl;
+        *mPendantCout << mPrefix << "wheel  event " << counters.counts() << endl;
+
+        mHal.setJogCounts(counters);
+        mDisplay.onJogDialEvent(counters, delta);
+        return true;
     }
-    mHal.setJogCounts(counts, delta);
-    mDisplay.onJogDialEvent(counts, delta);
-    return true;
+    return false;
+}
+
+// ----------------------------------------------------------------------
+
+void Pendant::dispatchAxisEventToHandwheel(const KeyCode& axis, bool isActive)
+{
+    if (!isActive)
+    {
+        mHandWheel.counters().setActiveCounter(HandWheelCounters::CounterNameToIndex::UNDEFINED);
+    }
+    else if (axis.code == KeyCodes::Axis.off.code)
+    {
+        mHandWheel.counters().setActiveCounter(HandWheelCounters::CounterNameToIndex::UNDEFINED);
+    }
+    else if (axis.code == KeyCodes::Axis.x.code)
+    {
+        mHandWheel.counters().setActiveCounter(HandWheelCounters::CounterNameToIndex::AXIS_X);
+    }
+    else if (axis.code == KeyCodes::Axis.y.code)
+    {
+        mHandWheel.counters().setActiveCounter(HandWheelCounters::CounterNameToIndex::AXIS_Y);
+    }
+    else if (axis.code == KeyCodes::Axis.z.code)
+    {
+        mHandWheel.counters().setActiveCounter(HandWheelCounters::CounterNameToIndex::AXIS_Z);
+    }
+    else if (axis.code == KeyCodes::Axis.a.code)
+    {
+        mHandWheel.counters().setActiveCounter(HandWheelCounters::CounterNameToIndex::AXIS_A);
+    }
+    else if (axis.code == KeyCodes::Axis.b.code)
+    {
+        mHandWheel.counters().setActiveCounter(HandWheelCounters::CounterNameToIndex::AXIS_B);
+    }
+    else if (axis.code == KeyCodes::Axis.c.code)
+    {
+        mHandWheel.counters().setActiveCounter(HandWheelCounters::CounterNameToIndex::AXIS_C);
+    }
+    else if (axis.code == KeyCodes::Axis.undefined.code)
+    {
+        mHandWheel.counters().setActiveCounter(HandWheelCounters::CounterNameToIndex::UNDEFINED);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -2044,7 +2117,7 @@ void Display::onAxisInactiveEvent(const KeyCode& axis)
 
 // ----------------------------------------------------------------------
 
-void Display::onFeedActiveEvent(const KeyCode& axis)
+void Display::onFeedActiveEvent(const KeyCode& feed)
 {
     if (mCurrentButtonsState.feedButton().stepMode() == HandwheelStepmodes::Mode::STEP)
     {
@@ -2057,24 +2130,24 @@ void Display::onFeedActiveEvent(const KeyCode& axis)
         mDisplayData.displayModeFlags.asBitFields.stepMode =
             static_cast<typename std::underlying_type<DisplayIndicatorStepMode::StepMode>::type>(
                 DisplayIndicatorStepMode::StepMode::MANUAL_PULSE_GENERATOR);
-    }
+    }/* // TODO: remove deprecated code
     else if (mCurrentButtonsState.feedButton().stepMode() == HandwheelStepmodes::Mode::FEED)
     {
         mDisplayData.displayModeFlags.asBitFields.stepMode =
             static_cast<typename std::underlying_type<DisplayIndicatorStepMode::StepMode>::type>(
                 DisplayIndicatorStepMode::StepMode::FEED);
-    }
+    }*/
 }
 
 // ----------------------------------------------------------------------
 
-void Display::onFeedInactiveEvent(const KeyCode& axis)
+void Display::onFeedInactiveEvent(const KeyCode& feed)
 {
 }
 
 // ----------------------------------------------------------------------
 
-bool Display::onJogDialEvent(int32_t counts, int32_t delta)
+bool Display::onJogDialEvent(const HandWheelCounters& counters, int8_t delta)
 {
     return false;
 }

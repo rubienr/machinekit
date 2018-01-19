@@ -70,9 +70,9 @@ public:
         //! displays "MPG <xx>%"
             MANUAL_PULSE_GENERATOR = 0x02,
         //! displays <xxx%>
-            FEED= 0x03,
+            FEED                   = 0x03,
         //! unknown flags
-            UNKNOWN = 0x04
+            UNKNOWN                = 0x04
     };
 };
 
