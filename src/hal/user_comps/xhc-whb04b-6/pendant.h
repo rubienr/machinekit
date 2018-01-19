@@ -735,8 +735,8 @@ public:
     ~Handwheel();
     void setMode(HandWheelCounters::CounterNameToIndex mode);
     void count(int8_t delta);
-    const HandWheelCounters &counters() const;
-    HandWheelCounters &counters();
+    const HandWheelCounters& counters() const;
+    HandWheelCounters& counters();
 
 private:
     HandWheelCounters mCounters;
