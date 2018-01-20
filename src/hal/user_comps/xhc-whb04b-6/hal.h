@@ -111,10 +111,15 @@ public:
         //! See also \ref encoder and \ref scale.
         hal_float_t* spindleSpeedAbsRpm{nullptr};
 
-        // to be connected to \ref motion.current-vel
+        //! to be connected to \ref motion.current-vel
         hal_float_t* feedSpeedUps{nullptr};
         //! to be connected to \ref halui.feed-override.value
         hal_float_t* feedOverrideValue{nullptr};
+
+        //! the minimum feed-override value when in Lead-mode, usually same as [DISPLAY]MIN_FEED_OVERRIDE
+        hal_float_t* feedOverrideMinValue{nullptr};
+        //! the maximum feed-override value when in Lead-mode, usually same as [DISPLAY]MAX_FEED_OVERRIDE
+        hal_float_t* feedOverrideMaxValue{nullptr};
 
         //! to be connected to \ref halui.program.is-running
         hal_bit_t* isProgramRunning{nullptr};
@@ -198,10 +203,13 @@ public:
         //! to be connected to \ref axis.5.jog-vel-mode
         hal_bit_t* axisCSetVelocityMode{nullptr};
 
-        //! to be connected to \ref halui.spindle.start
-        hal_bit_t* spindleStart{nullptr};
         //! to be connected to \ref halui.spindle.stop
         hal_bit_t* spindleStop{nullptr};
+
+        //! to be connected to \ref halui.spindle.forward
+        hal_bit_t* spindleDoRunForward{nullptr};
+        //! to be connected to \ref halui.spindle.reverse
+        hal_bit_t* spindleDoRunReverse{nullptr};
 
         hal_bit_t* feedValueSelected0_001{nullptr};
         hal_bit_t* feedValueSelected0_01{nullptr};
@@ -322,7 +330,7 @@ public:
     //! indicates the program has been invoked in hal mode or normal
     void setSimulationMode(bool isSimulationMode);
     int getHalComponentId() const;
-    hal_bit_t* getButtonHalBit(size_t pinNumber);
+    //hal_bit_t* getButtonHalBit(size_t pinNumber);
     const char* getHalComponentName() const;
     //! Enables verbose hal output.
     //! \param enable true to enable hal messages, disable otherwise
@@ -369,8 +377,12 @@ public:
     void setFeedMinus(bool enabled);
     //! Returns the current feed override value.
     //! \return the current feed override value v: 0 <= v <= 1
-    hal_float_t getFeedOverrideValue();
-    // TODO: fix doygen
+    hal_float_t getFeedOverrideValue() const;
+    // TODO: fix doxygen
+    hal_float_t getFeedOverrideMinValue() const;
+    // TODO: fix doxygen
+    hal_float_t getFeedOverrideMaxValue() const;
+    // TODO: fix doxygen
     //! \xrefitem HalMemory::Out::feedOverrideCounts setter
     void setFeedOverrideCounts(hal_s32_t counts);
     //! \xrefitem HalMemory::Out::feedOverrideScale setter
@@ -381,7 +393,7 @@ public:
     void setFeedOverrideDirectValue(bool enabled);
     //! Returns the feed speed.
     //! \return the feed speed in unis per second
-    hal_float_t getFeedUps();
+    hal_float_t getFeedUps() const;
 
     void setFeedValueSelected0_001(bool selected);
     void setFeedValueSelected0_01(bool selected);
@@ -390,7 +402,7 @@ public:
 
     //! Returns the spindle speed.
     //! \return the spindle speed in rounds per second
-    hal_float_t getSpindleSpeedAbsRpm();
+    hal_float_t getSpindleSpeedAbsRpm() const;
     //! \sa setReset(bool, size_t)
     void setSpindlePlus(bool enabled);
     //! \sa setReset(bool, size_t)
@@ -404,7 +416,9 @@ public:
     //! \sa setReset(bool, size_t)
     void setWorkpieceHome(bool enabled);
     //! \sa setReset(bool, size_t)
-    void setSpindleOn(bool enabled);
+    void toggleSpindleDirection(bool isButtonPressed);
+    //! \sa setReset(bool, size_t)
+    void toggleSpindleOnOff(bool isButtonPressed);
     //! \sa setReset(bool, size_t)
     void setProbeZ(bool enabled);
     //! \sa setReset(bool, size_t)
@@ -478,6 +492,7 @@ private:
     std::ostream mDevNull;
     std::ostream* mHalCout;
     HandwheelStepmodes::Mode mStepMode;
+    bool                     mIsSpindleDirectionForward{true};
 
     //! //! Allocates new hal_bit_t pin according to \ref mIsSimulationMode. If \ref mIsSimulationMode then
     //! mallocs memory, hal_pin_bit_new allocation otherwise.

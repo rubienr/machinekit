@@ -48,18 +48,22 @@ void HandWheelCounters::count(int8_t delta)
     }
 
     int32_t& counter = mCounters[static_cast<typename std::underlying_type<CounterNameToIndex>::type>(idx)];
-    int32_t tmp = counter;
-    tmp += delta;
+    int32_t tmp = counter + delta;
 
-    // TODO: refactor hotfix
-    if (idx == CounterNameToIndex::LEAD)
+    if (mIsLeadCounterActive)
     {
-        tmp = (tmp < 0) ? 0 : tmp;
-        // TODO: make the scaled max. feed-override value configurable or read from halui
-        tmp = (tmp > 150) ? 150 : tmp;
+        tmp = (tmp < mLeadMinValue) ? mLeadMinValue : tmp;
+        tmp = (tmp > mLeadMaxValue) ? mLeadMaxValue : tmp;
     }
 
     counter = tmp;
+}
+
+// ----------------------------------------------------------------------
+
+HandWheelCounters::HandWheelCounters()
+{
+    mCounters[static_cast<typename std::underlying_type<CounterNameToIndex>::type>(CounterNameToIndex::LEAD)] = 100;
 }
 
 // ----------------------------------------------------------------------
@@ -113,6 +117,14 @@ bool HandWheelCounters::isLeadCounterActive() const
 void HandWheelCounters::enableLeadCounter(bool isEnabled)
 {
     mIsLeadCounterActive = isEnabled;
+}
+
+// ----------------------------------------------------------------------
+
+void HandWheelCounters::setLeadValueLimit(int32_t min, int32_t max)
+{
+    mLeadMinValue = min;
+    mLeadMaxValue = max;
 }
 
 // ----------------------------------------------------------------------

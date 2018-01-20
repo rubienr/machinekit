@@ -42,7 +42,7 @@ public:
     {
         CONTINUOUS  = 0,
         STEP        = 1,
-        LEAD        = 2,
+        LEAD        = 2, // TODO: remove, unused
         MODES_COUNT = 3
     };
 };
@@ -52,6 +52,7 @@ public:
 class HandWheelCounters
 {
 public:
+
     enum class CounterNameToIndex : uint8_t
     {
         AXIS_X,
@@ -64,6 +65,8 @@ public:
         COUNTERS_COUNT,
         UNDEFINED
     };
+
+    HandWheelCounters();
 
     void count(int8_t delta);
     //! Return the currently active counter which is in-/decreased by \xrefitem count(uint8_t).
@@ -78,6 +81,7 @@ public:
     CounterNameToIndex activeCounter() const;
     bool isLeadCounterActive() const;
     void enableLeadCounter(bool isEnabled);
+    void setLeadValueLimit(int32_t min, int32_t max);
 
 protected:
     bool               mIsLeadCounterActive{false};
@@ -85,6 +89,8 @@ protected:
     int32_t            mCounters[static_cast<typename std::underlying_type<CounterNameToIndex>::type>(CounterNameToIndex::COUNTERS_COUNT)]{
         0
     };
+    int32_t            mLeadMinValue{0};
+    int32_t            mLeadMaxValue{150};
 
 private:
 };

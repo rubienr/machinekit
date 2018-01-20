@@ -134,6 +134,8 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->in.spindleSpeedAbsRpm));
     freeSimulatedPin((void**)(&memory->in.feedSpeedUps));
     freeSimulatedPin((void**)(&memory->in.feedOverrideValue));
+    freeSimulatedPin((void**)(&memory->in.feedOverrideMinValue));
+    freeSimulatedPin((void**)(&memory->in.feedOverrideMaxValue));
     freeSimulatedPin((void**)(&memory->in.isEmergencyStop));
     freeSimulatedPin((void**)(&memory->in.isMachineOn));
 
@@ -179,8 +181,9 @@ WhbHal::~WhbHal()
     freeSimulatedPin((void**)(&memory->out.feedOverrideCounts));
     freeSimulatedPin((void**)(&memory->out.feedOverrideDecrease));
     freeSimulatedPin((void**)(&memory->out.feedOverrideIncrease));
-    freeSimulatedPin((void**)(&memory->out.spindleStart));
     freeSimulatedPin((void**)(&memory->out.spindleStop));
+    freeSimulatedPin((void**)(&memory->out.spindleDoRunForward));
+    freeSimulatedPin((void**)(&memory->out.spindleDoRunReverse));
     freeSimulatedPin((void**)(&memory->out.spindleDoDecrease));
     freeSimulatedPin((void**)(&memory->out.spindleDoIncrease));
     freeSimulatedPin((void**)(&memory->out.spindleOverrideDoDecrease));
@@ -541,6 +544,10 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_OUT, &(memory->out.feedOverrideCountEnable), mHalCompId, "%s.halui.feed-override.count-enable",
               mComponentPrefix);
     newHalFloat(HAL_IN, &(memory->in.feedOverrideValue), mHalCompId, "%s.halui.feed-override.value", mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.feedOverrideMinValue), mHalCompId, "%s.halui.feed-override.min-value",
+                mComponentPrefix);
+    newHalFloat(HAL_IN, &(memory->in.feedOverrideMaxValue), mHalCompId, "%s.halui.feed-override.max-value",
+                mComponentPrefix);
     newHalSigned32(HAL_OUT, &(memory->out.feedOverrideCounts), mHalCompId, "%s.halui.feed-override.counts",
                    mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.feedOverrideDecrease), mHalCompId, "%s.halui.feed-override.decrease",
@@ -560,8 +567,9 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     newHalBit(HAL_OUT, &(memory->out.spindleOverrideDoDecrease), mHalCompId, "%s.halui.spindle-override.decrease",
               mComponentPrefix);
     newHalBit(HAL_IN, &(memory->in.spindleIsOn), mHalCompId, "%s.halui.spindle.is-on", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.spindleStart), mHalCompId, "%s.halui.spindle.start", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.spindleStop), mHalCompId, "%s.halui.spindle.stop", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.spindleDoRunForward), mHalCompId, "%s.halui.spindle.forward", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.spindleDoRunReverse), mHalCompId, "%s.halui.spindle.reverse", mComponentPrefix);
 
     newHalBit(HAL_OUT, &(memory->out.doEmergencyStop), mHalCompId, "%s.halui.estop.activate", mComponentPrefix);
     newHalBit(HAL_IN, &(memory->in.isEmergencyStop), mHalCompId, "%s.halui.estop.is-activated", mComponentPrefix);
@@ -784,14 +792,14 @@ void WhbHal::setReset(bool enabled)
     }
     setPin(enabled, KeyCodes::Buttons.reset.text);
 }
-
+/*
 // ----------------------------------------------------------------------
 
 hal_bit_t* WhbHal::getButtonHalBit(size_t pinNumber)
 {
     assert(memory->out.button_pin[pinNumber] != nullptr);
     return memory->out.button_pin[pinNumber];
-}
+}*/
 
 // ----------------------------------------------------------------------
 
@@ -886,9 +894,23 @@ void WhbHal::setFeedOverrideDirectValue(bool enabled)
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getFeedOverrideValue()
+hal_float_t WhbHal::getFeedOverrideValue() const
 {
     return *memory->in.feedOverrideValue;
+}
+
+// ----------------------------------------------------------------------
+
+hal_float_t WhbHal::getFeedOverrideMinValue() const
+{
+    return *memory->in.feedOverrideMinValue;
+}
+
+// ----------------------------------------------------------------------
+
+hal_float_t WhbHal::getFeedOverrideMaxValue() const
+{
+    return *memory->in.feedOverrideMaxValue;
 }
 
 // ----------------------------------------------------------------------
@@ -935,14 +957,14 @@ void WhbHal::setFeedOverrideScale(hal_float_t scale)
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getSpindleSpeedAbsRpm()
+hal_float_t WhbHal::getSpindleSpeedAbsRpm() const
 {
     return *memory->in.spindleSpeedAbsRpm;
 }
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getFeedUps()
+hal_float_t WhbHal::getFeedUps() const
 {
     return *memory->in.feedSpeedUps;
 }
@@ -1004,25 +1026,67 @@ void WhbHal::setWorkpieceHome(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setSpindleOn(bool enabled)
+void WhbHal::toggleSpindleDirection(bool isButtonPressed)
 {
-    if (enabled)
+    if (isButtonPressed)
     {
-        if (*memory->in.spindleIsOn)
+        mIsSpindleDirectionForward = !mIsSpindleDirectionForward;
+    }
+
+    // on running spindle update direction immediately
+    if (*memory->in.spindleIsOn)
+    {
+        if (isButtonPressed)
         {
-            *memory->out.spindleStop = enabled;
+            if (mIsSpindleDirectionForward)
+            {
+                *memory->out.spindleDoRunForward = true;
+            }
+            else
+            {
+                *memory->out.spindleDoRunReverse = true;
+            }
         }
         else
         {
-            *memory->out.spindleStart = enabled;
+            *memory->out.spindleDoRunForward = false;
+            *memory->out.spindleDoRunReverse = false;
+        }
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void WhbHal::toggleSpindleOnOff(bool isButtonPressed)
+{
+    if (isButtonPressed)
+    {
+        if (*memory->in.spindleIsOn)
+        {
+            // on spindle stop
+            *memory->out.spindleStop = true;
+        }
+        else
+        {
+            // on spindle start
+            if (mIsSpindleDirectionForward)
+            {
+                *memory->out.spindleDoRunForward = true;
+            }
+            else
+            {
+                *memory->out.spindleDoRunReverse = true;
+            }
         }
     }
     else
     {
-        *memory->out.spindleStop  = false;
-        *memory->out.spindleStart = false;
+        // on button released
+        *memory->out.spindleStop         = false;
+        *memory->out.spindleDoRunForward = false;
+        *memory->out.spindleDoRunReverse = false;
     }
-    setPin(enabled, KeyCodes::Buttons.spindle_on_off.text);
+    setPin(isButtonPressed, KeyCodes::Buttons.spindle_on_off.text);
 }
 
 // ----------------------------------------------------------------------

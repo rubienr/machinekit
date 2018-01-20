@@ -890,7 +890,7 @@ private:
     void dispatchAxisEventToHal(const KeyCode& axis, bool isActive);
     void dispatchActiveFeedToHal(const KeyCode& feed, bool isActive);
     void dispatchFeedValueToHal();
-    void dispatchFeedValueToHal(const KeyCode* feed);
+    void dispatchFeedValueToHal(const KeyCode& feed);
 };
 
 // ----------------------------------------------------------------------
