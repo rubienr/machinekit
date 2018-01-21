@@ -104,32 +104,48 @@ Hal::~Hal()
     freeSimulatedPin((void**)(&memory->in.axisAPosition));
     freeSimulatedPin((void**)(&memory->in.axisBPosition));
     freeSimulatedPin((void**)(&memory->in.axisCPosition));
+
     freeSimulatedPin((void**)(&memory->in.axisXPositionRelative));
     freeSimulatedPin((void**)(&memory->in.axisYPositionRelative));
     freeSimulatedPin((void**)(&memory->in.axisZPositionRelative));
     freeSimulatedPin((void**)(&memory->in.axisAPositionRelative));
     freeSimulatedPin((void**)(&memory->in.axisBPositionRelative));
     freeSimulatedPin((void**)(&memory->in.axisCPositionRelative));
+
     freeSimulatedPin((void**)(&memory->in.stepgenXMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenYMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenZMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenAMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenBMaxVelocity));
     freeSimulatedPin((void**)(&memory->in.stepgenCMaxVelocity));
+
     freeSimulatedPin((void**)(&memory->in.stepgenXPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenYPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenZPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenAPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenBPositionScale));
     freeSimulatedPin((void**)(&memory->in.stepgenCPositionScale));
+
     freeSimulatedPin((void**)(&memory->in.spindleIsOn));
     freeSimulatedPin((void**)(&memory->in.spindleOverrideValue));
     freeSimulatedPin((void**)(&memory->in.spindleSpeedAbsRpm));
+
     freeSimulatedPin((void**)(&memory->in.feedSpeedUps));
     freeSimulatedPin((void**)(&memory->in.feedOverrideValue));
     freeSimulatedPin((void**)(&memory->in.feedOverrideMinValue));
     freeSimulatedPin((void**)(&memory->in.feedOverrideMaxValue));
+
+    freeSimulatedPin((void**)(&memory->in.isProgramRunning));
+    freeSimulatedPin((void**)(&memory->in.isProgramPaused));
+    freeSimulatedPin((void**)(&memory->in.isProgramIdle));
+
+    freeSimulatedPin((void**)(&memory->in.isModeAuto));
+    freeSimulatedPin((void**)(&memory->in.isModeJoint));
+    freeSimulatedPin((void**)(&memory->in.isModeManual));
+    freeSimulatedPin((void**)(&memory->in.isModeMdi));
+
     freeSimulatedPin((void**)(&memory->in.isEmergencyStop));
+
     freeSimulatedPin((void**)(&memory->in.isMachineOn));
 
     constexpr size_t pinsCount = sizeof(memory->out.button_pin) / sizeof(hal_bit_t * );
@@ -138,11 +154,6 @@ Hal::~Hal()
         freeSimulatedPin((void**)(&memory->out.button_pin[idx]));
     }
 
-    freeSimulatedPin((void**)(&memory->out.feedOverrideScale));
-    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_001));
-    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_01));
-    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_1));
-    freeSimulatedPin((void**)(&memory->out.feedValueSelected1_0));
     freeSimulatedPin((void**)(&memory->out.axisXJogCounts));
     freeSimulatedPin((void**)(&memory->out.axisYJogCounts));
     freeSimulatedPin((void**)(&memory->out.axisZJogCounts));
@@ -170,11 +181,19 @@ Hal::~Hal()
     freeSimulatedPin((void**)(&memory->out.axisASetVelocityMode));
     freeSimulatedPin((void**)(&memory->out.axisBSetVelocityMode));
     freeSimulatedPin((void**)(&memory->out.axisCSetVelocityMode));
+
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_001));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_01));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected0_1));
+    freeSimulatedPin((void**)(&memory->out.feedValueSelected1_0));
+
+    freeSimulatedPin((void**)(&memory->out.feedOverrideScale));
     freeSimulatedPin((void**)(&memory->out.feedOverrideCountEnable));
     freeSimulatedPin((void**)(&memory->out.feedOverrideDirectValue));
     freeSimulatedPin((void**)(&memory->out.feedOverrideCounts));
     freeSimulatedPin((void**)(&memory->out.feedOverrideDecrease));
     freeSimulatedPin((void**)(&memory->out.feedOverrideIncrease));
+
     freeSimulatedPin((void**)(&memory->out.spindleStop));
     freeSimulatedPin((void**)(&memory->out.spindleDoRunForward));
     freeSimulatedPin((void**)(&memory->out.spindleDoRunReverse));
@@ -182,27 +201,37 @@ Hal::~Hal()
     freeSimulatedPin((void**)(&memory->out.spindleDoIncrease));
     freeSimulatedPin((void**)(&memory->out.spindleOverrideDoDecrease));
     freeSimulatedPin((void**)(&memory->out.spindleOverrideDoIncrease));
+
+    freeSimulatedPin((void**)(&memory->out.jogSpeedValue));
+
     freeSimulatedPin((void**)(&memory->out.homeAll));
+
     freeSimulatedPin((void**)(&memory->out.jointXSelect));
     freeSimulatedPin((void**)(&memory->out.jointYSelect));
     freeSimulatedPin((void**)(&memory->out.jointZSelect));
     freeSimulatedPin((void**)(&memory->out.jointASelect));
     freeSimulatedPin((void**)(&memory->out.jointBSelect));
     freeSimulatedPin((void**)(&memory->out.jointCSelect));
+
     freeSimulatedPin((void**)(&memory->out.isPendantSleeping));
     freeSimulatedPin((void**)(&memory->out.isPendantConnected));
+
     freeSimulatedPin((void**)(&memory->out.doRunProgram));
     freeSimulatedPin((void**)(&memory->out.doPauseProgram));
     freeSimulatedPin((void**)(&memory->out.doResumeProgram));
     freeSimulatedPin((void**)(&memory->out.doStopProgram));
+
     freeSimulatedPin((void**)(&memory->out.doModeAuto));
     freeSimulatedPin((void**)(&memory->out.doModeJoint));
     freeSimulatedPin((void**)(&memory->out.doModeManual));
     freeSimulatedPin((void**)(&memory->out.doModeMdi));
+
     freeSimulatedPin((void**)(&memory->out.doEmergencyStop));
     freeSimulatedPin((void**)(&memory->out.resetEmergencyStop));
+
     freeSimulatedPin((void**)(&memory->out.doMachineOn));
     freeSimulatedPin((void**)(&memory->out.doMachineOff));
+
     delete memory;
 }
 

@@ -203,14 +203,6 @@ public:
         //! to be connected to \ref axis.5.jog-vel-mode
         hal_bit_t* axisCSetVelocityMode{nullptr};
 
-        //! to be connected to \ref halui.spindle.stop
-        hal_bit_t* spindleStop{nullptr};
-
-        //! to be connected to \ref halui.spindle.forward
-        hal_bit_t* spindleDoRunForward{nullptr};
-        //! to be connected to \ref halui.spindle.reverse
-        hal_bit_t* spindleDoRunReverse{nullptr};
-
         hal_bit_t* feedValueSelected0_001{nullptr};
         hal_bit_t* feedValueSelected0_01{nullptr};
         hal_bit_t* feedValueSelected0_1{nullptr};
@@ -229,6 +221,12 @@ public:
         //! to be connected to \ref halui.feed-override.increase
         hal_bit_t  * feedOverrideIncrease{nullptr};
 
+        //! to be connected to \ref halui.spindle.stop
+        hal_bit_t* spindleStop{nullptr};
+        //! to be connected to \ref halui.spindle.forward
+        hal_bit_t* spindleDoRunForward{nullptr};
+        //! to be connected to \ref halui.spindle.reverse
+        hal_bit_t* spindleDoRunReverse{nullptr};
         //! to be connected to halui.spindle.decrease
         hal_bit_t* spindleDoDecrease{nullptr};
         //! to be connected to halui.spindle.increase
@@ -508,8 +506,8 @@ public:
 private:
     HalMemory* memory{nullptr};
     std::map <std::string, size_t> mButtonNameToIdx;
-    bool mIsSimulationMode{false};
-    bool mIsInitialized{false};
+    bool                           mIsSimulationMode{false};
+    bool                           mIsInitialized{false};
     const char* mName{"xhc-whb04b-6"};
     const char* mComponentPrefix{"whb"};
     int          mHalCompId{-1};
