@@ -319,7 +319,6 @@ public:
     //! indicates the program has been invoked in hal mode or normal
     void setSimulationMode(bool isSimulationMode);
     int getHalComponentId() const;
-    //hal_bit_t* getButtonHalBit(size_t pinNumber);
     const char* getHalComponentName() const;
     //! Enables verbose hal output.
     //! \param enable true to enable hal messages, disable otherwise
@@ -452,10 +451,8 @@ public:
     //! \sa setMacro1(bool, size_t)
     void setMacro16(bool enabled);
 
-    /**
-     * Writes counts to each axis' count.
-     * \param counts value to propagate to each axis
-     */
+    //! Writes the corresponding counter to to each axis' count.
+    //! \param counters values to propagate to each axis
     void setJogCounts(const HandWheelCounters& counters);
 
     //! Returns the axis position.

@@ -36,20 +36,6 @@ using std::endl;
 
 namespace XhcWhb04b6 {
 
-/*
-// ----------------------------------------------------------------------
-
-UsbInputPackageInterpreted::~UsbInputPackageInterpreted()
-{
-}
- */
-/*
-// ----------------------------------------------------------------------
-
-WhbKeyEventListener::~WhbKeyEventListener()
-{
-}
-*/
 // ----------------------------------------------------------------------
 
 void XhcWhb04b6Component::initHal()
@@ -138,7 +124,7 @@ void XhcWhb04b6Component::printCrcDebug(const UsbInPackage& inPackage, const Usb
     //! The implementation has several flaws, but works with seed 0xfe and 0xff (which is a bad seed).
     //! \sa UsbOutPackageData::seed
     //! The checksum implementation does not work reliable with other seeds.
-    //! TODO: implement me correctly
+    // TODO: implement me correctly
     std::bitset<8> seed(outPackageBuffer.seed), nonSeed(~seed);
     std::bitset<8> nonSeedAndRandom(nonSeed & random);
     std::bitset<8> keyXorNonSeedAndRandom(buttonKeyCode ^ nonSeedAndRandom);
@@ -184,8 +170,6 @@ void XhcWhb04b6Component::printCrcDebug(const UsbInPackage& inPackage, const Usb
 //! interprets data packages as delivered by the XHC WHB04B-6 device
 void XhcWhb04b6Component::onInputDataReceived(const UsbInPackage& inPackage)
 {
-    //if (mIsSimulationMode)
-    //{
     *mRxCout << "in    ";
     printHexdump(inPackage);
     if (inPackage.rotaryButtonFeedKeyCode != KeyCodes::Feed.undefined.code)
@@ -204,7 +188,6 @@ void XhcWhb04b6Component::onInputDataReceived(const UsbInPackage& inPackage)
     printInputData(inPackage);
     printCrcDebug(inPackage, mUsb.getOutputPackageData());
     *mRxCout << endl;
-    //}
 
     uint8_t keyCode      = inPackage.buttonKeyCode1;
     uint8_t modifierCode = inPackage.buttonKeyCode2;
@@ -256,8 +239,6 @@ void XhcWhb04b6Component::onInputDataReceived(const UsbInPackage& inPackage)
 
 void XhcWhb04b6Component::initWhb()
 {
-    //stepHandler.old_inc_step_status = -1;
-    //gettimeofday(&sleepState.mLastWakeupTimestamp, nullptr);
     mIsRunning = true;
     mUsb.setIsRunning(true);
 }
@@ -291,7 +272,6 @@ XhcWhb04b6Component::XhcWhb04b6Component() :
     mName("XHC-WHB04B-6"),
     mHal(),
     mKeyCodes(),
-    //mStepHandler(),
     mMetaButtons{MetaButtonCodes(mKeyCodes.Buttons.reset, mKeyCodes.Buttons.undefined),
                      MetaButtonCodes(mKeyCodes.Buttons.reset, mKeyCodes.Buttons.function),
                      MetaButtonCodes(mKeyCodes.Buttons.stop, mKeyCodes.Buttons.undefined),
@@ -327,18 +307,12 @@ XhcWhb04b6Component::XhcWhb04b6Component() :
                      MetaButtonCodes(mKeyCodes.Buttons.undefined, mKeyCodes.Buttons.undefined)
     },
     mUsb(mName, *this),
-    //mIsRunning(false),
-    //mIsSimulationMode(false),
-    //mDevNull(nullptr),
     mTxCout(&mDevNull),
     mRxCout(&mDevNull),
     mKeyEventCout(&mDevNull),
     mHalInitCout(&mDevNull),
     mInitCout(&mDevNull),
-    //keyEventReceiver(*this),
     packageReceivedEventReceiver(*this),
-    //packageInterpretedEventReceiver(*this),
-    //mIsCrcDebuggingEnabled(false),
     mPendant(mHal, mUsb.getOutputPackageData())
 {
     setSimulationMode(true);

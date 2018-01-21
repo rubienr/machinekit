@@ -653,6 +653,7 @@ hal_float_t Hal::getAxisAPosition(bool absolute) const
 }
 
 // ----------------------------------------------------------------------
+
 hal_float_t Hal::getAxisBPosition(bool absolute) const
 {
     if (absolute)
@@ -663,6 +664,7 @@ hal_float_t Hal::getAxisBPosition(bool absolute) const
 }
 
 // ----------------------------------------------------------------------
+
 hal_float_t Hal::getAxisCPosition(bool absolute) const
 {
     if (absolute)
@@ -792,14 +794,6 @@ void Hal::setReset(bool enabled)
     }
     setPin(enabled, KeyCodes::Buttons.reset.text);
 }
-/*
-// ----------------------------------------------------------------------
-
-hal_bit_t* Hal::getButtonHalBit(size_t pinNumber)
-{
-    assert(memory->out.button_pin[pinNumber] != nullptr);
-    return memory->out.button_pin[pinNumber];
-}*/
 
 // ----------------------------------------------------------------------
 

@@ -115,7 +115,6 @@ UsbSleepPackage::UsbSleepPackage() :
 
 // ----------------------------------------------------------------------
 
-//! caution: it is not guaranteed that (this == \p other) == (\p other == this)
 bool UsbSleepPackage::operator==(const UsbInPackage& other) const
 {
     // equality constraints: 0x4 0x? 0x? 0x? 0x? 0x? 0x? 0x?
@@ -136,7 +135,6 @@ bool UsbSleepPackage::operator==(const UsbInPackage& other) const
 
 // ----------------------------------------------------------------------
 
-//! \see operator==(const UsbInPackage&)
 bool UsbSleepPackage::operator!=(const UsbInPackage& other) const
 {
     return !((*this) == other);
@@ -201,7 +199,6 @@ libusb_device_handle* Usb::getDeviceHandle()
 }
 
 // ----------------------------------------------------------------------
-
 
 void Usb::setDeviceHandle(libusb_device_handle* deviceHandle)
 {

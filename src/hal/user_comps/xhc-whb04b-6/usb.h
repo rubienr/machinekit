@@ -274,7 +274,6 @@ public:
     void init(const UsbOutPackageData* data);
 } __attribute__((packed));
 
-
 // ----------------------------------------------------------------------
 
 //! Convenience structure for casting data in package stream.

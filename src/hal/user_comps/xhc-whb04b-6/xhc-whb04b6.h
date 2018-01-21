@@ -35,49 +35,11 @@ namespace XhcWhb04b6 {
 
 // forward declarations
 
-/*
 // ----------------------------------------------------------------------
 
-class WhbKeyEventListener
-{
-public:
-    //! Called when button is pressed.
-    //! \param softwareButton the button pressed
-    //! \return true if a subsequent re-evaluation should be performed.
-    //! Example: A button event changes the feed rotary buttons step mode from
-    //! step to continuous. The button must be re-evaluated, otherwise the
-    //! button state remains untouched until the next button's event.
-    //virtual bool onButtonPressedEvent(const WhbSoftwareButton& softwareButton) = 0;
-    //! Called when button is released.
-    //! \param softwareButton the button released
-    //! \return true if a subsequent re-evaluation should be performed.
-    //! Example: A button event changes the feed rotary buttons step mode from
-    //! step to continuous. The button must be re-evaluated, otherwise the
-    //! button state remains untouched until the next button's event.
-    //virtual bool onButtonReleasedEvent(const WhbSoftwareButton& softwareButton) = 0;
-    //virtual void onAxisActiveEvent(const WhbKeyCode& axis) = 0;
-    //virtual void onAxisInactiveEvent(const WhbKeyCode& axis) = 0;
-    //virtual void onFeedActiveEvent(const WhbKeyCode& axis) = 0;
-    //virtual void onFeedInactiveEvent(const WhbKeyCode& axis) = 0;
-    //virtual void onJogDialEvent(int8_t delta) = 0;
-    virtual ~WhbKeyEventListener();
-};
-*/
-/*
-// ----------------------------------------------------------------------
-
-class OnUsbInputPackageInterpretedListener
-{
-public:
-    //virtual void onDataInterpreted() = 0;
-    virtual ~OnUsbInputPackageInterpretedListener();
-};
-*/
-// ----------------------------------------------------------------------
-
-//! program context
+//! The XHC WHB04B-6 user space component for Linuxcnc.
 class XhcWhb04b6Component :
-    public OnUsbInputPackageListener /*, public WhbKeyEventListener*/ /*, public OnUsbInputPackageInterpretedListener*/
+    public OnUsbInputPackageListener
 {
 public:
     XhcWhb04b6Component();
@@ -93,7 +55,6 @@ public:
     const char* getHalName() const;
     //! callback method received by \ref Usb when a \ref libusb_transfer is received
     void onInputDataReceived(const UsbInPackage& inPackage) override;
-    //size_t getSoftwareButtonIndex(uint8_t keyCode) const;
     void initWhb();
     void initHal();
     void teardownHal();
@@ -119,7 +80,6 @@ private:
     const char* mName;
     Hal                     mHal;
     const KeyCodes          mKeyCodes;
-    //const WhbStepHandler    mStepHandler;
     const MetaButtonCodes   mMetaButtons[32];
     Usb                  mUsb;
     bool                    mIsRunning{false};
@@ -130,9 +90,7 @@ private:
     std::ostream              * mKeyEventCout;
     std::ostream              * mHalInitCout;
     std::ostream              * mInitCout;
-    //WhbKeyEventListener       & keyEventReceiver;
     OnUsbInputPackageListener   & packageReceivedEventReceiver;
-    //OnUsbInputPackageInterpretedListener& packageInterpretedEventReceiver;
     bool    mIsCrcDebuggingEnabled{false};
     Pendant mPendant;
 
