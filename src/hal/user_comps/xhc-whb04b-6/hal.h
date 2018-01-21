@@ -38,15 +38,15 @@
 namespace XhcWhb04b6 {
 
 // forward declarations
-class WhbSoftwareButton;
-class WhbKeyCodes;
+class MetaButtonCodes;
+class KeyCodes;
 
 
 // ----------------------------------------------------------------------
 
 //! HAL memory pointers. Each pointer represents an i/o hal pin.
 
-class WhbHalMemory
+class HalMemory
 {
 public:
     struct In
@@ -296,36 +296,25 @@ public:
     In  in;
     Out out;
 
-    WhbHalMemory();
-    ~WhbHalMemory();
-};
-
-// ----------------------------------------------------------------------
-
-class WhbVelocityComputation
-{
-public:
-    hal_s32_t      last_jog_counts;
-    struct timeval last_tv;
-    WhbVelocityComputation();
+    HalMemory();
+    ~HalMemory();
 };
 
 // ----------------------------------------------------------------------
 
 //! HAL and related parameters
-class WhbHal
+class Hal
 {
 public:
-    WhbHalMemory* memory;
+    HalMemory* memory;
     std::map <std::string, size_t> mButtonNameToIdx;
-    WhbVelocityComputation         velocityComputation;
 
-    WhbHal();
-    ~WhbHal();
+    Hal();
+    ~Hal();
     //! Initializes HAL memory and pins according to simulation mode. Must not be called more than once.
     //! If \ref mIsSimulationMode is true heap memory will be used, shared HAL memory otherwise.
     //! \ref setIsSimulationMode() must be set before accordingly
-    void init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& codes);
+    void init(const MetaButtonCodes* metaButtons, const KeyCodes& codes);
     bool isSimulationModeEnabled() const;
     //! indicates the program has been invoked in hal mode or normal
     void setSimulationMode(bool isSimulationMode);
@@ -360,8 +349,8 @@ public:
     //! Sets the hal state of the respective pin (reset). Usually called in case the reset
     //! button is pressed or released. The pin should be connected to \ref halui.estop.activate.
     //! \param enabled the new pin value, (true if the button was pressed, false otherwise)
-    //! \param pinNumber The pin number in \ref WhbHalMemory as registered in
-    //! \ref WhbHal::halInit(const WhbSoftwareButton* , size_t , const WhbKeyCodes&)
+    //! \param pinNumber The pin number in \ref HalMemory as registered in
+    //! \ref Hal::halInit(const WhbSoftwareButton* , size_t , const WhbKeyCodes&)
     //! \sa doEmergencyStop
     void setReset(bool enabled);
     //! \sa setReset(bool, size_t)
@@ -429,7 +418,7 @@ public:
     //! button is pressed or released. A macro button can be any button
     //! when pressed together with the modifier key.
     //! \param enabled the new pin value, (true if the button was pressed, false otherwise)
-    //! \param pinNumber The pin number in \ref WhbHalMemory.
+    //! \param pinNumber The pin number in \ref HalMemory.
     //! \sa setReset(bool, size_t)
     void setMacro1(bool enabled);
     //! \sa setMacro1(bool, size_t)

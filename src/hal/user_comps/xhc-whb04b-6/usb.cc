@@ -53,20 +53,20 @@ void usbInputResponseCallback(struct libusb_transfer* transfer)
 
 // ----------------------------------------------------------------------
 
-const WhbConstantUsbPackages WhbUsb::ConstantPackages;
+const ConstantUsbPackages Usb::ConstantPackages;
 
 
 // ----------------------------------------------------------------------
 
-WhbUsbOutPackageBlock::WhbUsbOutPackageBlock() :
+UsbOutPackageBlock::UsbOutPackageBlock() :
     asBlock()
 {
-    assert(sizeof(WhbUsbOutPackageBlockBuffer) == sizeof(WhbUsbOutPackageBlockFields));
+    assert(sizeof(UsbOutPackageBlockBuffer) == sizeof(UsbOutPackageBlockFields));
 }
 
 // ----------------------------------------------------------------------
 
-WhbUsbInPackageBuffer::WhbUsbInPackageBuffer() :
+UsbInPackageBuffer::UsbInPackageBuffer() :
     asBuffer{0}
 {
     assert(sizeof(asFields) == sizeof(asBuffer));
@@ -74,15 +74,14 @@ WhbUsbInPackageBuffer::WhbUsbInPackageBuffer() :
 
 // ----------------------------------------------------------------------
 
-WhbUsbEmptyPackage::WhbUsbEmptyPackage() :
-    WhbUsbInPackage(0x04, 0xff, 0, 0, 0, 0, 0, 0xff)
+UsbEmptyPackage::UsbEmptyPackage() :
+    UsbInPackage(0x04, 0xff, 0, 0, 0, 0, 0, 0xff)
 {
 }
 
-
 // ----------------------------------------------------------------------
 
-bool WhbUsbEmptyPackage::operator==(const WhbUsbInPackage& other) const
+bool UsbEmptyPackage::operator==(const UsbInPackage& other) const
 {
     // equality constraints: 0x4 0x? 0x0 0x0 0x0 0x0 0x0 0x?
     if ((header == other.header) &&
@@ -102,22 +101,22 @@ bool WhbUsbEmptyPackage::operator==(const WhbUsbInPackage& other) const
 
 // ----------------------------------------------------------------------
 
-bool WhbUsbEmptyPackage::operator!=(const WhbUsbInPackage& other) const
+bool UsbEmptyPackage::operator!=(const UsbInPackage& other) const
 {
     return !((*this) == other);
 }
 
 // ----------------------------------------------------------------------
 
-WhbUsbSleepPackage::WhbUsbSleepPackage() :
-    WhbUsbInPackage(0x04, 0xff, 0xff, 0xff, 0xff, 0xff, -127, 0xff)
+UsbSleepPackage::UsbSleepPackage() :
+    UsbInPackage(0x04, 0xff, 0xff, 0xff, 0xff, 0xff, -127, 0xff)
 {
 }
 
 // ----------------------------------------------------------------------
 
 //! caution: it is not guaranteed that (this == \p other) == (\p other == this)
-bool WhbUsbSleepPackage::operator==(const WhbUsbInPackage& other) const
+bool UsbSleepPackage::operator==(const UsbInPackage& other) const
 {
     // equality constraints: 0x4 0x? 0x? 0x? 0x? 0x? 0x? 0x?
     if ((header == other.header)
@@ -137,15 +136,15 @@ bool WhbUsbSleepPackage::operator==(const WhbUsbInPackage& other) const
 
 // ----------------------------------------------------------------------
 
-//! \see operator==(const WhbUsbInPackage&)
-bool WhbUsbSleepPackage::operator!=(const WhbUsbInPackage& other) const
+//! \see operator==(const UsbInPackage&)
+bool UsbSleepPackage::operator!=(const UsbInPackage& other) const
 {
     return !((*this) == other);
 }
 
 // ----------------------------------------------------------------------
 
-WhbConstantUsbPackages::WhbConstantUsbPackages() :
+ConstantUsbPackages::ConstantUsbPackages() :
     sleepPackage(),
     emptyPackage()
 {
@@ -153,14 +152,14 @@ WhbConstantUsbPackages::WhbConstantUsbPackages() :
 
 // ----------------------------------------------------------------------
 
-uint16_t WhbUsb::getUsbVendorId() const
+uint16_t Usb::getUsbVendorId() const
 {
     return usbVendorId;
 }
 
 // ----------------------------------------------------------------------
 
-uint16_t WhbUsb::getUsbProductId() const
+uint16_t Usb::getUsbProductId() const
 {
     return usbProductId;
 }
@@ -168,35 +167,35 @@ uint16_t WhbUsb::getUsbProductId() const
 // ----------------------------------------------------------------------
 
 
-const bool WhbUsb::isDeviceOpen() const
+const bool Usb::isDeviceOpen() const
 {
     return deviceHandle != nullptr;
 }
 
 // ----------------------------------------------------------------------
 
-libusb_context** WhbUsb::getContextReference()
+libusb_context** Usb::getContextReference()
 {
     return &context;
 }
 
 // ----------------------------------------------------------------------
 
-libusb_context* WhbUsb::getContext()
+libusb_context* Usb::getContext()
 {
     return context;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::setContext(libusb_context* context)
+void Usb::setContext(libusb_context* context)
 {
     this->context = context;
 }
 
 // ----------------------------------------------------------------------
 
-libusb_device_handle* WhbUsb::getDeviceHandle()
+libusb_device_handle* Usb::getDeviceHandle()
 {
     return deviceHandle;
 }
@@ -204,35 +203,35 @@ libusb_device_handle* WhbUsb::getDeviceHandle()
 // ----------------------------------------------------------------------
 
 
-void WhbUsb::setDeviceHandle(libusb_device_handle* deviceHandle)
+void Usb::setDeviceHandle(libusb_device_handle* deviceHandle)
 {
     this->deviceHandle = deviceHandle;
 }
 
 // ----------------------------------------------------------------------
 
-bool WhbUsb::isWaitForPendantBeforeHalEnabled() const
+bool Usb::isWaitForPendantBeforeHalEnabled() const
 {
     return isWaitWithTimeout;
 }
 
 // ----------------------------------------------------------------------
 
-bool WhbUsb::getDoReconnect() const
+bool Usb::getDoReconnect() const
 {
     return do_reconnect;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::setDoReconnect(bool doReconnect)
+void Usb::setDoReconnect(bool doReconnect)
 {
     this->do_reconnect = doReconnect;
 }
 
 // ----------------------------------------------------------------------
 
-WhbUsb::WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback)
+Usb::Usb(const char* name, OnUsbInputPackageListener& onDataReceivedCallback)
     :
     usbVendorId(0x10ce), // xhc-whb04-6
     usbProductId(0xeb93), // xhc-whb04-6
@@ -262,7 +261,7 @@ WhbUsb::WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::sendDisplayData()
+void Usb::sendDisplayData()
 {
     outputPackageBuffer.asBlocks.init(&outputPackageData);
 
@@ -273,10 +272,10 @@ void WhbUsb::sendDisplayData()
                       << endl;
     }
 
-    for (size_t idx = 0; idx < (sizeof(outputPackageBuffer.asBlockArray) / sizeof(WhbUsbOutPackageBlockFields)); idx++)
+    for (size_t idx = 0; idx < (sizeof(outputPackageBuffer.asBlockArray) / sizeof(UsbOutPackageBlockFields)); idx++)
     {
-        WhbUsbOutPackageBlock& block = outputPackageBuffer.asBlockArray[idx];
-        size_t blockSize = sizeof(WhbUsbOutPackageBlock);
+        UsbOutPackageBlock& block = outputPackageBuffer.asBlockArray[idx];
+        size_t blockSize = sizeof(UsbOutPackageBlock);
         // see also
         // http://www.beyondlogic.org/usbnutshell/usb6.shtml
         // http://libusb.sourceforge.net/api-1.0/group__desc.html
@@ -308,7 +307,7 @@ void WhbUsb::sendDisplayData()
 
 // ----------------------------------------------------------------------
 
-void WhbUsbOutPackageAxisCoordinate::setCoordinate(const float& coordinate)
+void UsbOutPackageAxisCoordinate::setCoordinate(const float& coordinate)
 {
     float coordinateAbs = rtapi_fabs(coordinate);
     if (coordinate == coordinateAbs)
@@ -327,7 +326,7 @@ void WhbUsbOutPackageAxisCoordinate::setCoordinate(const float& coordinate)
 
 // ----------------------------------------------------------------------
 
-void WhbUsbOutPackageAxisCoordinate::clear()
+void UsbOutPackageAxisCoordinate::clear()
 {
     integerValue   = 0;
     fractionValue  = 0;
@@ -336,7 +335,7 @@ void WhbUsbOutPackageAxisCoordinate::clear()
 
 // ----------------------------------------------------------------------
 
-std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate& coordinate)
+std::ostream& operator<<(std::ostream& os, const UsbOutPackageAxisCoordinate& coordinate)
 {
     std::ios init(NULL);
     init.copyfmt(os);
@@ -350,7 +349,7 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate&
 
 // ----------------------------------------------------------------------
 
-WhbUsbOutPackageBlockFields::WhbUsbOutPackageBlockFields() :
+UsbOutPackageBlockFields::UsbOutPackageBlockFields() :
     reportId(0x06),
     __padding0(0),
     __padding1(0),
@@ -364,7 +363,7 @@ WhbUsbOutPackageBlockFields::WhbUsbOutPackageBlockFields() :
 
 // ----------------------------------------------------------------------
 
-void WhbUsbOutPackageBlockFields::init(const void* data)
+void UsbOutPackageBlockFields::init(const void* data)
 {
     reportId   = 0x06;
     __padding0 = reinterpret_cast<const uint8_t*>(data)[0];
@@ -378,7 +377,7 @@ void WhbUsbOutPackageBlockFields::init(const void* data)
 
 // ----------------------------------------------------------------------
 
-std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlockFields& block)
+std::ostream& operator<<(std::ostream& os, const UsbOutPackageBlockFields& block)
 {
     std::ios init(NULL);
     init.copyfmt(os);
@@ -396,7 +395,7 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlockFields& bl
 
 // ----------------------------------------------------------------------
 
-WhbUsbOutPackageBlocks::WhbUsbOutPackageBlocks() :
+UsbOutPackageBlocks::UsbOutPackageBlocks() :
     block0(),
     block1(),
     block2()
@@ -405,7 +404,7 @@ WhbUsbOutPackageBlocks::WhbUsbOutPackageBlocks() :
 
 // ----------------------------------------------------------------------
 
-void WhbUsbOutPackageBlocks::init(const WhbUsbOutPackageData* data)
+void UsbOutPackageBlocks::init(const UsbOutPackageData* data)
 {
     const uint8_t* d = reinterpret_cast<const uint8_t*>(data);
     block0.init(d += 0);
@@ -416,24 +415,24 @@ void WhbUsbOutPackageBlocks::init(const WhbUsbOutPackageData* data)
 // ----------------------------------------------------------------------
 
 
-std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlocks& blocks)
+std::ostream& operator<<(std::ostream& os, const UsbOutPackageBlocks& blocks)
 {
     return os << blocks.block0 << " " << blocks.block1 << " " << blocks.block2;
 }
 
 // ----------------------------------------------------------------------
 
-WhbUsbOutPackageData::WhbUsbOutPackageData()
+UsbOutPackageData::UsbOutPackageData()
 {
     clear();
 }
 
 // ----------------------------------------------------------------------
 
-void WhbUsbOutPackageData::clear()
+void UsbOutPackageData::clear()
 {
     header = 0xfdfe;
-    //! \sa WhbContext::printCrcDebug(const WhbUsbInPackage&, const WhbUsbOutPackageData&)
+    //! \sa WhbContext::printCrcDebug(const UsbInPackage&, const UsbOutPackageData&)
     seed   = 0xfe;
     displayModeFlags.asByte = 0;
 
@@ -448,7 +447,7 @@ void WhbUsbOutPackageData::clear()
 
 // ----------------------------------------------------------------------
 
-std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data)
+std::ostream& operator<<(std::ostream& os, const UsbOutPackageData& data)
 {
     std::ios init(NULL);
     init.copyfmt(os);
@@ -480,26 +479,26 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data)
 
 // ----------------------------------------------------------------------
 
-WhbUsbOutPackageBuffer::WhbUsbOutPackageBuffer() :
+UsbOutPackageBuffer::UsbOutPackageBuffer() :
     asBlocks()
 {
     if (false)
     {
-        std::cout << "sizeof usb data " << sizeof(WhbUsbOutPackageData) << endl
-                  << " blocks count   " << sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlockFields) << endl
-                  << " sizeof block   " << sizeof(WhbUsbOutPackageBlockFields) << endl
-                  << " sizeof blocks  " << sizeof(WhbUsbOutPackageBlocks) << endl
+        std::cout << "sizeof usb data " << sizeof(UsbOutPackageData) << endl
+                  << " blocks count   " << sizeof(UsbOutPackageBlocks) / sizeof(UsbOutPackageBlockFields) << endl
+                  << " sizeof block   " << sizeof(UsbOutPackageBlockFields) << endl
+                  << " sizeof blocks  " << sizeof(UsbOutPackageBlocks) << endl
                   << " sizeof array   " << sizeof(asBlockArray) << endl
-                  << " sizeof package " << sizeof(WhbUsbOutPackageData) << endl;
+                  << " sizeof package " << sizeof(UsbOutPackageData) << endl;
     }
-    assert(sizeof(WhbUsbOutPackageBlocks) == sizeof(asBlockArray));
-    size_t blocksCount = sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlockFields);
-    assert((sizeof(WhbUsbOutPackageData) + blocksCount) == sizeof(WhbUsbOutPackageBlocks));
+    assert(sizeof(UsbOutPackageBlocks) == sizeof(asBlockArray));
+    size_t blocksCount = sizeof(UsbOutPackageBlocks) / sizeof(UsbOutPackageBlockFields);
+    assert((sizeof(UsbOutPackageData) + blocksCount) == sizeof(UsbOutPackageBlocks));
 }
 
 // ----------------------------------------------------------------------
 
-WhbUsbInPackage::WhbUsbInPackage() :
+UsbInPackage::UsbInPackage() :
     header(0),
     randomByte(0),
     buttonKeyCode1(0),
@@ -513,7 +512,7 @@ WhbUsbInPackage::WhbUsbInPackage() :
 
 // ----------------------------------------------------------------------
 
-WhbUsbInPackage::WhbUsbInPackage(const uint8_t notAvailable1, const uint8_t notAvailable2, const uint8_t buttonKeyCode1,
+UsbInPackage::UsbInPackage(const uint8_t notAvailable1, const uint8_t notAvailable2, const uint8_t buttonKeyCode1,
                                  const uint8_t buttonKeyCode2, const uint8_t rotaryButtonFeedKeyCode,
                                  const uint8_t rotaryButtonAxisKeyCode, const int8_t stepCount, const uint8_t crc) :
     header(notAvailable1),
@@ -529,32 +528,31 @@ WhbUsbInPackage::WhbUsbInPackage(const uint8_t notAvailable1, const uint8_t notA
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::setSimulationMode(bool isSimulationMode)
+void Usb::setSimulationMode(bool isSimulationMode)
 {
     mIsSimulationMode = isSimulationMode;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::setIsRunning(bool enableRunning)
+void Usb::setIsRunning(bool enableRunning)
 {
     mIsRunning = enableRunning;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::requestTermination()
+void Usb::requestTermination()
 {
     mIsRunning = false;
 }
 
 // ----------------------------------------------------------------------
 
-bool WhbUsb::setupAsyncTransfer()
+bool Usb::setupAsyncTransfer()
 {
     assert(inTransfer != nullptr);
     libusb_fill_bulk_transfer(inTransfer, deviceHandle,
-        //! TODO: LIBUSB_ENDPOINT_IN
                               (0x1 | LIBUSB_ENDPOINT_IN), inputPackageBuffer.asBuffer,
                               sizeof(inputPackageBuffer.asBuffer), mRawDataCallback,
         //! pass this object as callback data
@@ -568,9 +566,9 @@ bool WhbUsb::setupAsyncTransfer()
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
+void Usb::onUsbDataReceived(struct libusb_transfer* transfer)
 {
-    int      expectedPackageSize = static_cast<int>(sizeof(WhbUsbInPackage));
+    int      expectedPackageSize = static_cast<int>(sizeof(UsbInPackage));
     std::ios init(NULL);
     init.copyfmt(*verboseTxOut);
     switch (transfer->status)
@@ -579,11 +577,11 @@ void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
             // sleep mode was previously detected, drop current package
             if (sleepState.mDropNextInPackage)
             {
-                if (WhbUsb::ConstantPackages.sleepPackage != inputPackageBuffer.asFields)
+                if (Usb::ConstantPackages.sleepPackage != inputPackageBuffer.asFields)
                 {
                     *verboseTxOut << "expected sleep package starting with " << std::hex << std::setfill('0')
                                   << std::setw(2)
-                                  << static_cast<unsigned short>(WhbUsb::ConstantPackages.sleepPackage.header)
+                                  << static_cast<unsigned short>(Usb::ConstantPackages.sleepPackage.header)
                                   << " but got " << std::hex << std::setfill('0') << std::setw(2)
                                   << static_cast<unsigned short>(inputPackageBuffer.asFields.header) << endl;
                     verboseTxOut->copyfmt(init);
@@ -597,9 +595,9 @@ void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
             {
                 //! detect pendant going to sleep:
                 //! when powering off pedant sends two packages
-                //! 1st: \ref WhbUsbEmptyPackage
-                //! 2nd: \ref WhbUsbSleepPackage
-                if (WhbUsb::ConstantPackages.emptyPackage == inputPackageBuffer.asFields)
+                //! 1st: \ref UsbEmptyPackage
+                //! 2nd: \ref UsbSleepPackage
+                if (Usb::ConstantPackages.emptyPackage == inputPackageBuffer.asFields)
                 {
                     sleepState.mDropNextInPackage = true;
                     *(mHalMemory->out.isPendantSleeping) = 1;
@@ -673,13 +671,13 @@ void WhbUsb::onUsbDataReceived(struct libusb_transfer* transfer)
 
 // ----------------------------------------------------------------------
 
-WhbUsb::~WhbUsb()
+Usb::~Usb()
 {
 }
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::enableVerboseTx(bool enable)
+void Usb::enableVerboseTx(bool enable)
 {
     if (enable)
     {
@@ -693,7 +691,7 @@ void WhbUsb::enableVerboseTx(bool enable)
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::enableVerboseRx(bool enable)
+void Usb::enableVerboseRx(bool enable)
 {
     if (enable)
     {
@@ -707,7 +705,7 @@ void WhbUsb::enableVerboseRx(bool enable)
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::enableVerboseInit(bool enable)
+void Usb::enableVerboseInit(bool enable)
 {
     if (enable)
     {
@@ -721,7 +719,7 @@ void WhbUsb::enableVerboseInit(bool enable)
 
 // ----------------------------------------------------------------------
 
-bool WhbUsb::init()
+bool Usb::init()
 {
     if (getDoReconnect())
     {
@@ -824,7 +822,7 @@ bool WhbUsb::init()
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::setWaitWithTimeout(uint8_t waitSecs)
+void Usb::setWaitWithTimeout(uint8_t waitSecs)
 {
     mWaitSecs         = waitSecs;
     if (mWaitSecs > 0)
@@ -837,21 +835,21 @@ void WhbUsb::setWaitWithTimeout(uint8_t waitSecs)
 
 // ----------------------------------------------------------------------
 
-WhbUsbOutPackageData& WhbUsb::getOutputPackageData()
+UsbOutPackageData& Usb::getOutputPackageData()
 {
     return outputPackageData;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbUsb::takeHalMemoryReference(WhbHalMemory* memory)
+void Usb::takeHalMemoryReference(HalMemory* memory)
 {
     mHalMemory = memory;
 }
 
 // ----------------------------------------------------------------------
 
-WhbSleepDetect::WhbSleepDetect() :
+SleepDetect::SleepDetect() :
     mDropNextInPackage(false),
     mLastWakeupTimestamp()
 {
@@ -865,7 +863,7 @@ UsbRawInputListener::~UsbRawInputListener()
 
 // ----------------------------------------------------------------------
 
-UsbInputPackageListener::~UsbInputPackageListener()
+OnUsbInputPackageListener::~OnUsbInputPackageListener()
 {
 }
 }

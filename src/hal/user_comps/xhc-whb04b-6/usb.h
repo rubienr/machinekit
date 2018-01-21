@@ -37,14 +37,14 @@ struct libusb_transfer;
 namespace XhcWhb04b6 {
 
 // forward declarations
-class WhbHalMemory;
-class WhbUsb;
+class HalMemory;
+class Usb;
 
 // ----------------------------------------------------------------------
 
 //! Axis coordinate structure as sent via usb.
 //! Caution: do not reorder fields!
-class WhbUsbOutPackageAxisCoordinate
+class UsbOutPackageAxisCoordinate
 {
 public:
     uint16_t integerValue;
@@ -87,7 +87,7 @@ class DisplayIndicatorBitFields
 public:
     //! \see DisplayIndicatorStepMode
     uint8_t stepMode            : 2;
-    // TODO: investigate unknown:4
+    // TODO: investigate unknown bit field of size 4
     //! unknown flags
     uint8_t unknown             : 4;
     //! if flag set displays "RESET", \ref stepMode otherwise
@@ -112,21 +112,21 @@ public:
 
 //! Convenience structure for accessing data fields in output package stream.
 //! Caution: do not reorder fields!
-class WhbUsbOutPackageData
+class UsbOutPackageData
 {
 public:
     //! constant: 0xfdfe
     uint16_t                       header;
     uint8_t                        seed;
     DisplayIndicator               displayModeFlags;
-    WhbUsbOutPackageAxisCoordinate row1Coordinate;
-    WhbUsbOutPackageAxisCoordinate row2Coordinate;
-    WhbUsbOutPackageAxisCoordinate row3Coordinate;
+    UsbOutPackageAxisCoordinate row1Coordinate;
+    UsbOutPackageAxisCoordinate row2Coordinate;
+    UsbOutPackageAxisCoordinate row3Coordinate;
     //! on feed+/- button pressed shown on display
     uint16_t                       feedRate;
     //! on spindle+/- button pressed shown on display
     uint16_t                       spindleSpeed;
-    WhbUsbOutPackageData();
+    UsbOutPackageData();
     void clear();
 
 private:
@@ -138,7 +138,7 @@ private:
 
 //! Convenience structure for accessing data in input package stream.
 //! Caution: do not reorder fields!
-class WhbUsbInPackage
+class UsbInPackage
 {
 public:
     //! constant 0x04
@@ -150,8 +150,8 @@ public:
     const uint8_t rotaryButtonAxisKeyCode;
     const int8_t  stepCount;
     const uint8_t crc;
-    WhbUsbInPackage();
-    WhbUsbInPackage(const uint8_t notAvailable1, const uint8_t notAvailable2, const uint8_t buttonKeyCode1,
+    UsbInPackage();
+    UsbInPackage(const uint8_t notAvailable1, const uint8_t notAvailable2, const uint8_t buttonKeyCode1,
                     const uint8_t buttonKeyCode2, const uint8_t rotaryButtonFeedKeyCode,
                     const uint8_t rotaryButtonAxisKeyCode, const int8_t stepCount, const uint8_t crc);
 }__attribute__((packed));
@@ -160,53 +160,53 @@ public:
 
 //! This package is sent as last but one package before xhc-whb04-6 is powered off,
 //! and is meant to be used with operator== for comparison.
-class WhbUsbEmptyPackage :
-    public WhbUsbInPackage
+class UsbEmptyPackage :
+    public UsbInPackage
 {
 public:
 
-    WhbUsbEmptyPackage();
+    UsbEmptyPackage();
     //! caution: it is not guaranteed that (this == \p other) == (\p other == this)
-    bool operator==(const WhbUsbInPackage& other) const;
-    //! \see operator==(const WhbUsbInPackage&)
-    bool operator!=(const WhbUsbInPackage& other) const;
+    bool operator==(const UsbInPackage& other) const;
+    //! \see operator==(const UsbInPackage&)
+    bool operator!=(const UsbInPackage& other) const;
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
 //! This package is sent as last package before xhc-whb04-6 is powered off,
 //! and is meant to be used with operator== for comparison.
-class WhbUsbSleepPackage :
-    public WhbUsbInPackage
+class UsbSleepPackage :
+    public UsbInPackage
 {
 public:
-    WhbUsbSleepPackage();
+    UsbSleepPackage();
     //! caution: it is not guaranteed that (this == \p other) == (\p other == this)
-    bool operator==(const WhbUsbInPackage& other) const;
-    //! \see operator==(const WhbUsbInPackage&)
-    bool operator!=(const WhbUsbInPackage& other) const;
+    bool operator==(const UsbInPackage& other) const;
+    //! \see operator==(const UsbInPackage&)
+    bool operator!=(const UsbInPackage& other) const;
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
 //! set of constant usb packages
-class WhbConstantUsbPackages
+class ConstantUsbPackages
 {
 public:
-    const WhbUsbSleepPackage sleepPackage;
-    const WhbUsbEmptyPackage emptyPackage;
-    WhbConstantUsbPackages();
+    const UsbSleepPackage sleepPackage;
+    const UsbEmptyPackage emptyPackage;
+    ConstantUsbPackages();
 };
 
 // ----------------------------------------------------------------------
 
-class UsbInputPackageListener
+class OnUsbInputPackageListener
 {
 public:
     //! callback with structured input data
-    virtual void onInputDataReceived(const WhbUsbInPackage& inPackage) = 0;
+    virtual void onInputDataReceived(const UsbInPackage& inPackage) = 0;
 
-    virtual ~UsbInputPackageListener();
+    virtual ~OnUsbInputPackageListener();
 };
 
 // ----------------------------------------------------------------------
@@ -224,7 +224,7 @@ public:
 
 //! Convenience structure for initializing a transmission block.
 //! Caution: do not reorder fields!
-class WhbUsbOutPackageBlockFields
+class UsbOutPackageBlockFields
 {
 public:
     //! constant 0x06
@@ -236,42 +236,42 @@ public:
     uint8_t __padding4;
     uint8_t __padding5;
     uint8_t __padding6;
-    WhbUsbOutPackageBlockFields();
+    UsbOutPackageBlockFields();
     void init(const void* data);
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
 //! Convenience structure for accessing a block as byte buffer.
-class WhbUsbOutPackageBlockBuffer
+class UsbOutPackageBlockBuffer
 {
 public:
-    uint8_t asBytes[sizeof(WhbUsbOutPackageBlockFields)];
+    uint8_t asBytes[sizeof(UsbOutPackageBlockFields)];
 } __attribute__((packed));
 
 
 // ----------------------------------------------------------------------
 
-union WhbUsbOutPackageBlock
+union UsbOutPackageBlock
 {
 public:
-    WhbUsbOutPackageBlockBuffer asBuffer;
-    WhbUsbOutPackageBlockFields asBlock;
-    WhbUsbOutPackageBlock();
+    UsbOutPackageBlockBuffer asBuffer;
+    UsbOutPackageBlockFields asBlock;
+    UsbOutPackageBlock();
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
 //! Convenience structure for initializing a transmission package's blocks.
 //! Caution: do not reorder fields!
-class WhbUsbOutPackageBlocks
+class UsbOutPackageBlocks
 {
 public:
-    WhbUsbOutPackageBlockFields block0;
-    WhbUsbOutPackageBlockFields block1;
-    WhbUsbOutPackageBlockFields block2;
-    WhbUsbOutPackageBlocks();
-    void init(const WhbUsbOutPackageData* data);
+    UsbOutPackageBlockFields block0;
+    UsbOutPackageBlockFields block1;
+    UsbOutPackageBlockFields block2;
+    UsbOutPackageBlocks();
+    void init(const UsbOutPackageData* data);
 } __attribute__((packed));
 
 
@@ -279,36 +279,36 @@ public:
 
 //! Convenience structure for casting data in package stream.
 //! Caution: do not reorder fields!
-union WhbUsbOutPackageBuffer
+union UsbOutPackageBuffer
 {
 public:
-    WhbUsbOutPackageBlock  asBlockArray[sizeof(WhbUsbOutPackageBlocks) / sizeof(WhbUsbOutPackageBlock)];
-    WhbUsbOutPackageBlocks asBlocks;
-    WhbUsbOutPackageBuffer();
+    UsbOutPackageBlock  asBlockArray[sizeof(UsbOutPackageBlocks) / sizeof(UsbOutPackageBlock)];
+    UsbOutPackageBlocks asBlocks;
+    UsbOutPackageBuffer();
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
 //! Convenience structure for casting data in package stream.
 //! Caution: do not reorder fields!
-union WhbUsbInPackageBuffer
+union UsbInPackageBuffer
 {
 public:
-    const WhbUsbInPackage asFields;
-    uint8_t               asBuffer[sizeof(WhbUsbInPackage)];
-    WhbUsbInPackageBuffer();
+    const UsbInPackage asFields;
+    uint8_t               asBuffer[sizeof(UsbInPackage)];
+    UsbInPackageBuffer();
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------
 
 //! pendant sleep/idle state parameters
-class WhbSleepDetect
+class SleepDetect
 {
-    friend WhbUsb;
+    friend Usb;
 
 public:
 
-    WhbSleepDetect();
+    SleepDetect();
 
 private:
     bool           mDropNextInPackage;
@@ -318,14 +318,14 @@ private:
 // ----------------------------------------------------------------------
 
 //! USB related parameters
-class WhbUsb : public UsbRawInputListener
+class Usb : public UsbRawInputListener
 {
 public:
-    static const WhbConstantUsbPackages ConstantPackages;
+    static const ConstantUsbPackages ConstantPackages;
     //! \param name device string used for printing messages
     //! \param onDataReceivedCallback called when received data is ready
-    WhbUsb(const char* name, UsbInputPackageListener& onDataReceivedCallback);
-    ~WhbUsb();
+    Usb(const char* name, OnUsbInputPackageListener& onDataReceivedCallback);
+    ~Usb();
     uint16_t getUsbVendorId() const;
     uint16_t getUsbProductId() const;
     const bool isDeviceOpen() const;
@@ -342,7 +342,7 @@ public:
     void setIsRunning(bool enableRunning);
     void requestTermination();
     //! Do offer a HAL memory before calling this method.
-    //! \sa takeHalMemoryReference(WhbHalMemory *)
+    //! \sa takeHalMemoryReference(HalMemory *)
     bool setupAsyncTransfer();
     void sendDisplayData();
     void enableVerboseTx(bool enable);
@@ -351,8 +351,8 @@ public:
     bool init();
     void setWaitWithTimeout(uint8_t waitSecs);
 
-    WhbUsbOutPackageData& getOutputPackageData();
-    void takeHalMemoryReference(WhbHalMemory* memory);
+    UsbOutPackageData& getOutputPackageData();
+    void takeHalMemoryReference(HalMemory* memory);
 
 private:
     const uint16_t usbVendorId;
@@ -362,14 +362,14 @@ private:
     bool                   do_reconnect;
     bool                   isWaitWithTimeout;
     bool                   mIsSimulationMode;
-    WhbSleepDetect         sleepState;
+    SleepDetect         sleepState;
     bool                   mIsRunning;
-    WhbUsbInPackageBuffer  inputPackageBuffer;
-    WhbUsbOutPackageBuffer outputPackageBuffer;
-    WhbUsbOutPackageData   outputPackageData;
-    UsbInputPackageListener& mDataHandler;
+    UsbInPackageBuffer  inputPackageBuffer;
+    UsbOutPackageBuffer outputPackageBuffer;
+    UsbOutPackageData   outputPackageData;
+    OnUsbInputPackageListener& mDataHandler;
     void (* const mRawDataCallback)(struct libusb_transfer*);
-    WhbHalMemory          * mHalMemory;
+    HalMemory             * mHalMemory;
     struct libusb_transfer* inTransfer;
     struct libusb_transfer* outTransfer;
     std::ostream devNull;
@@ -382,8 +382,8 @@ private:
 
 // ----------------------------------------------------------------------
 
-std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageAxisCoordinate& coordinate);
-std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data);
-std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlockFields& block);
-std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageBlocks& blocks);
+std::ostream& operator<<(std::ostream& os, const UsbOutPackageAxisCoordinate& coordinate);
+std::ostream& operator<<(std::ostream& os, const UsbOutPackageData& data);
+std::ostream& operator<<(std::ostream& os, const UsbOutPackageBlockFields& block);
+std::ostream& operator<<(std::ostream& os, const UsbOutPackageBlocks& blocks);
 }

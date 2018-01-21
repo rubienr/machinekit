@@ -37,7 +37,7 @@ namespace XhcWhb04b6 {
 
 // ----------------------------------------------------------------------
 
-WhbHalMemory::WhbHalMemory() :
+HalMemory::HalMemory() :
     in(),
     out()
 {
@@ -45,26 +45,26 @@ WhbHalMemory::WhbHalMemory() :
 
 // ----------------------------------------------------------------------
 
-WhbHalMemory::~WhbHalMemory()
+HalMemory::~HalMemory()
 {
 }
 
 // ----------------------------------------------------------------------
 
 
-WhbHalMemory::In::In()
+HalMemory::In::In()
 {
 }
 
 // ----------------------------------------------------------------------
 
-WhbHalMemory::Out::Out()
+HalMemory::Out::Out()
 {
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::freeSimulatedPin(void** pin)
+void Hal::freeSimulatedPin(void** pin)
 {
     if (*pin != nullptr)
     {
@@ -75,10 +75,9 @@ void WhbHal::freeSimulatedPin(void** pin)
 
 // ----------------------------------------------------------------------
 
-WhbHal::WhbHal() :
+Hal::Hal() :
     memory(nullptr),
     mButtonNameToIdx(),
-    velocityComputation(),
     mIsSimulationMode(true),
     mName("xhc-whb04b-6"),
     mComponentPrefix("whb"),
@@ -91,11 +90,11 @@ WhbHal::WhbHal() :
 
 // ----------------------------------------------------------------------
 
-WhbHal::~WhbHal()
+Hal::~Hal()
 {
     if (!mIsSimulationMode)
     {
-        memory->~WhbHalMemory();
+        memory->~HalMemory();
         // documentation tells us to not free hal pins
         return;
     }
@@ -215,7 +214,7 @@ WhbHal::~WhbHal()
 
 // ----------------------------------------------------------------------
 
-int WhbHal::newSimulatedHalPin(char* pin_name, void** ptr, int s)
+int Hal::newSimulatedHalPin(char* pin_name, void** ptr, int s)
 {
     *ptr = calloc(s, 1);
     assert(*ptr != nullptr);
@@ -225,7 +224,7 @@ int WhbHal::newSimulatedHalPin(char* pin_name, void** ptr, int s)
 
 // ----------------------------------------------------------------------
 
-int WhbHal::newHalFloat(hal_pin_dir_t direction, hal_float_t** ptr, int componentId, const char* fmt, ...)
+int Hal::newHalFloat(hal_pin_dir_t direction, hal_float_t** ptr, int componentId, const char* fmt, ...)
 {
     char    pin_name[256];
     va_list args;
@@ -263,7 +262,7 @@ int WhbHal::newHalFloat(hal_pin_dir_t direction, hal_float_t** ptr, int componen
 
 // ----------------------------------------------------------------------
 
-int WhbHal::newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int componentId, const char* fmt, ...)
+int Hal::newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int componentId, const char* fmt, ...)
 {
     char    pin_name[256];
     va_list args;
@@ -301,7 +300,7 @@ int WhbHal::newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int compone
 
 // ----------------------------------------------------------------------
 
-int WhbHal::newHalUnsigned32(hal_pin_dir_t direction, hal_u32_t** ptr, int componentId, const char* fmt, ...)
+int Hal::newHalUnsigned32(hal_pin_dir_t direction, hal_u32_t** ptr, int componentId, const char* fmt, ...)
 {
     char    pin_name[256];
     va_list args;
@@ -339,7 +338,7 @@ int WhbHal::newHalUnsigned32(hal_pin_dir_t direction, hal_u32_t** ptr, int compo
 
 // ----------------------------------------------------------------------
 
-int WhbHal::newHalBit(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId, const char* fmt, ...)
+int Hal::newHalBit(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId, const char* fmt, ...)
 {
     char    pin_name[256];
     va_list args;
@@ -377,35 +376,35 @@ int WhbHal::newHalBit(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId,
 
 // ----------------------------------------------------------------------
 
-bool WhbHal::isSimulationModeEnabled() const
+bool Hal::isSimulationModeEnabled() const
 {
     return mIsSimulationMode;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setSimulationMode(bool isSimulationMode)
+void Hal::setSimulationMode(bool isSimulationMode)
 {
     this->mIsSimulationMode = isSimulationMode;
 }
 
 // ----------------------------------------------------------------------
 
-int WhbHal::getHalComponentId() const
+int Hal::getHalComponentId() const
 {
     return mHalCompId;
 }
 
 // ----------------------------------------------------------------------
 
-const char* WhbHal::getHalComponentName() const
+const char* Hal::getHalComponentName() const
 {
     return mName;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& mKeyCodes)
+void Hal::init(const MetaButtonCodes* metaButtons, const KeyCodes& keyCodes)
 {
     if (!mIsSimulationMode)
     {
@@ -419,13 +418,13 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
         *mHalCout << "ok" << endl;
 
         *mHalCout << "hal   initialize shared HAL memory for component id  " << mHalCompId << " ... ";
-        memory = reinterpret_cast<WhbHalMemory*>(hal_malloc(sizeof(WhbHalMemory)));
-        memory = new(memory) WhbHalMemory();
+        memory = reinterpret_cast<HalMemory*>(hal_malloc(sizeof(HalMemory)));
+        memory = new(memory) HalMemory();
     }
     else
     {
         *mHalCout << "hal   initialize simulated HAL memory " << " ... ";
-        memory = new WhbHalMemory();
+        memory = new HalMemory();
     }
 
     if (memory == nullptr)
@@ -436,17 +435,17 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
     *mHalCout << "ok" << endl;
 
     // register all known xhc-whb04b-6 buttons
-    for (size_t idx = 0; !((softwareButtons[idx].key.code == mKeyCodes.buttons.undefined.code) &&
-                           (softwareButtons[idx].modifier.code == mKeyCodes.buttons.undefined.code)); idx++)
+    for (size_t idx = 0; !((metaButtons[idx].key.code == keyCodes.Buttons.undefined.code) &&
+                           (metaButtons[idx].modifier.code == keyCodes.Buttons.undefined.code)); idx++)
     {
         const char* buttonName = nullptr;
-        if (&softwareButtons[idx].modifier == &mKeyCodes.buttons.undefined)
+        if (&metaButtons[idx].modifier == &keyCodes.Buttons.undefined)
         {
-            buttonName = softwareButtons[idx].key.text;
+            buttonName = metaButtons[idx].key.text;
         }
         else
         {
-            buttonName = softwareButtons[idx].key.altText;
+            buttonName = metaButtons[idx].key.altText;
         }
 
         mButtonNameToIdx[std::string(mComponentPrefix) + ".button." + std::string(buttonName)] = idx;
@@ -611,7 +610,7 @@ void WhbHal::init(const WhbSoftwareButton* softwareButtons, const WhbKeyCodes& m
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getAxisXPosition(bool absolute) const
+hal_float_t Hal::getAxisXPosition(bool absolute) const
 {
     if (absolute)
     {
@@ -622,7 +621,7 @@ hal_float_t WhbHal::getAxisXPosition(bool absolute) const
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getAxisYPosition(bool absolute) const
+hal_float_t Hal::getAxisYPosition(bool absolute) const
 {
     if (absolute)
     {
@@ -633,7 +632,7 @@ hal_float_t WhbHal::getAxisYPosition(bool absolute) const
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getAxisZPosition(bool absolute) const
+hal_float_t Hal::getAxisZPosition(bool absolute) const
 {
     if (absolute)
     {
@@ -644,7 +643,7 @@ hal_float_t WhbHal::getAxisZPosition(bool absolute) const
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getAxisAPosition(bool absolute) const
+hal_float_t Hal::getAxisAPosition(bool absolute) const
 {
     if (absolute)
     {
@@ -654,7 +653,7 @@ hal_float_t WhbHal::getAxisAPosition(bool absolute) const
 }
 
 // ----------------------------------------------------------------------
-hal_float_t WhbHal::getAxisBPosition(bool absolute) const
+hal_float_t Hal::getAxisBPosition(bool absolute) const
 {
     if (absolute)
     {
@@ -664,7 +663,7 @@ hal_float_t WhbHal::getAxisBPosition(bool absolute) const
 }
 
 // ----------------------------------------------------------------------
-hal_float_t WhbHal::getAxisCPosition(bool absolute) const
+hal_float_t Hal::getAxisCPosition(bool absolute) const
 {
     if (absolute)
     {
@@ -676,7 +675,7 @@ hal_float_t WhbHal::getAxisCPosition(bool absolute) const
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setEnableVerbose(bool enable)
+void Hal::setEnableVerbose(bool enable)
 {
     if (enable)
     {
@@ -690,14 +689,14 @@ void WhbHal::setEnableVerbose(bool enable)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setNoAxisActive(bool enabled)
+void Hal::setNoAxisActive(bool enabled)
 {
     *mHalCout << "hal   OFF no axis active" << endl;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setAxisXActive(bool enabled)
+void Hal::setAxisXActive(bool enabled)
 {
     *memory->out.jointXSelect   = enabled;
     *memory->out.axisXJogEnable = enabled;
@@ -706,7 +705,7 @@ void WhbHal::setAxisXActive(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setAxisYActive(bool enabled)
+void Hal::setAxisYActive(bool enabled)
 {
     *memory->out.jointYSelect   = enabled;
     *memory->out.axisYJogEnable = enabled;
@@ -715,7 +714,7 @@ void WhbHal::setAxisYActive(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setAxisZActive(bool enabled)
+void Hal::setAxisZActive(bool enabled)
 {
     *memory->out.jointZSelect   = enabled;
     *memory->out.axisZJogEnable = enabled;
@@ -724,7 +723,7 @@ void WhbHal::setAxisZActive(bool enabled)
 
 // ---4-------------------------------------------------------------------
 
-void WhbHal::setAxisAActive(bool enabled)
+void Hal::setAxisAActive(bool enabled)
 {
     *memory->out.jointASelect   = enabled;
     *memory->out.axisAJogEnable = enabled;
@@ -733,7 +732,7 @@ void WhbHal::setAxisAActive(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setAxisBActive(bool enabled)
+void Hal::setAxisBActive(bool enabled)
 {
     *memory->out.jointBSelect   = enabled;
     *memory->out.axisBJogEnable = enabled;
@@ -742,7 +741,7 @@ void WhbHal::setAxisBActive(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setAxisCActive(bool enabled)
+void Hal::setAxisCActive(bool enabled)
 {
     *memory->out.jointCSelect   = enabled;
     *memory->out.axisCJogEnable = enabled;
@@ -751,7 +750,7 @@ void WhbHal::setAxisCActive(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setStepSize(const hal_float_t& stepSize)
+void Hal::setStepSize(const hal_float_t& stepSize)
 {
     *memory->out.axisXJogScale = stepSize;
     *memory->out.axisYJogScale = stepSize;
@@ -764,7 +763,7 @@ void WhbHal::setStepSize(const hal_float_t& stepSize)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setLead()
+void Hal::setLead()
 {
     std::ios init(NULL);
     init.copyfmt(*mHalCout);
@@ -774,7 +773,7 @@ void WhbHal::setLead()
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setReset(bool enabled)
+void Hal::setReset(bool enabled)
 {
     if (*memory->in.isMachineOn)
     { // disable machine
@@ -796,7 +795,7 @@ void WhbHal::setReset(bool enabled)
 /*
 // ----------------------------------------------------------------------
 
-hal_bit_t* WhbHal::getButtonHalBit(size_t pinNumber)
+hal_bit_t* Hal::getButtonHalBit(size_t pinNumber)
 {
     assert(memory->out.button_pin[pinNumber] != nullptr);
     return memory->out.button_pin[pinNumber];
@@ -804,7 +803,7 @@ hal_bit_t* WhbHal::getButtonHalBit(size_t pinNumber)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setStop(bool enabled)
+void Hal::setStop(bool enabled)
 {
     clearStartResumeProgramStates();
     *memory->out.doStopProgram = enabled;
@@ -813,7 +812,7 @@ void WhbHal::setStop(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setStart(bool enabled)
+void Hal::setStart(bool enabled)
 {
     if (!enabled)
     {
@@ -831,7 +830,7 @@ void WhbHal::setStart(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::clearStartResumeProgramStates()
+void Hal::clearStartResumeProgramStates()
 {
     *memory->out.doModeAuto      = false;
     *memory->out.doPauseProgram  = false;
@@ -841,7 +840,7 @@ void WhbHal::clearStartResumeProgramStates()
 
 // ----------------------------------------------------------------------
 
-void WhbHal::toggleStartResumeProgram()
+void Hal::toggleStartResumeProgram()
 {
     if (*memory->in.isProgramPaused)
     {
@@ -865,7 +864,7 @@ void WhbHal::toggleStartResumeProgram()
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedPlus(bool enabled)
+void Hal::setFeedPlus(bool enabled)
 {
     *memory->out.feedOverrideIncrease = enabled;
     setPin(enabled, KeyCodes::Buttons.feed_plus.text);
@@ -873,7 +872,7 @@ void WhbHal::setFeedPlus(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedMinus(bool enabled)
+void Hal::setFeedMinus(bool enabled)
 {
     *memory->out.feedOverrideDecrease = enabled;
     setPin(enabled, KeyCodes::Buttons.feed_minus.text);
@@ -881,98 +880,98 @@ void WhbHal::setFeedMinus(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedOverrideCountEnable(bool enabled)
+void Hal::setFeedOverrideCountEnable(bool enabled)
 {
     *memory->out.feedOverrideCountEnable = enabled;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedOverrideDirectValue(bool enabled)
+void Hal::setFeedOverrideDirectValue(bool enabled)
 {
     *memory->out.feedOverrideDirectValue = enabled;
 }
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getFeedOverrideValue() const
+hal_float_t Hal::getFeedOverrideValue() const
 {
     return *memory->in.feedOverrideValue;
 }
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getFeedOverrideMinValue() const
+hal_float_t Hal::getFeedOverrideMinValue() const
 {
     return *memory->in.feedOverrideMinValue;
 }
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getFeedOverrideMaxValue() const
+hal_float_t Hal::getFeedOverrideMaxValue() const
 {
     return *memory->in.feedOverrideMaxValue;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedOverrideCounts(hal_s32_t counts)
+void Hal::setFeedOverrideCounts(hal_s32_t counts)
 {
     *memory->out.feedOverrideCounts = counts;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedValueSelected0_001(bool selected)
+void Hal::setFeedValueSelected0_001(bool selected)
 {
     *memory->out.feedValueSelected0_001 = selected;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedValueSelected0_01(bool selected)
+void Hal::setFeedValueSelected0_01(bool selected)
 {
     *memory->out.feedValueSelected0_01 = selected;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedValueSelected0_1(bool selected)
+void Hal::setFeedValueSelected0_1(bool selected)
 {
     *memory->out.feedValueSelected0_1 = selected;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedValueSelected1_0(bool selected)
+void Hal::setFeedValueSelected1_0(bool selected)
 {
     *memory->out.feedValueSelected1_0 = selected;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFeedOverrideScale(hal_float_t scale)
+void Hal::setFeedOverrideScale(hal_float_t scale)
 {
     *memory->out.feedOverrideScale = scale;
 }
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getSpindleSpeedAbsRpm() const
+hal_float_t Hal::getSpindleSpeedAbsRpm() const
 {
     return *memory->in.spindleSpeedAbsRpm;
 }
 
 // ----------------------------------------------------------------------
 
-hal_float_t WhbHal::getFeedUps() const
+hal_float_t Hal::getFeedUps() const
 {
     return *memory->in.feedSpeedUps;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setSpindlePlus(bool enabled)
+void Hal::setSpindlePlus(bool enabled)
 {
     if (enabled)
     {
@@ -987,7 +986,7 @@ void WhbHal::setSpindlePlus(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setSpindleMinus(bool enabled)
+void Hal::setSpindleMinus(bool enabled)
 {
     if (enabled)
     {
@@ -1002,7 +1001,7 @@ void WhbHal::setSpindleMinus(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMachineHome(bool enabled)
+void Hal::setMachineHome(bool enabled)
 {
     enableMdiMode(enabled);
     *memory->out.homeAll = enabled;
@@ -1011,7 +1010,7 @@ void WhbHal::setMachineHome(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setSafeZ(bool enabled)
+void Hal::setSafeZ(bool enabled)
 {
     enableMdiMode(enabled);
     setPin(enabled, KeyCodes::Buttons.safe_z.text);
@@ -1019,7 +1018,7 @@ void WhbHal::setSafeZ(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setWorkpieceHome(bool enabled)
+void Hal::setWorkpieceHome(bool enabled)
 {
     enableMdiMode(enabled);
     setPin(enabled, KeyCodes::Buttons.workpiece_home.text);
@@ -1027,7 +1026,7 @@ void WhbHal::setWorkpieceHome(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::toggleSpindleDirection(bool isButtonPressed)
+void Hal::toggleSpindleDirection(bool isButtonPressed)
 {
     if (isButtonPressed)
     {
@@ -1058,7 +1057,7 @@ void WhbHal::toggleSpindleDirection(bool isButtonPressed)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::toggleSpindleOnOff(bool isButtonPressed)
+void Hal::toggleSpindleOnOff(bool isButtonPressed)
 {
     if (isButtonPressed)
     {
@@ -1092,7 +1091,7 @@ void WhbHal::toggleSpindleOnOff(bool isButtonPressed)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setProbeZ(bool enabled)
+void Hal::setProbeZ(bool enabled)
 {
     enableMdiMode(enabled);
     setPin(enabled, KeyCodes::Buttons.probe_z.text);
@@ -1100,7 +1099,7 @@ void WhbHal::setProbeZ(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setContinuousMode(bool enabled)
+void Hal::setContinuousMode(bool enabled)
 {
     if (enabled)
     {
@@ -1117,7 +1116,7 @@ void WhbHal::setContinuousMode(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setStepMode(bool enabled)
+void Hal::setStepMode(bool enabled)
 {
     if (enabled)
     {
@@ -1134,21 +1133,21 @@ void WhbHal::setStepMode(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro1(bool enabled)
+void Hal::setMacro1(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.feed_plus.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro2(bool enabled)
+void Hal::setMacro2(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.feed_minus.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro3(bool enabled)
+void Hal::setMacro3(bool enabled)
 {
     if (enabled)
     {
@@ -1166,7 +1165,7 @@ void WhbHal::setMacro3(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro4(bool enabled)
+void Hal::setMacro4(bool enabled)
 {
     if (enabled)
     {
@@ -1184,42 +1183,42 @@ void WhbHal::setMacro4(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro5(bool enabled)
+void Hal::setMacro5(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.machine_home.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro6(bool enabled)
+void Hal::setMacro6(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.safe_z.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro7(bool enabled)
+void Hal::setMacro7(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.workpiece_home.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro8(bool enabled)
+void Hal::setMacro8(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.spindle_on_off.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro9(bool enabled)
+void Hal::setMacro9(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.probe_z.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro10(bool enabled)
+void Hal::setMacro10(bool enabled)
 {
     enableManualMode(enabled);
     setPin(enabled, KeyCodes::Buttons.macro10.text);
@@ -1227,49 +1226,49 @@ void WhbHal::setMacro10(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro11(bool enabled)
+void Hal::setMacro11(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.reset.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro12(bool enabled)
+void Hal::setMacro12(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.stop.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro13(bool enabled)
+void Hal::setMacro13(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.start.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro14(bool enabled)
+void Hal::setMacro14(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.macro10.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro15(bool enabled)
+void Hal::setMacro15(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.manual_pulse_generator.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setMacro16(bool enabled)
+void Hal::setMacro16(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.step_continuous.altText);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setPin(bool enabled, size_t pinNumber, const char* pinName)
+void Hal::setPin(bool enabled, size_t pinNumber, const char* pinName)
 {
     *mHalCout << "hal   " << pinName << ((enabled) ? " enabled" : " disabled") << " (pin # " << pinNumber << ")"
               << endl;
@@ -1278,7 +1277,7 @@ void WhbHal::setPin(bool enabled, size_t pinNumber, const char* pinName)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setPin(bool enabled, const char* pinName)
+void Hal::setPin(bool enabled, const char* pinName)
 {
     std::string fullyQualifiedPinName = std::string(mComponentPrefix) + ".button." + pinName;
     assert(mButtonNameToIdx.find(fullyQualifiedPinName) != mButtonNameToIdx.end());
@@ -1288,7 +1287,7 @@ void WhbHal::setPin(bool enabled, const char* pinName)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setJogCounts(const HandWheelCounters& counters)
+void Hal::setJogCounts(const HandWheelCounters& counters)
 {
     *memory->out.axisXJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_X);
     *memory->out.axisYJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_Y);
@@ -1304,14 +1303,14 @@ void WhbHal::setJogCounts(const HandWheelCounters& counters)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::setFunction(bool enabled)
+void Hal::setFunction(bool enabled)
 {
     setPin(enabled, KeyCodes::Buttons.function.text);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbHal::enableManualMode(bool isRisingEdge)
+void Hal::enableManualMode(bool isRisingEdge)
 {
     if (isRisingEdge)
     {
@@ -1328,7 +1327,7 @@ void WhbHal::enableManualMode(bool isRisingEdge)
 
 // ----------------------------------------------------------------------
 
-void WhbHal::enableMdiMode(bool isRisingEdge)
+void Hal::enableMdiMode(bool isRisingEdge)
 {
     if (isRisingEdge)
     {
@@ -1343,11 +1342,4 @@ void WhbHal::enableMdiMode(bool isRisingEdge)
     }
 }
 
-// ----------------------------------------------------------------------
-
-WhbVelocityComputation::WhbVelocityComputation() :
-    last_jog_counts(-1),
-    last_tv()
-{
-}
 }

@@ -47,6 +47,7 @@ const MetaButtonsCodes         KeyCodes::Meta(Buttons);
 const AxisRotaryButtonCodes    KeyCodes::Axis;
 const FeedRotaryButtonCodes    KeyCodes::Feed;
 
+/*
 // ----------------------------------------------------------------------
 
 WhbKeyCode::WhbKeyCode(uint8_t code, const char* text, const char* altText) :
@@ -106,7 +107,9 @@ bool WhbSoftwareButton::containsKeys(const WhbKeyCode& key, const WhbKeyCode& mo
 {
     return ((this->key.code == key.code) && (this->modifier.code == modifier.code));
 }
+*/
 
+/*
 // ----------------------------------------------------------------------
 
 WhbAxisRotaryButtonCodes::WhbAxisRotaryButtonCodes() :
@@ -120,7 +123,8 @@ WhbAxisRotaryButtonCodes::WhbAxisRotaryButtonCodes() :
     undefined(0x00, "", "")
 {
 }
-
+ */
+/*
 // ----------------------------------------------------------------------
 
 WhbFeedRotaryButtonCodes::WhbFeedRotaryButtonCodes() :
@@ -133,8 +137,9 @@ WhbFeedRotaryButtonCodes::WhbFeedRotaryButtonCodes() :
     lead(0x1c, "Lead", ""),
     undefined(0x00, "", "")
 {
-}
+}*/
 
+/*
 // ----------------------------------------------------------------------
 
 WhbButtonsCode::WhbButtonsCode() :
@@ -175,7 +180,8 @@ const WhbKeyCode& WhbButtonsCode::getKeyCode(uint8_t keyCode) const
 
     return *whbKeyCode;
 }
-
+*/
+/*
 // ----------------------------------------------------------------------
 
 WhbKeyCodes::WhbKeyCodes() :
@@ -183,8 +189,9 @@ WhbKeyCodes::WhbKeyCodes() :
     axis(),
     feed()
 {
-}
+}*/
 
+/*
 // ----------------------------------------------------------------------
 
 float WhbHandwheelStepModeStepSize::getStepSize(PositionNameIndex buttonPosition) const
@@ -198,7 +205,8 @@ WhbHandwheelStepModeStepSize::WhbHandwheelStepModeStepSize() :
     mSequence{0.001, 0.01, 0.1, 1.0, 0, 0, 0, 0}
 {
 }
-
+*/
+/*
 // ----------------------------------------------------------------------
 
 uint8_t WhbHandwheelContinuousModeStepSize::getStepSize(PositionNameIndex buttonPosition) const
@@ -227,8 +235,9 @@ WhbStepHandler::WhbStepHandler() :
     stepSize(),
     old_inc_step_status(0)
 {
-}
+}*/
 
+/*
 // ----------------------------------------------------------------------
 
 HandwheelStepmodes::Mode WhbButtonsState::currentStepMode() const
@@ -281,11 +290,12 @@ uint8_t WhbButtonsState::getModifierCode() const
     return mCurrentButton2Code;
 }
 
+
 // ----------------------------------------------------------------------
 
 uint8_t WhbButtonsState::getAxisRotaryButtonCode() const
 {
-    // TODO: must return type WhbKeyCode
+    //// must return type WhbKeyCode
     return mCurrentAxisCode;
 }
 
@@ -293,7 +303,7 @@ uint8_t WhbButtonsState::getAxisRotaryButtonCode() const
 
 uint8_t WhbButtonsState::getFeedRotaryButtonCode() const
 {
-    // TODO: must return type WhbKeyCode
+    //// must return type WhbKeyCode
     return mCurrentFeedCode;
 }
 
@@ -307,14 +317,14 @@ void WhbButtonsState::updateButtonState(uint8_t keyCode, uint8_t modifierCode, u
     mCurrentAxisCode    = currentAxisRotaryButtonCode;
     mCurrentFeedCode    = currentFeedRotaryButtonCode;
 
-    // TODO: update step mode a. axis
+    // update step mode a. axis
 }
 
 // ----------------------------------------------------------------------
 
 hal_float_t WhbButtonsState::getStepSize()
 {
-    // TODO: remove hotfix
+    // remove hotfix
     float maxVelocity_mm_sec = 40.0;
     float stepsPerUnit_mm    = 200.0 / 5.0;
 
@@ -435,7 +445,7 @@ void WhbButtonsState::setCurrentModeContinuousMode()
 {
     mCurrentStepMode = HandwheelStepmodes::Mode::CONTINUOUS;
 }
-
+*/
 // ----------------------------------------------------------------------
 
 KeyEventListener::~KeyEventListener()
@@ -828,6 +838,25 @@ ButtonsCode::ButtonsCode() :
 {
 }
 
+// ----------------------------------------------------------------------
+
+const KeyCode& ButtonsCode::getKeyCode(uint8_t keyCode) const
+{
+    const KeyCode* buttonKeyCode = reinterpret_cast<const KeyCode*>(this);
+
+    while (buttonKeyCode->code != 0)
+    {
+        if (buttonKeyCode->code == keyCode)
+        {
+            break;
+        }
+        buttonKeyCode++;
+    }
+
+    assert(nullptr != buttonKeyCode);
+
+    return *buttonKeyCode;
+}
 
 // ----------------------------------------------------------------------
 
@@ -1340,7 +1369,7 @@ FeedRotaryButton& ButtonsState::feedButton()
 
 // ----------------------------------------------------------------------
 
-Pendant::Pendant(WhbHal& hal, WhbUsbOutPackageData& displayOutData) :
+Pendant::Pendant(Hal& hal, UsbOutPackageData& displayOutData) :
     mHal(hal),
     mPreviousButtonsState(this),
     mCurrentButtonsState(this, &mPreviousButtonsState),
@@ -1371,7 +1400,7 @@ std::ostream& operator<<(std::ostream& os, const Pendant& data)
 }
 
 // ----------------------------------------------------------------------
-// TODO: remove
+
 void Pendant::processEvent(uint8_t keyCode,
                            uint8_t modifierCode,
                            uint8_t rotaryButtonAxisKeyCode,
@@ -2052,7 +2081,7 @@ void Pendant::dispatchAxisEventToHal(const KeyCode& axis, bool isActive)
 
 // ----------------------------------------------------------------------
 
-Display::Display(const ButtonsState& currentButtonsState, WhbHal& hal, WhbUsbOutPackageData& displayData) :
+Display::Display(const ButtonsState& currentButtonsState, Hal& hal, UsbOutPackageData& displayData) :
     mCurrentButtonsState(currentButtonsState),
     mHal(hal),
     mDisplayData(displayData),

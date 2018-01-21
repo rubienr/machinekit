@@ -40,10 +40,10 @@
 namespace XhcWhb04b6 {
 
 // forward declarations
-class WhbContext;
-class WhbButtonsState;
-class WhbHal;
-class WhbUsbOutPackageData;
+class XhcWhb04b6Component;
+//class WhbButtonsState;
+class Hal;
+class UsbOutPackageData;
 
 // ----------------------------------------------------------------------
 
@@ -53,10 +53,10 @@ class WhbUsbOutPackageData;
 //    STEP
 //};
 
+/*
 // ----------------------------------------------------------------------
 
 //! pendant button key code description
-// TODO: remove class
 class WhbKeyCode
 {
 public:
@@ -74,7 +74,9 @@ public:
 // ----------------------------------------------------------------------
 
 std::ostream& operator<<(std::ostream& os, const WhbKeyCode& data);
+*/
 
+/*
 // ----------------------------------------------------------------------
 
 //! meta-button state which is dependent on the "Fn" modifier button's state
@@ -86,7 +88,9 @@ public:
     bool containsKeys(const WhbKeyCode& key, const WhbKeyCode& modifier) const;
     WhbSoftwareButton(const WhbKeyCode& key, const WhbKeyCode& modifier);
 };
+*/
 
+/*
 // ----------------------------------------------------------------------
 
 //! rotary axis selection button related parameters
@@ -103,7 +107,8 @@ public:
     const WhbKeyCode undefined;
     WhbAxisRotaryButtonCodes();
 } __attribute__((packed));
-
+*/
+/*
 // ----------------------------------------------------------------------
 
 //! rotary feed button related parameters
@@ -120,7 +125,8 @@ public:
     const WhbKeyCode undefined;
     WhbFeedRotaryButtonCodes();
 } __attribute__((packed));
-
+*/
+/*
 // ----------------------------------------------------------------------
 
 //! pendant button related parameters
@@ -147,7 +153,8 @@ public:
     const WhbKeyCode& getKeyCode(uint8_t keyCode) const;
     WhbButtonsCode();
 } __attribute__((packed));
-
+*/
+/*
 // ----------------------------------------------------------------------
 
 //! whb button and rotary button codes
@@ -159,7 +166,9 @@ public:
     const WhbFeedRotaryButtonCodes feed;
     WhbKeyCodes();
 };
+*/
 
+/*
 // ----------------------------------------------------------------------
 
 //! If hand wheel is in Lead mode (activated by the feed rotary button) this speed setting is applied.
@@ -171,7 +180,8 @@ public:
         RotaryButtonLead = 6
     };
 };
-
+*/
+/*
 // ----------------------------------------------------------------------
 
 //! If hand wheel is in step mode (toggled by Step/Continuous" button) this speed setting is applied.
@@ -238,8 +248,8 @@ private:
 
 class WhbStepModeStepSize
 {
-    friend XhcWhb04b6::WhbContext;
-    friend XhcWhb04b6::WhbButtonsState;
+    //friend XhcWhb04b6::WhbContext;
+    //friend XhcWhb04b6::ButtonsState;
 
 public:
     WhbStepModeStepSize();
@@ -263,7 +273,8 @@ public:
 private:
     unsigned char old_inc_step_status;
 };
-
+*/
+/*
 // ----------------------------------------------------------------------
 
 //! Buttons state struct reflecting i.e. current or previous button state,
@@ -283,8 +294,8 @@ public:
 
     uint8_t getKeyCode() const;
     uint8_t getModifierCode() const;
-    uint8_t getAxisRotaryButtonCode() const;
-    uint8_t getFeedRotaryButtonCode() const;
+    //uint8_t getAxisRotaryButtonCode() const;
+    //uint8_t getFeedRotaryButtonCode() const;
     const WhbSoftwareButton& getSoftwareButton() const;
     //! stores the buttons state and updates the software button state and step speed state
     void updateButtonState(uint8_t keyCode, uint8_t modifierCode, uint8_t currentAxisRotaryButtonCode,
@@ -324,7 +335,7 @@ private:
     const WhbKeyCode* mCurrentAxisKeyCode;
     const WhbKeyCode* mCurrentFeedKeyCode;
 };
-
+*/
 // ----------------------------------------------------------------------
 
 //! If hand wheel is in step mode (toggled by Step/Continuous" button) this speed setting is applied.
@@ -491,7 +502,6 @@ public:
     const KeyCode                           speed_1;
     const KeyCode                           percent_60;
     const KeyCode                           percent_100;
-    // TODO: inherit lead and re-implement == operator which checks for key-code only
     const KeyCode                           lead;
     const KeyCode                           undefined;
     const std::map<uint8_t, const KeyCode*> codeMap;
@@ -803,7 +813,7 @@ public:
         ABC
     };
 
-    Display(const ButtonsState& currentButtonsState, WhbHal& hal, WhbUsbOutPackageData& displayData);
+    Display(const ButtonsState& currentButtonsState, Hal& hal, UsbOutPackageData& displayData);
 
     Display();
 
@@ -829,8 +839,8 @@ public:
 
 private:
     const ButtonsState  & mCurrentButtonsState;
-    WhbHal              & mHal;
-    WhbUsbOutPackageData& mDisplayData;
+    Hal              & mHal;
+    UsbOutPackageData& mDisplayData;
     AxisPositionMethod mAxisPositionMethod;
     AxisGroup          mActiveAxisGroup;
 };
@@ -840,7 +850,7 @@ private:
 class Pendant : public KeyEventListener
 {
 public:
-    Pendant(WhbHal& hal, WhbUsbOutPackageData& displayOutData);
+    Pendant(Hal& hal, UsbOutPackageData& displayOutData);
     ~Pendant();
 
     void processEvent(uint8_t keyCode,
@@ -866,7 +876,7 @@ public:
     virtual bool onJogDialEvent(const HandWheelCounters& counters, int8_t delta) override;
 
 private:
-    WhbHal& mHal;
+    Hal& mHal;
     ButtonsState mPreviousButtonsState;
     ButtonsState mCurrentButtonsState;
     Handwheel    mHandWheel;

@@ -40,7 +40,7 @@ using std::endl;
 
 // globals
 //! link object for signal handler
-XhcWhb04b6::WhbContext* Whb = nullptr;
+XhcWhb04b6::XhcWhb04b6Component* WhbComponent{nullptr};
 
 // ----------------------------------------------------------------------
 
@@ -126,9 +126,9 @@ static int printUsage(const char* programName, const char* deviceName, bool isEr
 //! called on program termination requested
 static void quit(int signal)
 {
-    if (Whb != nullptr)
+    if (WhbComponent != nullptr)
     {
-        Whb->requestTermination(signal);
+        WhbComponent->requestTermination(signal);
     }
 }
 
@@ -158,8 +158,7 @@ bool parseFloat(const char* str, float& out)
 
 int main(int argc, char** argv)
 {
-    XhcWhb04b6::WhbContext whb;
-    Whb = &whb;
+    WhbComponent = new XhcWhb04b6::XhcWhb04b6Component();
 
     const char* optargs = "phaeHuctnUs:v:";
     for (int opt = getopt(argc, argv, optargs); opt != -1; opt = getopt(argc, argv, optargs))
@@ -167,57 +166,58 @@ int main(int argc, char** argv)
         switch (opt)
         {
             case 'H':
-                whb.setSimulationMode(false);
+                WhbComponent->setSimulationMode(false);
                 break;
             case 't':
-                whb.setWaitWithTimeout(3);
+                WhbComponent->setWaitWithTimeout(3);
                 break;
             case 'e':
-                whb.setEnableVerboseKeyEvents(true);
+                WhbComponent->setEnableVerboseKeyEvents(true);
                 break;
             case 'u':
-                whb.enableVerboseInit(true);
-                whb.enableVerboseRx(true);
+                WhbComponent->enableVerboseInit(true);
+                WhbComponent->enableVerboseRx(true);
                 break;
             case 'U':
-                whb.enableVerboseInit(true);
-                whb.enableVerboseRx(true);
-                whb.enableVerboseTx(true);
+                WhbComponent->enableVerboseInit(true);
+                WhbComponent->enableVerboseRx(true);
+                WhbComponent->enableVerboseTx(true);
                 break;
             case 'p':
-                whb.enableVerboseInit(true);
-                whb.enableVerboseHal(true);
+                WhbComponent->enableVerboseInit(true);
+                WhbComponent->enableVerboseHal(true);
                 break;
             case 'a':
-                whb.enableVerboseInit(true);
-                whb.setEnableVerboseKeyEvents(true);
-                whb.enableVerboseRx(true);
-                whb.enableVerboseTx(true);
-                whb.enableVerboseHal(true);
+                WhbComponent->enableVerboseInit(true);
+                WhbComponent->setEnableVerboseKeyEvents(true);
+                WhbComponent->enableVerboseRx(true);
+                WhbComponent->enableVerboseTx(true);
+                WhbComponent->enableVerboseHal(true);
                 break;
             case 'c':
-                whb.enableCrcDebugging(true);
+                WhbComponent->enableCrcDebugging(true);
                 break;
             case 'n':
                 break;
             case 'h':
-                return printUsage(basename(argv[0]), whb.getName());
+                return printUsage(basename(argv[0]), WhbComponent->getName());
                 break;
             default:
-                return printUsage(basename(argv[0]), whb.getName(), true);
+                return printUsage(basename(argv[0]), WhbComponent->getName(), true);
                 break;
         }
     }
 
     registerSignalHandler();
 
-    whb.run();
+    WhbComponent->run();
 
     //! hotfix for https://github.com/machinekit/machinekit/issues/1266
-    if (whb.isSimulationModeEnabled())
+    if (WhbComponent->isSimulationModeEnabled())
     {
         google::protobuf::ShutdownProtobufLibrary();
     }
 
+    delete (WhbComponent);
     return 0;
 }

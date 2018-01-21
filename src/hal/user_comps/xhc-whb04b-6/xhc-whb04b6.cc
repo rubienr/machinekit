@@ -36,56 +36,58 @@ using std::endl;
 
 namespace XhcWhb04b6 {
 
+/*
 // ----------------------------------------------------------------------
 
 UsbInputPackageInterpreted::~UsbInputPackageInterpreted()
 {
 }
-
+ */
+/*
 // ----------------------------------------------------------------------
 
 WhbKeyEventListener::~WhbKeyEventListener()
 {
 }
-
+*/
 // ----------------------------------------------------------------------
 
-void WhbContext::initHal()
+void XhcWhb04b6Component::initHal()
 {
-    mHal.init(mSoftwareButtons, mKeyCodes);
+    mHal.init(mMetaButtons, mKeyCodes);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::teardownHal()
+void XhcWhb04b6Component::teardownHal()
 {
     hal_exit(mHal.getHalComponentId());
 }
 
 // ----------------------------------------------------------------------
 
-const char* WhbContext::getName() const
+const char* XhcWhb04b6Component::getName() const
 {
     return mName;
 }
 
 // ----------------------------------------------------------------------
 
-const char* WhbContext::getHalName() const
+const char* XhcWhb04b6Component::getHalName() const
 {
     return mHal.getHalComponentName();
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOutPackageData& outPackageBuffer) const
+void XhcWhb04b6Component::printCrcDebug(const UsbInPackage& inPackage, const UsbOutPackageData& outPackageBuffer) const
 {
     std::ios init(NULL);
     init.copyfmt(*mRxCout);
     *mRxCout << std::setfill('0') << std::hex;
 
     // calculate checksum on button released, jog dial or rotary button change
-    if (inPackage.buttonKeyCode1 == mKeyCodes.buttons.undefined.code)
+    if (inPackage.buttonKeyCode1 == mKeyCodes.Buttons.undefined.code)
     {
         bool isValid = (inPackage.crc == (inPackage.randomByte & outPackageBuffer.seed));
 
@@ -134,7 +136,7 @@ void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOut
     //! \brief On button pressed checksum calculation.
     //! Experimental: checksum generator not clear yet, but this is a good starting point.
     //! The implementation has several flaws, but works with seed 0xfe and 0xff (which is a bad seed).
-    //! \sa WhbUsbOutPackageData::seed
+    //! \sa UsbOutPackageData::seed
     //! The checksum implementation does not work reliable with other seeds.
     //! TODO: implement me correctly
     std::bitset<8> seed(outPackageBuffer.seed), nonSeed(~seed);
@@ -180,7 +182,7 @@ void WhbContext::printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOut
 // ----------------------------------------------------------------------
 
 //! interprets data packages as delivered by the XHC WHB04B-6 device
-void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
+void XhcWhb04b6Component::onInputDataReceived(const UsbInPackage& inPackage)
 {
     //if (mIsSimulationMode)
     //{
@@ -252,7 +254,7 @@ void WhbContext::onInputDataReceived(const WhbUsbInPackage& inPackage)
 
 // ----------------------------------------------------------------------
 
-void WhbContext::initWhb()
+void XhcWhb04b6Component::initWhb()
 {
     //stepHandler.old_inc_step_status = -1;
     //gettimeofday(&sleepState.mLastWakeupTimestamp, nullptr);
@@ -262,7 +264,7 @@ void WhbContext::initWhb()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::requestTermination(int signal)
+void XhcWhb04b6Component::requestTermination(int signal)
 {
     if (signal >= 0)
     {
@@ -278,65 +280,65 @@ void WhbContext::requestTermination(int signal)
 
 // ----------------------------------------------------------------------
 
-bool WhbContext::isRunning() const
+bool XhcWhb04b6Component::isRunning() const
 {
     return mIsRunning;
 }
 
 // ----------------------------------------------------------------------
 
-WhbContext::WhbContext() :
+XhcWhb04b6Component::XhcWhb04b6Component() :
     mName("XHC-WHB04B-6"),
     mHal(),
     mKeyCodes(),
-    mStepHandler(),
-    mSoftwareButtons{WhbSoftwareButton(mKeyCodes.buttons.reset, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.reset, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.stop, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.stop, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.start, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.start, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.feed_plus, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.feed_plus, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.feed_minus, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.feed_minus, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.spindle_plus, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.spindle_plus, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.spindle_minus, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.spindle_minus, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.machine_home, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.machine_home, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.safe_z, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.safe_z, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.workpiece_home, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.workpiece_home, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.spindle_on_off, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.spindle_on_off, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.function, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.probe_z, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.probe_z, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.macro10, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.macro10, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.manual_pulse_generator, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.manual_pulse_generator, mKeyCodes.buttons.function),
-                     WhbSoftwareButton(mKeyCodes.buttons.step_continuous, mKeyCodes.buttons.undefined),
-                     WhbSoftwareButton(mKeyCodes.buttons.step_continuous, mKeyCodes.buttons.function),
+    //mStepHandler(),
+    mMetaButtons{MetaButtonCodes(mKeyCodes.Buttons.reset, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.reset, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.stop, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.stop, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.start, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.start, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.feed_plus, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.feed_plus, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.feed_minus, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.feed_minus, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.spindle_plus, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.spindle_plus, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.spindle_minus, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.spindle_minus, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.machine_home, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.machine_home, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.safe_z, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.safe_z, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.workpiece_home, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.workpiece_home, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.spindle_on_off, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.spindle_on_off, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.function, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.probe_z, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.probe_z, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.macro10, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.macro10, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.manual_pulse_generator, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.manual_pulse_generator, mKeyCodes.Buttons.function),
+                     MetaButtonCodes(mKeyCodes.Buttons.step_continuous, mKeyCodes.Buttons.undefined),
+                     MetaButtonCodes(mKeyCodes.Buttons.step_continuous, mKeyCodes.Buttons.function),
         //! it is expected to terminate this array with the "undefined" software button
-                     WhbSoftwareButton(mKeyCodes.buttons.undefined, mKeyCodes.buttons.undefined)
+                     MetaButtonCodes(mKeyCodes.Buttons.undefined, mKeyCodes.Buttons.undefined)
     },
     mUsb(mName, *this),
-    mIsRunning(false),
-    mIsSimulationMode(false),
-    mDevNull(nullptr),
+    //mIsRunning(false),
+    //mIsSimulationMode(false),
+    //mDevNull(nullptr),
     mTxCout(&mDevNull),
     mRxCout(&mDevNull),
     mKeyEventCout(&mDevNull),
     mHalInitCout(&mDevNull),
     mInitCout(&mDevNull),
-    keyEventReceiver(*this),
+    //keyEventReceiver(*this),
     packageReceivedEventReceiver(*this),
-    packageInterpretedEventReceiver(*this),
-    mIsCrcDebuggingEnabled(false),
+    //packageInterpretedEventReceiver(*this),
+    //mIsCrcDebuggingEnabled(false),
     mPendant(mHal, mUsb.getOutputPackageData())
 {
     setSimulationMode(true);
@@ -348,13 +350,13 @@ WhbContext::WhbContext() :
 
 // ----------------------------------------------------------------------
 
-WhbContext::~WhbContext()
+XhcWhb04b6Component::~XhcWhb04b6Component()
 {
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::updateDisplay()
+void XhcWhb04b6Component::updateDisplay()
 {
     if (mIsRunning)
     {
@@ -369,7 +371,7 @@ void WhbContext::updateDisplay()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out)
+void XhcWhb04b6Component::printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std::ostream& out)
 {
     std::ios init(NULL);
     init.copyfmt(out);
@@ -377,44 +379,44 @@ void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode, std:
     out << std::setfill(' ');
 
     // no key code
-    if (keyCode == mKeyCodes.buttons.undefined.code)
+    if (keyCode == mKeyCodes.Buttons.undefined.code)
     {
         out << std::setw(indent) << "";
         return;
     }
 
-    const WhbKeyCode& whbKeyCode = mKeyCodes.buttons.getKeyCode(keyCode);
+    const KeyCode& buttonKeyCode = mKeyCodes.Buttons.getKeyCode(keyCode);
 
     // print key text
-    if (modifierCode == mKeyCodes.buttons.function.code)
+    if (modifierCode == mKeyCodes.Buttons.function.code)
     {
-        out << std::setw(indent) << whbKeyCode.altText;
+        out << std::setw(indent) << buttonKeyCode.altText;
     }
     else
     {
-        out << std::setw(indent) << whbKeyCode.text;
+        out << std::setw(indent) << buttonKeyCode.text;
     }
     out.copyfmt(init);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode, std::ostream& out)
+void XhcWhb04b6Component::printRotaryButtonText(const KeyCode* keyCodesBase, uint8_t keyCode, std::ostream& out)
 {
     std::ios init(NULL);
     init.copyfmt(out);
 
     // find key code
-    const WhbKeyCode* whbKeyCode = keyCodeBase;
-    while (whbKeyCode->code != 0)
+    const KeyCode* buttonKeyCode = keyCodesBase;
+    while (buttonKeyCode->code != 0)
     {
-        if (whbKeyCode->code == keyCode)
+        if (buttonKeyCode->code == keyCode)
         {
             break;
         }
-        whbKeyCode++;
+        buttonKeyCode++;
     }
-    out << std::setw(5) << whbKeyCode->text << "(" << std::setw(4) << whbKeyCode->altText << ")";
+    out << std::setw(5) << buttonKeyCode->text << "(" << std::setw(4) << buttonKeyCode->altText << ")";
     out.copyfmt(init);
 }
 
@@ -428,7 +430,7 @@ DisplayIndicator::DisplayIndicator() :
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printInputData(const WhbUsbInPackage& inPackage, std::ostream& out)
+void XhcWhb04b6Component::printInputData(const UsbInPackage& inPackage, std::ostream& out)
 {
     std::ios init(NULL);
     init.copyfmt(out);
@@ -441,9 +443,9 @@ void WhbContext::printInputData(const WhbUsbInPackage& inPackage, std::ostream& 
     out << " | ";
     printPushButtonText(inPackage.buttonKeyCode2, inPackage.buttonKeyCode1, out);
     out << " | ";
-    printRotaryButtonText((WhbKeyCode*)&mKeyCodes.feed, inPackage.rotaryButtonFeedKeyCode, out);
+    printRotaryButtonText((KeyCode*)&mKeyCodes.Feed, inPackage.rotaryButtonFeedKeyCode, out);
     out << " | ";
-    printRotaryButtonText((WhbKeyCode*)&mKeyCodes.axis, inPackage.rotaryButtonAxisKeyCode, out);
+    printRotaryButtonText((KeyCode*)&mKeyCodes.Axis, inPackage.rotaryButtonAxisKeyCode, out);
     out << " | " << std::setfill(' ') << std::setw(3) << static_cast<short>(inPackage.stepCount) << " | " << std::hex
         << std::setfill('0')
         << std::setw(2) << static_cast<unsigned short>(inPackage.crc);
@@ -454,7 +456,7 @@ void WhbContext::printInputData(const WhbUsbInPackage& inPackage, std::ostream& 
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printHexdump(const WhbUsbInPackage& inPackage, std::ostream& out)
+void XhcWhb04b6Component::printHexdump(const UsbInPackage& inPackage, std::ostream& out)
 {
     std::ios init(NULL);
     init.copyfmt(out);
@@ -473,7 +475,7 @@ void WhbContext::printHexdump(const WhbUsbInPackage& inPackage, std::ostream& ou
 
 // ----------------------------------------------------------------------
 
-int WhbContext::run()
+int XhcWhb04b6Component::run()
 {
 
     if (mHal.isSimulationModeEnabled())
@@ -530,20 +532,20 @@ int WhbContext::run()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::linuxcncSimulate()
+void XhcWhb04b6Component::linuxcncSimulate()
 {
 }
 
 // ----------------------------------------------------------------------
 
-bool WhbContext::enableReceiveAsyncTransfer()
+bool XhcWhb04b6Component::enableReceiveAsyncTransfer()
 {
     return mUsb.setupAsyncTransfer();
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::setSimulationMode(bool enableSimulationMode)
+void XhcWhb04b6Component::setSimulationMode(bool enableSimulationMode)
 {
     mIsSimulationMode = enableSimulationMode;
     mHal.setSimulationMode(mIsSimulationMode);
@@ -553,28 +555,28 @@ void WhbContext::setSimulationMode(bool enableSimulationMode)
 // ----------------------------------------------------------------------
 
 
-void WhbContext::setUsbContext(libusb_context* context)
+void XhcWhb04b6Component::setUsbContext(libusb_context* context)
 {
     mUsb.setContext(context);
 }
 
 // ----------------------------------------------------------------------
 
-libusb_device_handle* WhbContext::getUsbDeviceHandle()
+libusb_device_handle* XhcWhb04b6Component::getUsbDeviceHandle()
 {
     return mUsb.getDeviceHandle();
 }
 
 // ----------------------------------------------------------------------
 
-libusb_context* WhbContext::getUsbContext()
+libusb_context* XhcWhb04b6Component::getUsbContext()
 {
     return mUsb.getContext();
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::process()
+void XhcWhb04b6Component::process()
 {
     if (mUsb.isDeviceOpen())
     {
@@ -611,7 +613,7 @@ void WhbContext::process()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::teardownUsb()
+void XhcWhb04b6Component::teardownUsb()
 {
     libusb_exit(getUsbContext());
     mUsb.setContext(nullptr);
@@ -619,7 +621,7 @@ void WhbContext::teardownUsb()
 
 // ----------------------------------------------------------------------
 
-void WhbContext::enableVerboseRx(bool enable)
+void XhcWhb04b6Component::enableVerboseRx(bool enable)
 {
     mUsb.enableVerboseRx(enable);
     if (enable)
@@ -634,7 +636,7 @@ void WhbContext::enableVerboseRx(bool enable)
 
 // ----------------------------------------------------------------------
 
-void WhbContext::enableVerboseTx(bool enable)
+void XhcWhb04b6Component::enableVerboseTx(bool enable)
 {
     mUsb.enableVerboseTx(enable);
     if (enable)
@@ -649,7 +651,7 @@ void WhbContext::enableVerboseTx(bool enable)
 
 // ----------------------------------------------------------------------
 
-void WhbContext::enableVerboseHal(bool enable)
+void XhcWhb04b6Component::enableVerboseHal(bool enable)
 {
     mHal.setEnableVerbose(enable);
 
@@ -665,7 +667,7 @@ void WhbContext::enableVerboseHal(bool enable)
 
 // ----------------------------------------------------------------------
 
-void WhbContext::enableVerboseInit(bool enable)
+void XhcWhb04b6Component::enableVerboseInit(bool enable)
 {
     mUsb.enableVerboseInit(enable);
     if (enable)
@@ -680,49 +682,49 @@ void WhbContext::enableVerboseInit(bool enable)
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
+void XhcWhb04b6Component::printPushButtonText(uint8_t keyCode, uint8_t modifierCode)
 {
     printPushButtonText(keyCode, modifierCode, *mRxCout);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode)
+void XhcWhb04b6Component::printRotaryButtonText(const KeyCode* keyCodesBase, uint8_t keyCode)
 {
-    printRotaryButtonText(keyCodeBase, keyCode, *mRxCout);
+    printRotaryButtonText(keyCodesBase, keyCode, *mRxCout);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printInputData(const WhbUsbInPackage& inPackage)
+void XhcWhb04b6Component::printInputData(const UsbInPackage& inPackage)
 {
     printInputData(inPackage, *mRxCout);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::printHexdump(const WhbUsbInPackage& inPackage)
+void XhcWhb04b6Component::printHexdump(const UsbInPackage& inPackage)
 {
     printHexdump(inPackage, *mRxCout);
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::setWaitWithTimeout(uint8_t waitSecs)
+void XhcWhb04b6Component::setWaitWithTimeout(uint8_t waitSecs)
 {
     mUsb.setWaitWithTimeout(waitSecs);
 }
 
 // ----------------------------------------------------------------------
 
-bool WhbContext::isSimulationModeEnabled() const
+bool XhcWhb04b6Component::isSimulationModeEnabled() const
 {
     return mIsSimulationMode;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::setEnableVerboseKeyEvents(bool enable)
+void XhcWhb04b6Component::setEnableVerboseKeyEvents(bool enable)
 {
     mUsb.enableVerboseRx(enable);
     if (enable)
@@ -737,14 +739,14 @@ void WhbContext::setEnableVerboseKeyEvents(bool enable)
 
 // ----------------------------------------------------------------------
 
-void WhbContext::enableCrcDebugging(bool enable)
+void XhcWhb04b6Component::enableCrcDebugging(bool enable)
 {
     mIsCrcDebuggingEnabled = enable;
 }
 
 // ----------------------------------------------------------------------
 
-void WhbContext::offerHalMemory()
+void XhcWhb04b6Component::offerHalMemory()
 {
     assert(mHal.memory != nullptr);
     mUsb.takeHalMemoryReference(mHal.memory);

@@ -42,8 +42,8 @@ public:
     {
         CONTINUOUS  = 0,
         STEP        = 1,
-        LEAD        = 2, // TODO: remove, unused
-        MODES_COUNT = 3
+        //LEAD        = 2, // remove, unused
+        MODES_COUNT = 2
     };
 };
 

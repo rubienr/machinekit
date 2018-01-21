@@ -35,6 +35,7 @@ namespace XhcWhb04b6 {
 
 // forward declarations
 
+/*
 // ----------------------------------------------------------------------
 
 class WhbKeyEventListener
@@ -61,36 +62,37 @@ public:
     //virtual void onJogDialEvent(int8_t delta) = 0;
     virtual ~WhbKeyEventListener();
 };
-
+*/
+/*
 // ----------------------------------------------------------------------
 
-class UsbInputPackageInterpreted
+class OnUsbInputPackageInterpretedListener
 {
 public:
     //virtual void onDataInterpreted() = 0;
-    virtual ~UsbInputPackageInterpreted();
+    virtual ~OnUsbInputPackageInterpretedListener();
 };
-
+*/
 // ----------------------------------------------------------------------
 
 //! program context
-class WhbContext :
-    public UsbInputPackageListener, public WhbKeyEventListener, public UsbInputPackageInterpreted
+class XhcWhb04b6Component :
+    public OnUsbInputPackageListener /*, public WhbKeyEventListener*/ /*, public OnUsbInputPackageInterpretedListener*/
 {
 public:
-    WhbContext();
-    virtual ~WhbContext();
+    XhcWhb04b6Component();
+    virtual ~XhcWhb04b6Component();
     void process();
     void teardownUsb();
     void setUsbContext(libusb_context* context);
     libusb_device_handle* getUsbDeviceHandle();
     libusb_context* getUsbContext();
-    //! \return the name as specified to \ref WhbContext
+    //! \return the name as specified to \ref XhcWhb04b6Component
     const char* getName() const;
-    //! \return the name as specified to \ref hal
+    //! \return the name as specified to \ref Hal
     const char* getHalName() const;
-    //! callback method received by \ref WhbUsb when a \ref libusb_transfer is received
-    void onInputDataReceived(const WhbUsbInPackage& inPackage) override;
+    //! callback method received by \ref Usb when a \ref libusb_transfer is received
+    void onInputDataReceived(const UsbInPackage& inPackage) override;
     //size_t getSoftwareButtonIndex(uint8_t keyCode) const;
     void initWhb();
     void initHal();
@@ -110,28 +112,28 @@ public:
     void enableVerboseInit(bool enable);
     void enableCrcDebugging(bool enable);
     void setWaitWithTimeout(uint8_t waitSecs = 3);
-    void printCrcDebug(const WhbUsbInPackage& inPackage, const WhbUsbOutPackageData& outPackageBuffer) const;
+    void printCrcDebug(const UsbInPackage& inPackage, const UsbOutPackageData& outPackageBuffer) const;
     void offerHalMemory();
 
 private:
     const char* mName;
-    WhbHal                  mHal;
-    const WhbKeyCodes       mKeyCodes;
-    const WhbStepHandler    mStepHandler;
-    const WhbSoftwareButton mSoftwareButtons[32];
-    WhbUsb                  mUsb;
-    bool                    mIsRunning;
-    bool                    mIsSimulationMode;
-    std::ostream            mDevNull;
+    Hal                     mHal;
+    const KeyCodes          mKeyCodes;
+    //const WhbStepHandler    mStepHandler;
+    const MetaButtonCodes   mMetaButtons[32];
+    Usb                  mUsb;
+    bool                    mIsRunning{false};
+    bool                    mIsSimulationMode{false};
+    std::ostream            mDevNull{nullptr};
     std::ostream              * mTxCout;
     std::ostream              * mRxCout;
     std::ostream              * mKeyEventCout;
     std::ostream              * mHalInitCout;
     std::ostream              * mInitCout;
-    WhbKeyEventListener       & keyEventReceiver;
-    UsbInputPackageListener   & packageReceivedEventReceiver;
-    UsbInputPackageInterpreted& packageInterpretedEventReceiver;
-    bool    mIsCrcDebuggingEnabled;
+    //WhbKeyEventListener       & keyEventReceiver;
+    OnUsbInputPackageListener   & packageReceivedEventReceiver;
+    //OnUsbInputPackageInterpretedListener& packageInterpretedEventReceiver;
+    bool    mIsCrcDebuggingEnabled{false};
     Pendant mPendant;
 
     //! prints human readable output of the push buttons state
@@ -139,16 +141,16 @@ private:
     //! prints human readable output of the push buttons state to \ref verboseRxOut stream
     void printPushButtonText(uint8_t keyCode, uint8_t modifierCode);
     //! prints human readable output of the push buttons state to \p out
-    void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode, std::ostream& out);
+    void printRotaryButtonText(const KeyCode* keyCodesBase, uint8_t keyCode, std::ostream& out);
     //! prints human readable output of the rotary button text to \ref verboseRxOut stream
-    void printRotaryButtonText(const WhbKeyCode* keyCodeBase, uint8_t keyCode);
+    void printRotaryButtonText(const KeyCode* keyCodesBase, uint8_t keyCode);
     //! prints human readable output of the rotary button text to \p out
-    void printInputData(const WhbUsbInPackage& inPackage, std::ostream& out);
+    void printInputData(const UsbInPackage& inPackage, std::ostream& out);
     //! prints human readable output of the input package to \ref verboseRxOut stream
-    void printInputData(const WhbUsbInPackage& inPackage);
+    void printInputData(const UsbInPackage& inPackage);
     //! prints human readable output of the input package to \p out
-    void printHexdump(const WhbUsbInPackage& inPackage, std::ostream& out);
+    void printHexdump(const UsbInPackage& inPackage, std::ostream& out);
     //! prints a hexdump of the input package to \ref verboseRxOut stream
-    void printHexdump(const WhbUsbInPackage& inPackage);
+    void printHexdump(const UsbInPackage& inPackage);
 };
 }
