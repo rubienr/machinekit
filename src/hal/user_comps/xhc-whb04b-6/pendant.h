@@ -456,9 +456,13 @@ public:
     void count(int8_t delta);
     const HandWheelCounters& counters() const;
     HandWheelCounters& counters();
+    //! En-/disables the incremental counter.
+    //! \param enabled false if counting should be inhibited, true otherwise
+    void setEnabled(bool enabled);
 
 private:
     HandWheelCounters mCounters;
+    bool              mIsEnabled{false};
     const FeedRotaryButton& mFeedButton;
     KeyEventListener      * mEventListener;
     std::ostream          * mWheelCout;

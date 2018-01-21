@@ -804,6 +804,12 @@ const HandWheelCounters& Handwheel::counters() const
 
 // ----------------------------------------------------------------------
 
+void Handwheel::setEnabled(bool enabled)
+{
+    mIsEnabled = enabled;
+}
+// ----------------------------------------------------------------------
+
 HandWheelCounters& Handwheel::counters()
 {
     return mCounters;
@@ -821,8 +827,12 @@ void Handwheel::setMode(HandWheelCounters::CounterNameToIndex activeCounterMode)
 void Handwheel::count(int8_t delta)
 {
     assert(mEventListener != nullptr);
-    mCounters.count(delta);
-    mEventListener->onJogDialEvent(mCounters, delta);
+
+    if (mIsEnabled)
+    {
+        mCounters.count(delta);
+        mEventListener->onJogDialEvent(mCounters, delta);
+    }
 
     std::ios init(NULL);
     init.copyfmt(*mWheelCout);
@@ -1043,6 +1053,7 @@ void Pendant::processEvent(const KeyCode& keyCode,
                            const KeyCode& rotaryButtonFeedKeyCode,
                            int8_t handWheelStepCount)
 {
+    mHandWheel.setEnabled(mHal.getIsMachineOn());
     mCurrentButtonsState.update(keyCode, modifierCode, rotaryButtonAxisKeyCode, rotaryButtonFeedKeyCode);
     mHandWheel.count(handWheelStepCount);
     mDisplay.updateData();
