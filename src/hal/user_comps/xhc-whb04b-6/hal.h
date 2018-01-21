@@ -503,6 +503,11 @@ public:
     //! \xrefitem getAxisXPosition(bool)
     hal_float_t getAxisCPosition(bool absolute) const;
 
+    //! Requests manual mode if in MDI mode. Skips request if in AUTO mode.
+    //! \param isButtonPressed true on button press, false on release
+    //! \return true on successful request and if isButtonPressed == true, false otherwise
+    bool trySetManualMode(bool isButtonPressed);
+
 private:
     HalMemory* memory{nullptr};
     std::map <std::string, size_t> mButtonNameToIdx;

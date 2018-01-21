@@ -1053,10 +1053,12 @@ void Pendant::processEvent(const KeyCode& keyCode,
                            const KeyCode& rotaryButtonFeedKeyCode,
                            int8_t handWheelStepCount)
 {
+    mHal.trySetManualMode(true);
     mHandWheel.setEnabled(mHal.getIsMachineOn());
     mCurrentButtonsState.update(keyCode, modifierCode, rotaryButtonAxisKeyCode, rotaryButtonFeedKeyCode);
     mHandWheel.count(handWheelStepCount);
     mDisplay.updateData();
+    mHal.trySetManualMode(false);
 }
 
 // ----------------------------------------------------------------------

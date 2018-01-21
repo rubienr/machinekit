@@ -1372,6 +1372,25 @@ void Hal::setFunction(bool enabled)
 
 // ----------------------------------------------------------------------
 
+bool Hal::trySetManualMode(bool isButtonPressed)
+{
+    if (isButtonPressed)
+    {
+        if (!*memory->in.isModeAuto)
+        {
+            *memory->out.doModeManual = true;
+            return true;
+        }
+    }
+    else
+    {
+        *memory->out.doModeManual = false;
+    }
+    return false;
+}
+
+// ----------------------------------------------------------------------
+
 void Hal::enableManualMode(bool isRisingEdge)
 {
     if (isRisingEdge)
