@@ -87,12 +87,13 @@ class DisplayIndicatorBitFields
 public:
     //! \see DisplayIndicatorStepMode
     uint8_t stepMode            : 2;
+    // TODO: investigate unknown:4
     //! unknown flags
     uint8_t unknown             : 4;
     //! if flag set displays "RESET", \ref stepMode otherwise
     uint8_t isReset             : 1;
     //! if flag set axis names are "X1" "X1" ... "C1", "X" "Y" ... "C" otherwise
-    uint8_t isRelatvieCoordinate : 1;
+    uint8_t isRelativeCoordinate : 1;
 } __attribute__((packed));
 
 // ----------------------------------------------------------------------

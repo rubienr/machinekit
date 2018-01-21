@@ -78,17 +78,17 @@ public:
         //! to be connected to \ref halui.axis.5.pos-relative
         hal_float_t* axisCPositionRelative{nullptr};
 
-        //! to be connected to \ref stepge.00.maxvel
+        //! to be connected to \ref stepgen.00.maxvel
         hal_float_t* stepgenXMaxVelocity{nullptr};
-        //! to be connected to \ref stepge.01.maxvel
+        //! to be connected to \ref stepgen.01.maxvel
         hal_float_t* stepgenYMaxVelocity{nullptr};
-        //! to be connected to \ref stepge.02.maxvel
+        //! to be connected to \ref stepgen.02.maxvel
         hal_float_t* stepgenZMaxVelocity{nullptr};
-        //! to be connected to \ref stepge.03.maxvel
+        //! to be connected to \ref stepgen.03.maxvel
         hal_float_t* stepgenAMaxVelocity{nullptr};
-        //! to be connected to \ref stepge.04.maxvel
+        //! to be connected to \ref stepgen.04.maxvel
         hal_float_t* stepgenBMaxVelocity{nullptr};
-        //! to be connected to \ref stepge.05.maxvel
+        //! to be connected to \ref stepgen.05.maxvel
         hal_float_t* stepgenCMaxVelocity{nullptr};
         //! to be connected to \ref stepgen.00.position-scale
         hal_float_t* stepgenXPositionScale{nullptr};
@@ -134,7 +134,7 @@ public:
         hal_bit_t* isModeJoint{nullptr};
         //! to be connected to \ref halui.mode.is-manual
         hal_bit_t* isModeManual{nullptr};
-        //! to be connected to \ref halui.mode.is-madi
+        //! to be connected to \ref halui.mode.is-mdi
         hal_bit_t* isModeMdi{nullptr};
 
         //! to be connected to \ref halui.estop.is-activated
@@ -357,7 +357,7 @@ public:
     void setStepSize(const hal_float_t& feedRate);
     //! If lead is active.
     void setLead();
-    //! Sets the hal state of the respecitive pin (reset). Usually called in case the reset
+    //! Sets the hal state of the respective pin (reset). Usually called in case the reset
     //! button is pressed or released. The pin should be connected to \ref halui.estop.activate.
     //! \param enabled the new pin value, (true if the button was pressed, false otherwise)
     //! \param pinNumber The pin number in \ref WhbHalMemory as registered in

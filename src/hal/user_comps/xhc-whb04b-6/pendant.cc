@@ -2174,7 +2174,7 @@ void Display::updateData()
     mDisplayData.feedRate     = feedRate;
 
     bool isAbsolutePositionRequest = (mAxisPositionMethod == AxisPositionMethod::ABSOLUTE);
-    mDisplayData.displayModeFlags.asBitFields.isRelatvieCoordinate = !isAbsolutePositionRequest;
+    mDisplayData.displayModeFlags.asBitFields.isRelativeCoordinate = !isAbsolutePositionRequest;
     if (mActiveAxisGroup == AxisGroup::XYZ)
     {
         mDisplayData.row1Coordinate.setCoordinate(static_cast<float>(mHal.getAxisXPosition(isAbsolutePositionRequest)));
@@ -2197,7 +2197,7 @@ void Display::clearData()
         static_cast<typename std::underlying_type<DisplayIndicatorStepMode::StepMode>::type>(
             DisplayIndicatorStepMode::StepMode::MANUAL_PULSE_GENERATOR);
     mDisplayData.displayModeFlags.asBitFields.isReset              = true;
-    mDisplayData.displayModeFlags.asBitFields.isRelatvieCoordinate = false;
+    mDisplayData.displayModeFlags.asBitFields.isRelativeCoordinate = false;
     mDisplayData.row1Coordinate.clear();
     mDisplayData.row2Coordinate.clear();
     mDisplayData.row3Coordinate.clear();

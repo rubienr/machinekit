@@ -282,7 +282,7 @@ void WhbUsb::sendDisplayData()
         // http://libusb.sourceforge.net/api-1.0/group__desc.html
         // http://libusb.sourceforge.net/api-1.0/group__misc.html
         int    r         = libusb_control_transfer(deviceHandle,
-            // send to hid descriptor: bmRequestType == LIBUSB_DT_HID == 0x21 == (iterface | endpoint)
+            // send to hid descriptor: bmRequestType == LIBUSB_DT_HID == 0x21 == (interface | endpoint)
                                                    LIBUSB_DT_HID,
             // bRequest == LIBUSB_REQUEST_SET_CONFIGURATION == 0x09 == set configuration
                                                    LIBUSB_REQUEST_SET_CONFIGURATION,
@@ -453,8 +453,8 @@ std::ostream& operator<<(std::ostream& os, const WhbUsbOutPackageData& data)
     std::ios init(NULL);
     init.copyfmt(os);
 
-    bool enableMultiline = false;
-    if (enableMultiline)
+    bool enableMultiLine = false;
+    if (enableMultiLine)
     {
         os << std::hex << std::setfill('0') << "header       0x" << std::setw(2) << data.header << endl
            << "day of month   0x"
