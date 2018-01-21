@@ -216,42 +216,31 @@ bool Usb::isWaitForPendantBeforeHalEnabled() const
 
 bool Usb::getDoReconnect() const
 {
-    return do_reconnect;
+    return mDoReconnect;
 }
 
 // ----------------------------------------------------------------------
 
 void Usb::setDoReconnect(bool doReconnect)
 {
-    this->do_reconnect = doReconnect;
+    this->mDoReconnect = doReconnect;
 }
 
 // ----------------------------------------------------------------------
 
-Usb::Usb(const char* name, OnUsbInputPackageListener& onDataReceivedCallback)
-    :
-    usbVendorId(0x10ce), // xhc-whb04-6
-    usbProductId(0xeb93), // xhc-whb04-6
-    context(nullptr),
-    deviceHandle(nullptr),
-    do_reconnect(false),
-    isWaitWithTimeout(false),
-    mIsSimulationMode(false),
+Usb::Usb(const char* name, OnUsbInputPackageListener& onDataReceivedCallback, Hal& hal) :
     sleepState(),
-    mIsRunning(false),
     inputPackageBuffer(),
     outputPackageBuffer(),
     mDataHandler(onDataReceivedCallback),
     mRawDataCallback(usbInputResponseCallback),
-    mHalMemory(nullptr),
+    mHal(hal),
     inTransfer(libusb_alloc_transfer(0)),
     outTransfer(libusb_alloc_transfer(0)),
-    devNull(nullptr),
     verboseTxOut(&devNull),
     verboseRxOut(&devNull),
     verboseInitOut(&devNull),
-    mName(name),
-    mWaitSecs(0)
+    mName(name)
 {
     gettimeofday(&sleepState.mLastWakeupTimestamp, nullptr);
 }
@@ -565,6 +554,8 @@ bool Usb::setupAsyncTransfer()
 
 void Usb::onUsbDataReceived(struct libusb_transfer* transfer)
 {
+    assert(mHal.isInitialized());
+
     int      expectedPackageSize = static_cast<int>(sizeof(UsbInPackage));
     std::ios init(NULL);
     init.copyfmt(*verboseTxOut);
@@ -597,7 +588,7 @@ void Usb::onUsbDataReceived(struct libusb_transfer* transfer)
                 if (Usb::ConstantPackages.emptyPackage == inputPackageBuffer.asFields)
                 {
                     sleepState.mDropNextInPackage = true;
-                    *(mHalMemory->out.isPendantSleeping) = 1;
+                    mHal.setIsPendantSleeping(true);
                     if (mIsSimulationMode)
                     {
                         struct timeval now;
@@ -609,9 +600,9 @@ void Usb::onUsbDataReceived(struct libusb_transfer* transfer)
                     // on regular package
                 else
                 {
-                    if (*(mHalMemory->out.isPendantSleeping) == 1)
+                    if (mHal.getIsPendantSleeping())
                     {
-                        *(mHalMemory->out.isPendantSleeping) = 0;
+                        mHal.setIsPendantSleeping(false);
                         if (mIsSimulationMode)
                         {
                             struct timeval now;
@@ -835,13 +826,6 @@ void Usb::setWaitWithTimeout(uint8_t waitSecs)
 UsbOutPackageData& Usb::getOutputPackageData()
 {
     return outputPackageData;
-}
-
-// ----------------------------------------------------------------------
-
-void Usb::takeHalMemoryReference(HalMemory* memory)
-{
-    mHalMemory = memory;
 }
 
 // ----------------------------------------------------------------------

@@ -1792,7 +1792,7 @@ bool Display::onJogDialEvent(const HandWheelCounters& counters, int8_t delta)
 
 void Display::updateData()
 {
-    mDisplayData.displayModeFlags.asBitFields.isReset = !(*mHal.memory->in.isMachineOn);
+    mDisplayData.displayModeFlags.asBitFields.isReset = !mHal.getIsMachineOn();
 
     uint32_t spindleSpeed = static_cast<uint32_t>(mHal.getSpindleSpeedAbsRpm());
     uint32_t feedRate     = static_cast<uint32_t>(mHal.getFeedUps() * 60);

@@ -37,7 +37,7 @@ struct libusb_transfer;
 namespace XhcWhb04b6 {
 
 // forward declarations
-class HalMemory;
+class Hal;
 class Usb;
 
 // ----------------------------------------------------------------------
@@ -87,7 +87,7 @@ class DisplayIndicatorBitFields
 public:
     //! \see DisplayIndicatorStepMode
     uint8_t stepMode            : 2;
-    // TODO: investigate unknown bit field of size 4
+    // TODO: investigate the exact meaning of the yet still unknown bit field
     //! unknown flags
     uint8_t unknown             : 4;
     //! if flag set displays "RESET", \ref stepMode otherwise
@@ -323,7 +323,7 @@ public:
     static const ConstantUsbPackages ConstantPackages;
     //! \param name device string used for printing messages
     //! \param onDataReceivedCallback called when received data is ready
-    Usb(const char* name, OnUsbInputPackageListener& onDataReceivedCallback);
+    Usb(const char* name, OnUsbInputPackageListener& onDataReceivedCallback, Hal &hal);
     ~Usb();
     uint16_t getUsbVendorId() const;
     uint16_t getUsbProductId() const;
@@ -351,32 +351,31 @@ public:
     void setWaitWithTimeout(uint8_t waitSecs);
 
     UsbOutPackageData& getOutputPackageData();
-    void takeHalMemoryReference(HalMemory* memory);
 
 private:
-    const uint16_t usbVendorId;
-    const uint16_t usbProductId;
-    libusb_context      * context;
-    libusb_device_handle* deviceHandle;
-    bool                do_reconnect;
-    bool                isWaitWithTimeout;
-    bool                mIsSimulationMode;
+    const uint16_t usbVendorId{0x10ce};
+    const uint16_t usbProductId{0xeb93};
+    libusb_context      * context{nullptr};
+    libusb_device_handle* deviceHandle{nullptr};
+    bool                mDoReconnect{false};
+    bool                isWaitWithTimeout{false};
+    bool                mIsSimulationMode{false};
     SleepDetect         sleepState;
-    bool                mIsRunning;
+    bool                mIsRunning{false};
     UsbInPackageBuffer  inputPackageBuffer;
     UsbOutPackageBuffer outputPackageBuffer;
     UsbOutPackageData   outputPackageData;
     OnUsbInputPackageListener& mDataHandler;
     void (* const mRawDataCallback)(struct libusb_transfer*);
-    HalMemory             * mHalMemory;
-    struct libusb_transfer* inTransfer;
-    struct libusb_transfer* outTransfer;
-    std::ostream devNull;
-    std::ostream* verboseTxOut;
-    std::ostream* verboseRxOut;
-    std::ostream* verboseInitOut;
-    const char  * mName;
-    uint8_t mWaitSecs;
+    Hal                   & mHal;
+    struct libusb_transfer* inTransfer{nullptr};
+    struct libusb_transfer* outTransfer{nullptr};
+    std::ostream devNull{nullptr};
+    std::ostream* verboseTxOut{nullptr};
+    std::ostream* verboseRxOut{nullptr};
+    std::ostream* verboseInitOut{nullptr};
+    const char  * mName{nullptr};
+    uint8_t mWaitSecs{0};
 };
 
 // ----------------------------------------------------------------------

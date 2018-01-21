@@ -76,13 +76,7 @@ void Hal::freeSimulatedPin(void** pin)
 // ----------------------------------------------------------------------
 
 Hal::Hal() :
-    memory(nullptr),
     mButtonNameToIdx(),
-    mIsSimulationMode(true),
-    mName("xhc-whb04b-6"),
-    mComponentPrefix("whb"),
-    mHalCompId(-1),
-    mDevNull(nullptr),
     mHalCout(&mDevNull),
     mStepMode(HandwheelStepmodes::Mode::STEP)
 {
@@ -406,6 +400,8 @@ const char* Hal::getHalComponentName() const
 
 void Hal::init(const MetaButtonCodes* metaButtons, const KeyCodes& keyCodes)
 {
+    assert(!mIsInitialized);
+
     if (!mIsSimulationMode)
     {
         *mHalCout << "hal   initialize HAL component in HAL mode " << mName << " ... ";
@@ -606,6 +602,14 @@ void Hal::init(const MetaButtonCodes* metaButtons, const KeyCodes& keyCodes)
     newHalFloat(HAL_OUT, &(memory->out.jogSpeedValue), mHalCompId, "%s.halui.jog-speed", mComponentPrefix);
 
     newHalBit(HAL_OUT, &(memory->out.homeAll), mHalCompId, "%s.halui.home-all", mComponentPrefix);
+    mIsInitialized = true;
+}
+
+// ----------------------------------------------------------------------
+
+bool Hal::isInitialized()
+{
+    return mIsInitialized;
 }
 
 // ----------------------------------------------------------------------
@@ -820,6 +824,41 @@ void Hal::setStart(bool enabled)
         toggleStartResumeProgram();
     }
     setPin(enabled, KeyCodes::Buttons.start.text);
+}
+
+// ----------------------------------------------------------------------
+
+bool Hal::getIsMachineOn() const
+{
+    return *memory->in.isMachineOn;
+}
+
+// ----------------------------------------------------------------------
+
+void Hal::setIsPendantSleeping(bool isSleeping)
+{
+    *memory->out.isPendantSleeping = isSleeping;
+}
+
+// ----------------------------------------------------------------------
+
+bool Hal::getIsPendantSleeping() const
+{
+    return *memory->out.isPendantSleeping;
+}
+
+// ----------------------------------------------------------------------
+
+void Hal::setIsPendantConnected(bool isSleeping)
+{
+    *memory->out.isPendantConnected = isSleeping;
+}
+
+// ----------------------------------------------------------------------
+
+bool Hal::getIsPendantConnected() const
+{
+    return *memory->out.isPendantConnected;
 }
 
 // ----------------------------------------------------------------------

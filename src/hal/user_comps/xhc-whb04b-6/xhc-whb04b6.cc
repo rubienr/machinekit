@@ -92,6 +92,9 @@ void XhcWhb04b6Component::printCrcDebug(const UsbInPackage& inPackage, const Usb
         return;
     }
 
+    // TODO: implement this experimental code correctly
+    // once CRC decode/encode is implemented, it can be applied on received usb data
+
     std::bitset<8> random(inPackage.randomByte), buttonKeyCode(inPackage.buttonKeyCode1), crc(inPackage.crc);
     std::bitset<8> delta(0);
 
@@ -124,7 +127,6 @@ void XhcWhb04b6Component::printCrcDebug(const UsbInPackage& inPackage, const Usb
     //! The implementation has several flaws, but works with seed 0xfe and 0xff (which is a bad seed).
     //! \sa UsbOutPackageData::seed
     //! The checksum implementation does not work reliable with other seeds.
-    // TODO: implement me correctly
     std::bitset<8> seed(outPackageBuffer.seed), nonSeed(~seed);
     std::bitset<8> nonSeedAndRandom(nonSeed & random);
     std::bitset<8> keyXorNonSeedAndRandom(buttonKeyCode ^ nonSeedAndRandom);
@@ -306,7 +308,7 @@ XhcWhb04b6Component::XhcWhb04b6Component() :
         //! it is expected to terminate this array with the "undefined" software button
                  MetaButtonCodes(mKeyCodes.Buttons.undefined, mKeyCodes.Buttons.undefined)
     },
-    mUsb(mName, *this),
+    mUsb(mName, *this, mHal),
     mTxCout(&mDevNull),
     mRxCout(&mDevNull),
     mKeyEventCout(&mDevNull),
@@ -451,7 +453,6 @@ void XhcWhb04b6Component::printHexdump(const UsbInPackage& inPackage, std::ostre
 
 int XhcWhb04b6Component::run()
 {
-
     if (mHal.isSimulationModeEnabled())
     {
         *mInitCout << "init  starting in simulation mode" << endl;
@@ -460,7 +461,6 @@ int XhcWhb04b6Component::run()
     bool isHalReady = false;
     initWhb();
     initHal();
-    offerHalMemory();
 
     if (!mUsb.isWaitForPendantBeforeHalEnabled() && !mHal.isSimulationModeEnabled())
     {
@@ -470,7 +470,7 @@ int XhcWhb04b6Component::run()
 
     while (isRunning())
     {
-        *(mHal.memory->out.isPendantConnected) = 0;
+        mHal.setIsPendantConnected(false);
 
         initWhb();
         if (!mUsb.init())
@@ -478,7 +478,7 @@ int XhcWhb04b6Component::run()
             return EXIT_FAILURE;
         }
 
-        *(mHal.memory->out.isPendantConnected) = 1;
+        mHal.setIsPendantConnected(true);
 
         if (!isHalReady && !mHal.isSimulationModeEnabled())
         {
@@ -571,7 +571,7 @@ void XhcWhb04b6Component::process()
         }
         updateDisplay();
 
-        *(mHal.memory->out.isPendantConnected) = 0;
+        mHal.setIsPendantConnected(false);
         *mInitCout << "connection lost, cleaning up" << endl;
         struct timeval tv;
         tv.tv_sec  = 1;
@@ -716,13 +716,5 @@ void XhcWhb04b6Component::setEnableVerboseKeyEvents(bool enable)
 void XhcWhb04b6Component::enableCrcDebugging(bool enable)
 {
     mIsCrcDebuggingEnabled = enable;
-}
-
-// ----------------------------------------------------------------------
-
-void XhcWhb04b6Component::offerHalMemory()
-{
-    assert(mHal.memory != nullptr);
-    mUsb.takeHalMemoryReference(mHal.memory);
 }
 }

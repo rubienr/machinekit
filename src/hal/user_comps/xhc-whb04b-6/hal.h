@@ -306,15 +306,16 @@ public:
 class Hal
 {
 public:
-    HalMemory* memory;
-    std::map <std::string, size_t> mButtonNameToIdx;
-
     Hal();
     ~Hal();
     //! Initializes HAL memory and pins according to simulation mode. Must not be called more than once.
     //! If \ref mIsSimulationMode is true heap memory will be used, shared HAL memory otherwise.
     //! \ref setIsSimulationMode() must be set before accordingly
     void init(const MetaButtonCodes* metaButtons, const KeyCodes& codes);
+    //! \return true if void init(const MetaButtonCodes*, const KeyCodes&) has been called beforehand,
+    //! false otherwise
+    bool isInitialized();
+    //! \return true if simulation mode is enabled, false otherwise
     bool isSimulationModeEnabled() const;
     //! indicates the program has been invoked in hal mode or normal
     void setSimulationMode(bool isSimulationMode);
@@ -348,29 +349,51 @@ public:
     //! Sets the hal state of the respective pin (reset). Usually called in case the reset
     //! button is pressed or released. The pin should be connected to \ref halui.estop.activate.
     //! \param enabled the new pin value, (true if the button was pressed, false otherwise)
-    //! \param pinNumber The pin number in \ref HalMemory as registered in
     //! \ref Hal::halInit(const WhbSoftwareButton* , size_t , const WhbKeyCodes&)
     //! \sa doEmergencyStop
     void setReset(bool enabled);
-    //! \sa setReset(bool, size_t)
+    //! \sa setReset(bool)
     void setStop(bool enabled);
     //! Toggles the start/pause/resume states.
     //! \param enabled true if start/resume is requested, false otherwise
     //! \param pinNumber \sa setReset(bool, size_t)
     void setStart(bool enabled);
 
+    //! Returns the machine status.
+    //! \sa HalMemory::In::isMachineOn
+    //! \return true if machine is on, false otherwise
+    bool getIsMachineOn() const;
+
+    //! Writes the pendant sleeping status to hal.
+    //! \sa HalMemory::Out::isPendantSleeping
+    //! \param isSleeping true if sleeping, false otherwise
+    void setIsPendantSleeping(bool isSleeping);
+    //! Returns the pendant sleep state as written to hal.
+    //! \sa setIsPendantSleeping(bool)
+    bool getIsPendantSleeping() const;
+    //! Writes the pendant connection status to hal.
+    //! \sa HalMemory::Out::isPendantConnected
+    //! \param isConnected true if connected, false otherwise
+    void setIsPendantConnected(bool isConnected);
+    //! Returns the pendant connection state as written to hal.
+    //! \sa setIsPendantConnected(bool)
+    //! \return true if connected, false otherwise
+    bool getIsPendantConnected() const;
+
     //! \sa setReset(bool, size_t)
     void setFeedPlus(bool enabled);
     //! \sa setReset(bool, size_t)
     void setFeedMinus(bool enabled);
     //! Returns the current feed override value.
+    //! \sa Hal::In::feedOverrideValue
     //! \return the current feed override value v: 0 <= v <= 1
     hal_float_t getFeedOverrideValue() const;
-    // TODO: fix doxygen
+    //! \sa Hal::In::feedOverrideMinValue
+    //! \return the currently set minimum feed override value, i.e. 0.2 is equivalent to 20%
     hal_float_t getFeedOverrideMinValue() const;
-    // TODO: fix doxygen
+    //! \sa Hal::In::feedOverrideMaxValue
+    //! \return the currently set maximum feed override value, i.e. 1.5 is equivalent to 150%
     hal_float_t getFeedOverrideMaxValue() const;
-    // TODO: fix doxygen
     //! \xrefitem HalMemory::Out::feedOverrideCounts setter
     void setFeedOverrideCounts(hal_s32_t counts);
     //! \xrefitem HalMemory::Out::feedOverrideScale setter
@@ -383,9 +406,21 @@ public:
     //! \return the feed speed in unis per second
     hal_float_t getFeedUps() const;
 
+    //! Propagates the feed value 0.001 selection state to hal.
+    //! \sa Hal::Out::feedValueSelected0_001
+    //! \param selected true if 0.001 is selected, false otherwise
     void setFeedValueSelected0_001(bool selected);
+    //! Propagates the feed value 0.01 selection state to hal.
+    //! \sa Hal::Out::feedValueSelected0_01
+    //! \param selected true if 0.01 is selected, false otherwise
     void setFeedValueSelected0_01(bool selected);
+    //! Propagates the feed value 0.1 selection state to hal.
+    //! \sa Hal::Out::feedValueSelected0_1
+    //! \param selected true if 0.1 is selected, false otherwise
     void setFeedValueSelected0_1(bool selected);
+    //! Propagates the feed value 1.0 selection state to hal.
+    //! \sa Hal::Out::feedValueSelected1_0
+    //! \param selected true if 1.0 is selected, false otherwise
     void setFeedValueSelected1_0(bool selected);
 
     //! Returns the spindle speed.
@@ -471,12 +506,15 @@ public:
     hal_float_t getAxisCPosition(bool absolute) const;
 
 private:
-    bool mIsSimulationMode;
-    const char* mName;
-    const char* mComponentPrefix;
-    int          mHalCompId;
-    std::ostream mDevNull;
-    std::ostream* mHalCout;
+    HalMemory* memory{nullptr};
+    std::map <std::string, size_t> mButtonNameToIdx;
+    bool mIsSimulationMode{false};
+    bool mIsInitialized{false};
+    const char* mName{"xhc-whb04b-6"};
+    const char* mComponentPrefix{"whb"};
+    int          mHalCompId{-1};
+    std::ostream mDevNull{nullptr};
+    std::ostream* mHalCout{nullptr};
     HandwheelStepmodes::Mode mStepMode;
     bool                     mIsSpindleDirectionForward{true};
 
