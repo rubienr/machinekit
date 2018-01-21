@@ -547,9 +547,9 @@ public:
     void clearData();
 
 private:
-    const ButtonsState  & mCurrentButtonsState;
-    Hal              & mHal;
-    UsbOutPackageData& mDisplayData;
+    const ButtonsState& mCurrentButtonsState;
+    Hal               & mHal;
+    UsbOutPackageData & mDisplayData;
     AxisPositionMethod mAxisPositionMethod;
     AxisGroup          mActiveAxisGroup;
 };

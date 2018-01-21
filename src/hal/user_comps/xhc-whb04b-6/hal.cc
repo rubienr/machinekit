@@ -138,8 +138,8 @@ Hal::~Hal()
     freeSimulatedPin((void**)(&memory->in.isEmergencyStop));
     freeSimulatedPin((void**)(&memory->in.isMachineOn));
 
-    constexpr size_t pinsCount= sizeof(memory->out.button_pin) / sizeof(hal_bit_t* );
-    for (size_t idx = 0; idx < pinsCount; idx++)
+    constexpr size_t pinsCount = sizeof(memory->out.button_pin) / sizeof(hal_bit_t * );
+    for (size_t      idx       = 0; idx < pinsCount; idx++)
     {
         freeSimulatedPin((void**)(&memory->out.button_pin[idx]));
     }
@@ -1335,5 +1335,4 @@ void Hal::enableMdiMode(bool isRisingEdge)
         *memory->out.doModeMdi = false;
     }
 }
-
 }

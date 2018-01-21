@@ -116,16 +116,16 @@ class UsbOutPackageData
 {
 public:
     //! constant: 0xfdfe
-    uint16_t                       header;
-    uint8_t                        seed;
-    DisplayIndicator               displayModeFlags;
+    uint16_t                    header;
+    uint8_t                     seed;
+    DisplayIndicator            displayModeFlags;
     UsbOutPackageAxisCoordinate row1Coordinate;
     UsbOutPackageAxisCoordinate row2Coordinate;
     UsbOutPackageAxisCoordinate row3Coordinate;
     //! on feed+/- button pressed shown on display
-    uint16_t                       feedRate;
+    uint16_t                    feedRate;
     //! on spindle+/- button pressed shown on display
-    uint16_t                       spindleSpeed;
+    uint16_t                    spindleSpeed;
     UsbOutPackageData();
     void clear();
 
@@ -152,8 +152,8 @@ public:
     const uint8_t crc;
     UsbInPackage();
     UsbInPackage(const uint8_t notAvailable1, const uint8_t notAvailable2, const uint8_t buttonKeyCode1,
-                    const uint8_t buttonKeyCode2, const uint8_t rotaryButtonFeedKeyCode,
-                    const uint8_t rotaryButtonAxisKeyCode, const int8_t stepCount, const uint8_t crc);
+                 const uint8_t buttonKeyCode2, const uint8_t rotaryButtonFeedKeyCode,
+                 const uint8_t rotaryButtonAxisKeyCode, const int8_t stepCount, const uint8_t crc);
 }__attribute__((packed));
 
 // ----------------------------------------------------------------------
@@ -294,7 +294,7 @@ union UsbInPackageBuffer
 {
 public:
     const UsbInPackage asFields;
-    uint8_t               asBuffer[sizeof(UsbInPackage)];
+    uint8_t            asBuffer[sizeof(UsbInPackage)];
     UsbInPackageBuffer();
 } __attribute__((packed));
 
@@ -358,11 +358,11 @@ private:
     const uint16_t usbProductId;
     libusb_context      * context;
     libusb_device_handle* deviceHandle;
-    bool                   do_reconnect;
-    bool                   isWaitWithTimeout;
-    bool                   mIsSimulationMode;
+    bool                do_reconnect;
+    bool                isWaitWithTimeout;
+    bool                mIsSimulationMode;
     SleepDetect         sleepState;
-    bool                   mIsRunning;
+    bool                mIsRunning;
     UsbInPackageBuffer  inputPackageBuffer;
     UsbOutPackageBuffer outputPackageBuffer;
     UsbOutPackageData   outputPackageData;

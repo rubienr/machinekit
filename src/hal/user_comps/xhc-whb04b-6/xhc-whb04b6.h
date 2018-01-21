@@ -78,19 +78,19 @@ public:
 
 private:
     const char* mName;
-    Hal                     mHal;
-    const KeyCodes          mKeyCodes;
-    const MetaButtonCodes   mMetaButtons[32];
-    Usb                  mUsb;
-    bool                    mIsRunning{false};
-    bool                    mIsSimulationMode{false};
-    std::ostream            mDevNull{nullptr};
-    std::ostream              * mTxCout;
-    std::ostream              * mRxCout;
-    std::ostream              * mKeyEventCout;
-    std::ostream              * mHalInitCout;
-    std::ostream              * mInitCout;
-    OnUsbInputPackageListener   & packageReceivedEventReceiver;
+    Hal                   mHal;
+    const KeyCodes        mKeyCodes;
+    const MetaButtonCodes mMetaButtons[32];
+    Usb                   mUsb;
+    bool                  mIsRunning{false};
+    bool                  mIsSimulationMode{false};
+    std::ostream          mDevNull{nullptr};
+    std::ostream             * mTxCout;
+    std::ostream             * mRxCout;
+    std::ostream             * mKeyEventCout;
+    std::ostream             * mHalInitCout;
+    std::ostream             * mInitCout;
+    OnUsbInputPackageListener& packageReceivedEventReceiver;
     bool    mIsCrcDebuggingEnabled{false};
     Pendant mPendant;
 

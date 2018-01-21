@@ -510,8 +510,8 @@ UsbInPackage::UsbInPackage() :
 // ----------------------------------------------------------------------
 
 UsbInPackage::UsbInPackage(const uint8_t notAvailable1, const uint8_t notAvailable2, const uint8_t buttonKeyCode1,
-                                 const uint8_t buttonKeyCode2, const uint8_t rotaryButtonFeedKeyCode,
-                                 const uint8_t rotaryButtonAxisKeyCode, const int8_t stepCount, const uint8_t crc) :
+                           const uint8_t buttonKeyCode2, const uint8_t rotaryButtonFeedKeyCode,
+                           const uint8_t rotaryButtonAxisKeyCode, const int8_t stepCount, const uint8_t crc) :
     header(notAvailable1),
     randomByte(notAvailable2),
     buttonKeyCode1(buttonKeyCode1),
