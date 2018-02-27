@@ -1233,11 +1233,13 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
     }
     else if (metaButton == KeyCodes::Meta.macro5)
     {
+        mHal.toggleFloodOnOff(true);
         mHal.setMacro5(true);
         isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro6)
     {
+        mHal.toggleMistOnOff(true);
         mHal.setMacro6(true);
         isHandled = true;
     }
@@ -1395,11 +1397,13 @@ bool Pendant::onButtonReleasedEvent(const MetaButtonCodes& metaButton)
     }
     else if (metaButton == KeyCodes::Meta.macro5)
     {
+        mHal.toggleFloodOnOff(false);
         mHal.setMacro5(false);
         isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro6)
     {
+        mHal.toggleMistOnOff(false);
         mHal.setMacro6(false);
         isHandled = true;
     }
