@@ -98,6 +98,9 @@ Hal::~Hal()
         return;
     }
 
+    freeSimulatedPin((void**)(&memory->in.floodIsOn));
+    freeSimulatedPin((void**)(&memory->in.mistIsOn));
+    
     freeSimulatedPin((void**)(&memory->in.axisXPosition));
     freeSimulatedPin((void**)(&memory->in.axisYPosition));
     freeSimulatedPin((void**)(&memory->in.axisZPosition));
@@ -154,6 +157,11 @@ Hal::~Hal()
         freeSimulatedPin((void**)(&memory->out.button_pin[idx]));
     }
 
+    freeSimulatedPin((void**)(&memory->out.floodStop));
+    freeSimulatedPin((void**)(&memory->out.floodStart));
+    freeSimulatedPin((void**)(&memory->out.mistStop));
+    freeSimulatedPin((void**)(&memory->out.mistStart));
+    
     freeSimulatedPin((void**)(&memory->out.axisXJogCounts));
     freeSimulatedPin((void**)(&memory->out.axisYJogCounts));
     freeSimulatedPin((void**)(&memory->out.axisZJogCounts));
@@ -478,6 +486,14 @@ void Hal::init(const MetaButtonCodes* metaButtons, const KeyCodes& keyCodes)
                   buttonName);
     }
 
+    newHalBit(HAL_IN, &(memory->in.floodIsOn), mHalCompId, "%s.halui.flood.is-on", mComponentPrefix);  
+    newHalBit(HAL_OUT, &(memory->out.floodStop), mHalCompId, "%s.halui.flood.off", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.floodStart), mHalCompId, "%s.halui.flood.on", mComponentPrefix);
+    
+    newHalBit(HAL_IN, &(memory->in.mistIsOn), mHalCompId, "%s.halui.mist.is-on", mComponentPrefix);  
+    newHalBit(HAL_OUT, &(memory->out.mistStop), mHalCompId, "%s.halui.mist.off", mComponentPrefix);
+    newHalBit(HAL_OUT, &(memory->out.mistStart), mHalCompId, "%s.halui.mist.on", mComponentPrefix);
+    
     newHalSigned32(HAL_OUT, &(memory->out.axisXJogCounts), mHalCompId, "%s.axis.0.jog-counts", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.axisXJogEnable), mHalCompId, "%s.axis.0.jog-enable", mComponentPrefix);
     newHalFloat(HAL_OUT, &(memory->out.axisXJogScale), mHalCompId, "%s.axis.0.jog-scale", mComponentPrefix);
@@ -1149,6 +1165,56 @@ void Hal::toggleSpindleOnOff(bool isButtonPressed)
         *memory->out.spindleDoRunReverse = false;
     }
     setPin(isButtonPressed, KeyCodes::Buttons.spindle_on_off.text);
+}
+
+// ----------------------------------------------------------------------
+
+void Hal::toggleFloodOnOff(bool isButtonPressed)
+{
+    if (isButtonPressed)
+    {
+        if (*memory->in.floodIsOn)
+        {
+            // on flood stop
+            *memory->out.floodStop = true;
+        }
+        else
+        {
+            // on flood start
+            *memory->out.floodStart = true;
+        }
+    }
+    else
+    {
+        // on button released
+        *memory->out.floodStop         = false;
+        *memory->out.floodStart        = false;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+void Hal::toggleMistOnOff(bool isButtonPressed)
+{
+    if (isButtonPressed)
+    {
+        if (*memory->in.mistIsOn)
+        {
+            // on mist stop
+            *memory->out.mistStop = true;
+        }
+        else
+        {
+            // on mist start
+            *memory->out.mistStart = true;
+        }
+    }
+    else
+    {
+        // on button released
+        *memory->out.mistStop         = false;
+        *memory->out.mistStart        = false;
+    }
 }
 
 // ----------------------------------------------------------------------
