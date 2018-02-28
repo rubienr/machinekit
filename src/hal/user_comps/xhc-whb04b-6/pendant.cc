@@ -1218,6 +1218,7 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
     }
     else if (metaButton == KeyCodes::Meta.macro2)
     {
+        mHal.toggleLubeOnOff(true);
         mHal.setMacro2(true);
         isHandled = true;
     }
@@ -1233,13 +1234,11 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
     }
     else if (metaButton == KeyCodes::Meta.macro5)
     {
-        mHal.toggleFloodOnOff(true);
         mHal.setMacro5(true);
         isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro6)
     {
-        mHal.toggleMistOnOff(true);
         mHal.setMacro6(true);
         isHandled = true;
     }
@@ -1266,11 +1265,13 @@ bool Pendant::onButtonPressedEvent(const MetaButtonCodes& metaButton)
     }
     else if (metaButton == KeyCodes::Meta.macro15)
     {
+        mHal.toggleFloodOnOff(true);
         mHal.setMacro15(true);
         isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro16)
     {
+        mHal.toggleMistOnOff(true);
         mHal.setMacro16(true);
         isHandled = true;
     }
@@ -1382,6 +1383,7 @@ bool Pendant::onButtonReleasedEvent(const MetaButtonCodes& metaButton)
     }
     else if (metaButton == KeyCodes::Meta.macro2)
     {
+        mHal.toggleLubeOnOff(false);
         mHal.setMacro2(false);
         isHandled = true;
     }
@@ -1397,13 +1399,11 @@ bool Pendant::onButtonReleasedEvent(const MetaButtonCodes& metaButton)
     }
     else if (metaButton == KeyCodes::Meta.macro5)
     {
-        mHal.toggleFloodOnOff(false);
         mHal.setMacro5(false);
         isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro6)
     {
-        mHal.toggleMistOnOff(false);
         mHal.setMacro6(false);
         isHandled = true;
     }
@@ -1430,11 +1430,13 @@ bool Pendant::onButtonReleasedEvent(const MetaButtonCodes& metaButton)
     }
     else if (metaButton == KeyCodes::Meta.macro15)
     {
+        mHal.toggleFloodOnOff(false);
         mHal.setMacro15(false);
         isHandled = true;
     }
     else if (metaButton == KeyCodes::Meta.macro16)
     {
+        mHal.toggleMistOnOff(false);
         mHal.setMacro16(false);
         isHandled = true;
     }

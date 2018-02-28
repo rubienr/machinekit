@@ -57,6 +57,8 @@ public:
         hal_bit_t  * floodIsOn{nullptr};
         //! to be connected to \ref halui.mist.is-on
         hal_bit_t  * mistIsOn{nullptr};
+        //! to be connected to \ref halui.lube.is-on
+        hal_bit_t  * lubeIsOn{nullptr};
         
         //! to be connected to \ref halui.axis.0.pos-feedback
         hal_float_t* axisXPosition{nullptr};
@@ -166,6 +168,11 @@ public:
         hal_bit_t  * mistStop{nullptr};
         //! to be connected to \ref halui.mist.on
         hal_bit_t  * mistStart{nullptr};
+
+        //! to be connected to \ref halui.lube.off
+        hal_bit_t  * lubeStop{nullptr};
+        //! to be connected to \ref halui.lube.on
+        hal_bit_t  * lubeStart{nullptr};
         
         //! to be connected to \ref axis.0.jog-counts
         hal_s32_t* axisXJogCounts{nullptr};
@@ -460,6 +467,8 @@ public:
     void toggleFloodOnOff(bool isButtonPressed);
     //! \sa setReset(bool, size_t)
     void toggleMistOnOff(bool isButtonPressed);
+    //! \sa setReset(bool, size_t)
+    void toggleLubeOnOff(bool isButtonPressed);
     //! \sa setReset(bool, size_t)
     void setProbeZ(bool enabled);
     //! \sa setReset(bool, size_t)
