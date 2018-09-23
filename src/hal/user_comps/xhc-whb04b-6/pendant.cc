@@ -1734,16 +1734,30 @@ bool Display::onButtonPressedEvent(const MetaButtonCodes& metaButton)
                 DisplayIndicatorStepMode::StepMode::STEP);
         return true;
     }
-    else if (metaButton == KeyCodes::Meta.macro5)
+     else if (metaButton == KeyCodes::Meta.safe_z)
     {
-        mAxisPositionMethod = AxisPositionMethod::ABSOLUTE;
-        return true;
+        if (mAxisPositionMethod == AxisPositionMethod::ABSOLUTE)
+          {
+          	mAxisPositionMethod = AxisPositionMethod::RELATIVE;
+            return true;
+         	}
+         	else if (mAxisPositionMethod == AxisPositionMethod::RELATIVE)
+         	{
+            mAxisPositionMethod = AxisPositionMethod::ABSOLUTE;
+            return true;
+         	}
     }
-    else if (metaButton == KeyCodes::Meta.macro7)
-    {
-        mAxisPositionMethod = AxisPositionMethod::RELATIVE;
-        return true;
-    }
+
+//    else if (metaButton == KeyCodes::Meta.macro5)
+//    {
+//        mAxisPositionMethod = AxisPositionMethod::ABSOLUTE;
+//        return true;
+//    }
+//    else if (metaButton == KeyCodes::Meta.macro7)
+//    {
+//        mAxisPositionMethod = AxisPositionMethod::RELATIVE;
+//        return true;
+//    }
     return false;
 }
 
