@@ -80,10 +80,10 @@ static int hm2_read(void *void_hm2, const hal_funct_args_t *fa) {
     long period = fa_current_period(fa);
 
     // if there are comm problems, wait for the user to fix it
-    if ((*hm2->llio->io_error) != 0) return -1;
+    if ((*hm2->llio->hal->pin.io_error) != 0) return -1;
 
     hm2_tram_read(hm2);
-    if ((*hm2->llio->io_error) != 0) return -1;
+    if ((*hm2->llio->hal->pin.io_error) != 0) return -1;
     hm2_watchdog_process_tram_read(hm2);
     hm2_ioport_gpio_process_tram_read(hm2);
     hm2_encoder_process_tram_read(hm2, &hm2->encoder, period);
@@ -98,6 +98,8 @@ static int hm2_read(void *void_hm2, const hal_funct_args_t *fa) {
     hm2_tp_pwmgen_read(hm2); // check the status of the fault bit
     hm2_dpll_process_tram_read(hm2, period);
     hm2_raw_read(hm2);
+    de0_nano_soc_adc_read(hm2);
+    hm2_capsense_read(hm2);
     return 0;
 }
 
@@ -107,7 +109,7 @@ static int hm2_write(void *void_hm2, const hal_funct_args_t *fa) {
     long period = fa_current_period(fa);
 
     // if there are comm problems, wait for the user to fix it
-    if ((*hm2->llio->io_error) != 0) return -1;
+    if ((*hm2->llio->hal->pin.io_error) != 0) return -1;
 
     hm2_ioport_gpio_prepare_tram_write(hm2);
     hm2_pwmgen_prepare_tram_write(hm2);
@@ -142,7 +144,7 @@ static int hm2_read_gpio(void *void_hm2, const hal_funct_args_t *fa) {
     hostmot2_t *hm2 = void_hm2;
 
     // if there are comm problems, wait for the user to fix it
-    if ((*hm2->llio->io_error) != 0) return -1;
+    if ((*hm2->llio->hal->pin.io_error) != 0) return -1;
 
     hm2_ioport_gpio_read(hm2);
     return 0;
@@ -154,7 +156,7 @@ static int hm2_write_gpio(void *void_hm2, const hal_funct_args_t *fa) {
     long period = fa_current_period(fa);
 
     // if there are comm problems, wait for the user to fix it
-    if ((*hm2->llio->io_error) != 0) return -1;
+    if ((*hm2->llio->hal->pin.io_error) != 0) return -1;
 
     hm2_ioport_gpio_write(hm2);
     hm2_watchdog_write(hm2, period);
@@ -284,6 +286,8 @@ const char *hm2_get_general_function_name(int gtag) {
         case HM2_GTAG_PKTUART_RX:      return "PktUART Receive Channel";
         case HM2_GTAG_PKTUART_TX:      return "PktUART Transmit Channel";
         case HM2_GTAG_HM2DPLL:         return "Hostmot2 DPLL";
+        case HM2_GTAG_NANOADC:    return "NANOADC";
+        case HM2_GTAG_CAPSENSE:    return "CapSense";
         case HM2_GTAG_FWID:            return "Firmware ID";
         default: {
             static char unknown[100];
@@ -359,6 +363,8 @@ static int hm2_parse_config_string(hostmot2_t *hm2, char *config_string) {
     hm2->config.num_dplls = -1;
     hm2->config.num_leds = -1;
     hm2->config.enable_raw = 0;
+    hm2->config.enable_adc = 0;
+    hm2->config.num_capsensors = -1;
     hm2->config.firmware = NULL;
 
     if (config_string == NULL) return 0;
@@ -469,6 +475,13 @@ static int hm2_parse_config_string(hostmot2_t *hm2, char *config_string) {
         } else if (strncmp(token, "enable_raw", 10) == 0) {
             hm2->config.enable_raw = 1;
 
+        } else if (strncmp(token, "enable_adc", 10) == 0) {
+            hm2->config.enable_adc = 1;
+
+        } else if (strncmp(token, "num_capsensors=", 14) == 0) {
+            token += 14;
+            hm2->config.num_capsensors = simple_strtol(token, NULL, 0);
+
 	} else if (strncmp(token, "nofwid", 6) == 0) {
             hm2->config.skip_fwid = 1;
 
@@ -507,6 +520,8 @@ static int hm2_parse_config_string(hostmot2_t *hm2, char *config_string) {
     HM2_DBG("    num_dplls=%d\n",    hm2->config.num_dplls);
     HM2_DBG("    num_leds=%d\n",    hm2->config.num_leds);
     HM2_DBG("    enable_raw=%d\n",   hm2->config.enable_raw);
+    HM2_DBG("    enable_adc=%d\n",   hm2->config.enable_adc);
+    HM2_DBG("    num_capsensors=%d\n",   hm2->config.num_capsensors);
     HM2_DBG("    firmware=%s\n",   hm2->config.firmware ? hm2->config.firmware : "(NULL)");
 
     argv_free(argv);
@@ -876,7 +891,7 @@ static int hm2_parse_module_descriptors(hostmot2_t *hm2) {
 
         md_accepted = hm2_ioport_parse_md(hm2, md_index);
 
-        if ((*hm2->llio->io_error) != 0) {
+        if ((*hm2->llio->hal->pin.io_error) != 0) {
             HM2_ERR("IO error while parsing Module Descriptor %d\n", md_index);
             return -EIO;
         }
@@ -979,6 +994,10 @@ static int hm2_parse_module_descriptors(hostmot2_t *hm2) {
                 md_accepted = hm2_led_parse_md(hm2, md_index);
                 break;
 
+            case HM2_GTAG_CAPSENSE:
+                md_accepted = hm2_capsense_parse_md(hm2, md_index);
+                break;
+
 	    case HM2_GTAG_FWID:
 		continue;  // skip - already parsed above from well-known memory address
 
@@ -994,7 +1013,7 @@ static int hm2_parse_module_descriptors(hostmot2_t *hm2) {
 
         }
 
-        if ((*hm2->llio->io_error) != 0) {
+        if ((*hm2->llio->hal->pin.io_error) != 0) {
             HM2_ERR("IO error while parsing Module Descriptor %d\n", md_index);
             return -EIO;
         }
@@ -1319,25 +1338,24 @@ int hm2_register(hm2_lowlevel_io_t *llio, char *config_string) {
     //
 
     {
-        int r;
-        char name[HAL_NAME_LEN + 1];
-
-        llio->io_error = (hal_bit_t *)hal_malloc(sizeof(hal_bit_t));
-        if (llio->io_error == NULL) {
+        llio->hal = (hm2_low_level_io_global_t *)hal_malloc(sizeof(hm2_low_level_io_global_t));
+        if (llio->hal == NULL) {
             HM2_ERR("out of memory!\n");
-            r = -ENOMEM;
-            goto fail0;
+            return -ENOMEM;
         }
-
-        (*llio->io_error) = 0;
-
-        rtapi_snprintf(name, sizeof(name), "%s.io_error", llio->name);
-        r = hal_param_bit_new(name, HAL_RW, llio->io_error, llio->comp_id);
+        r = hal_pin_bit_newf(
+                HAL_IO,
+                &(llio->hal->pin.io_error),
+                llio->comp_id,
+                "%s.io_error",
+                llio->name
+        );
         if (r < 0) {
-            HM2_ERR("error adding param '%s', aborting\n", name);
+            HM2_ERR("error %d adding pin io_error pin, aborting\n", r);
             r = -EINVAL;
             goto fail0;
         }
+        *llio->hal->pin.io_error = 0;
     }
 
 
@@ -1501,7 +1519,6 @@ int hm2_register(hm2_lowlevel_io_t *llio, char *config_string) {
         goto fail1;
     }
 
-
     //
     // the "raw" interface lets you peek and poke the HostMot2 registers from HAL
     //
@@ -1511,6 +1528,26 @@ int hm2_register(hm2_lowlevel_io_t *llio, char *config_string) {
         goto fail1;
     }
 
+
+    //
+    // the "adc" interface lets you read the de0 nano soc builtin adc from HAL
+    //
+
+    r = hm2_adc_setup(hm2);
+    if (r != 0) {
+        goto fail1;
+    }
+
+/*
+    //
+    // the "capsense" interface lets you drive and read simple capsensesensors from HAL
+    //
+
+    r = hm2_capsense_setup(hm2);
+    if (r != 0) {
+        goto fail1;
+    }
+*/
 
     //
     // At this point, all non-TRAM register buffers have been initialized
@@ -1576,7 +1613,7 @@ int hm2_register(hm2_lowlevel_io_t *llio, char *config_string) {
     // final check for comm errors
     //
 
-    if ((*hm2->llio->io_error) != 0) {
+    if ((*hm2->llio->hal->pin.io_error) != 0) {
         HM2_ERR("comm errors while initializing firmware!\n");
         goto fail1;
     }
@@ -1613,7 +1650,6 @@ int hm2_register(hm2_lowlevel_io_t *llio, char *config_string) {
     //
 
     {
-	int r;
 
 	hal_export_xfunct_args_t read_args = {
 	    .type = FS_XTHREADFUNC,
@@ -1654,7 +1690,6 @@ int hm2_register(hm2_lowlevel_io_t *llio, char *config_string) {
     //
 
     if (hm2->llio->threadsafe) {
-	int r;
 
 	hal_export_xfunct_args_t read_gpio_args = {
 	    .type = FS_XTHREADFUNC,
@@ -1722,7 +1757,7 @@ void hm2_unregister(hm2_lowlevel_io_t *llio) {
         // if there's a watchdog, set it to safe the board right away
         if (hm2->watchdog.num_instances > 0) {
             hm2->watchdog.instance[0].enable = 1;
-            hm2->watchdog.instance[0].hal.param.timeout_ns = 1;
+            (*hm2->watchdog.instance[0].hal.pin.timeout_ns) = 1;
             hm2_watchdog_force_write(hm2);
         }
 

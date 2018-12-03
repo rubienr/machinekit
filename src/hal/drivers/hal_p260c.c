@@ -33,7 +33,7 @@
 #define MODNAME "hal_p260c"
 
 /* module information */
-MODULE_AUTHOR("Colin Whittaker");
+MODULE_AUTHOR("Colin Whittaker for PMC Stone, Inc.");
 MODULE_DESCRIPTION("Driver for P260C boards in a RS-485 string. Version 1.2");
 MODULE_LICENSE("GPL");
 
@@ -558,32 +558,32 @@ static void set_debug( int pin, int val )
 
 ***/
 
-static void flush_input( int board )
-{
-	unsigned char inp;
-	int cnt = 0;
+/* static void flush_input( int board ) */
+/* { */
+/* 	unsigned char inp; */
+/* 	int cnt = 0; */
 
-	// Flush the input data first
-	while ( read( sfd, &inp, 1 ) > 0 && cnt++ < 1000 )
-	{
-		if ( debug_fd )
-		{
-			write( debug_fd, &inp, 1 );
-		}
-	}
+/* 	// Flush the input data first */
+/* 	while ( read( sfd, &inp, 1 ) > 0 && cnt++ < 1000 ) */
+/* 	{ */
+/* 		if ( debug_fd ) */
+/* 		{ */
+/* 			write( debug_fd, &inp, 1 ); */
+/* 		} */
+/* 	} */
 
-#ifdef DEBUG_RX
-	if ( boards[board].readbeforewritecount != NULL )
-	{
-		*(boards[board].readbeforewritecount) = cnt;
-	}
-#endif
-	if ( cnt )
-	{
-		set_debug( 0, 0 );
-		set_debug( 0, 1 );
-	}
-}
+/* #ifdef DEBUG_RX */
+/* 	if ( boards[board].readbeforewritecount != NULL ) */
+/* 	{ */
+/* 		*(boards[board].readbeforewritecount) = cnt; */
+/* 	} */
+/* #endif */
+/* 	if ( cnt ) */
+/* 	{ */
+/* 		set_debug( 0, 0 ); */
+/* 		set_debug( 0, 1 ); */
+/* 	} */
+/* } */
 
 static void wait_tx_empty()
 {
@@ -594,7 +594,7 @@ static void wait_tx_empty()
 static void send_data( int board )
 {
 #ifdef DEBUG_RX
-//	flush_input( board );
+	/* flush_input( board ); */
 #endif
 
 	// Write protocol data
@@ -970,7 +970,7 @@ static void serial_port_task( void *arg, long period )
 	// Start the transmit to the first board.
 	set_debug( 1, 0 );
 //	set_debug( 0, 1 );
-//  flush_input( 0 );
+        /* flush_input( 0 ); */
 	set_debug( 0, 0 );
 
 	// Send data to all boards

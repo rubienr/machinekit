@@ -340,39 +340,39 @@ int hm2_sserial_setup_channel(hostmot2_t *hm2, hm2_sserial_instance_t *inst, int
                 hm2->llio->name, index);
         return -EINVAL;
     }
-    r = hal_param_u32_newf(HAL_RW, &(inst->fault_inc),
+    r = hal_pin_u32_newf(HAL_IO, &(inst->fault_inc),
                            hm2->llio->comp_id, 
                            "%s.sserial.port-%1d.fault-inc",
                            hm2->llio->name, index);
     if (r < 0) {
-        HM2_ERR("error adding parameter %s.sserial.port-%1d.fault-inc"
+        HM2_ERR("error adding pin %s.sserial.port-%1d.fault-inc"
                 " aborting\n",hm2->llio->name, index);
         return -EINVAL;
     }            
     
-    r = hal_param_u32_newf(HAL_RW, &(inst->fault_dec),
+    r = hal_pin_u32_newf(HAL_IO, &(inst->fault_dec),
                            hm2->llio->comp_id, 
                            "%s.sserial.port-%1d.fault-dec",
                            hm2->llio->name, index);
     if (r < 0) {
-        HM2_ERR("error adding parameter %s.sserial.port-%1d.fault-dec"
+        HM2_ERR("error adding pin %s.sserial.port-%1d.fault-dec"
                 " aborting\n",hm2->llio->name, index);
         return -EINVAL;
     }
     
-    r = hal_param_u32_newf(HAL_RW, &(inst->fault_lim),
+    r = hal_pin_u32_newf(HAL_IO, &(inst->fault_lim),
                            hm2->llio->comp_id, 
                            "%s.sserial.port-%1d.fault-lim",
                            hm2->llio->name, index);
     if (r < 0) {
-        HM2_ERR("error adding parameter %s.sserial.port-%1d.fault-lim"
+        HM2_ERR("error adding pin %s.sserial.port-%1d.fault-lim"
                 " aborting\n",hm2->llio->name, index);
         return -EINVAL;
     }
     //parameter defaults;
-    inst->fault_dec = 1;
-    inst->fault_inc = 10;
-    inst->fault_lim = 200;
+    *inst->fault_dec = 1;
+    *inst->fault_inc = 10;
+    *inst->fault_lim = 200;
     
     // setup read-back in all modes
     
@@ -1069,6 +1069,19 @@ int hm2_sserial_create_pins(hostmot2_t *hm2, hm2_sserial_remote_t *chan){
             case LBP_ENCODER_L:
                 //No pins for encoder L
                 break;
+            case LBP_FLOAT:
+                rtapi_snprintf(name, sizeof(name), "%s.%s",
+                               chan->name,
+                               chan->confs[i].NameString);
+                r = hal_pin_float_new(name,
+                                      data_dir,
+                                      &(chan->pins[i].float_pin),
+                                      hm2->llio->comp_id);
+                if (r < 0) {
+                    HM2_ERR("error adding pin '%s', aborting\n", name);
+                    return r;
+                }
+                break;
             default:
                 HM2_ERR("Unhandled sserial data type (%i) Name %s Units %s\n",
                         chan->confs[i].DataType, 
@@ -1205,16 +1218,16 @@ void hm2_sserial_prepare_tram_write(hostmot2_t *hm2, long period){
                     break;
                 }
                 
-                if (*inst->fault_count > inst->fault_lim) {
+                if (*inst->fault_count > *inst->fault_lim) {
                     // If there have been a large percentage of misses, for quite
                     // a long time, it's time to take it seriously. 
                     HM2_ERR("Smart Serial Comms Error: "
                             "There have been more than %i errors in %i "
                             "thread executions at least %i times. "
                             "See other error messages for details.\n",
-                            inst->fault_dec, 
-                            inst->fault_inc,
-                            inst->fault_lim);
+                            *inst->fault_dec,
+                            *inst->fault_inc,
+                            *inst->fault_lim);
                     HM2_ERR("***Smart Serial Port %i will be stopped***\n",i); 
                     *inst->state = 0x20;
                     *inst->run = 0;
@@ -1231,7 +1244,7 @@ void hm2_sserial_prepare_tram_write(hostmot2_t *hm2, long period){
                                 "if this is happening frequently.\n",
                                 i, hm2->llio->name, i);
                     }
-                    *inst->fault_count += inst->fault_inc;
+                    *inst->fault_count += *inst->fault_inc;
                     *inst->command_reg_write = 0x80000000; // set bit31 for ignored cmd
                     break; // give the register chance to clear
                 }
@@ -1246,11 +1259,11 @@ void hm2_sserial_prepare_tram_write(hostmot2_t *hm2, long period){
                                 i, ffs(f) - 1);
                         }
                     }
-                    *inst->fault_count += inst->fault_inc;
+                    *inst->fault_count += *inst->fault_inc;
                 }
                 
-                if (*inst->fault_count > inst->fault_dec) {
-                    *inst->fault_count -= inst->fault_dec;
+                if (*inst->fault_count > *inst->fault_dec) {
+                    *inst->fault_count -= *inst->fault_dec;
                 }
                 else
                 {
@@ -1314,6 +1327,18 @@ void hm2_sserial_prepare_tram_write(hostmot2_t *hm2, long period){
                                      // Would we ever write to a counter? 
                                     // Assume not for the time being
                                     break;
+                                case LBP_FLOAT:
+                                    if (conf->DataLength == sizeof(float) * 8 ){
+                                        float temp = *pin->float_pin;
+                                        memcpy(&buff, &temp, sizeof(float));
+                                    } else if (conf->DataLength == sizeof(double) * 8){
+                                        double temp = *pin->float_pin;
+                                        memcpy(&buff, &temp, sizeof(double));
+                                    } else {
+                                        HM2_ERR_NO_LL("sserial write: LBP_FLOAT of bit-length %i not handled\n", conf->DataLength);
+                                        conf->DataType = 0; // only warn once, then ignore
+                                    }
+                                    break;
                                 default:
                                     HM2_ERR("Unsupported output datatype %i (name ""%s"")\n",
                                             conf->DataType, conf->NameString);
@@ -1341,7 +1366,7 @@ void hm2_sserial_prepare_tram_write(hostmot2_t *hm2, long period){
                     }
                     HM2_ERR("sserial_write:"
                             "Timeout waiting for CMD to clear\n");
-                    *inst->fault_count += inst->fault_inc;
+                    *inst->fault_count += *inst->fault_inc;
                     // carry on, nothing much we can do about it
                 }
                 *inst->state &= 0x0F;
@@ -1495,6 +1520,20 @@ int hm2_sserial_read_pins(hm2_sserial_remote_t *chan){
                 *pin->s32_pin = pin->accum - pin->offset;
                 *pin->s32_pin2 = pin->accum;
                 *pin->float_pin = (double)(pin->accum - pin->offset) / pin->fullscale ;
+                break;
+            case LBP_FLOAT:
+                if (conf->DataLength == sizeof(float) * 8){
+                    float temp;
+                    memcpy(&temp, &buff, sizeof(float));
+                    *pin->float_pin = temp;
+                } else if (conf->DataLength == sizeof(double) * 8){
+                    double temp;
+                    memcpy(&temp, &buff, sizeof(double));
+                    *pin->float_pin = temp;
+                } else {
+                    HM2_ERR_NO_LL("sserial read: LBP_FLOAT of bit-length %i not handled\n", conf->DataLength);
+                    conf->DataType = 0; // Only warn once, then ignore
+                }
                 break;
             }
             default:

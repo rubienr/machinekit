@@ -35,8 +35,7 @@ using namespace google::protobuf;
 #include "czmq.h"
 #include "pbutil.hh" // hal/haltalk
 
-static zctx_t *z_context;
-static void *z_preview, *z_status;  // sockets
+static zsock_t *z_preview, *z_status;
 static const char *istat_topic = "status";
 static int batch_limit = 100;
 static const char *p_client = "preview"; //NULL; // single client for now
@@ -104,9 +103,6 @@ static void preview_end()
 
 static int z_init(void)
 {
-    if (!z_context)
-	z_context = zctx_new ();
-
     // const char *uri = getenv("PREVIEW_URI");
     // if (uri) z_preview_uri = uri;
     // uri = getenv("STATUS_URI");
@@ -120,16 +116,16 @@ static int z_init(void)
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
 
-    z_preview = zsocket_new (z_context, ZMQ_XPUB);
+    z_preview = zsock_new (ZMQ_XPUB);
 #if 0
-    rc = zsocket_bind(z_preview, z_preview_uri);
+    rc = zsock_bind(z_preview, z_preview_uri);
     assert (rc != 0);
 #endif
 
-    z_status = zsocket_new (z_context, ZMQ_XPUB);
+    z_status = zsock_new (ZMQ_XPUB);
     assert(z_status);
 #if 0 
-    rc = zsocket_bind(z_status, z_status_uri);
+    rc = zsock_bind(z_status, z_status_uri);
     assert (rc != 0);
 
 #endif
@@ -149,7 +145,8 @@ static void z_shutdown(void)
         fprintf(stderr, "preview: %zu containers %zu preview msgs %zu bytes  avg=%zu bytes/container\n",
             n_containers, n_messages, n_bytes, n_bytes/n_containers);
     }
-    zctx_destroy(&z_context);
+    zsock_destroy(&z_preview);
+    zsock_destroy(&z_status);
 }
 
 char _parameter_file_name[LINELEN];
@@ -266,6 +263,7 @@ static PyObject *callback;
 static int interp_error;
 static int last_sequence_number;
 static double _pos_x, _pos_y, _pos_z, _pos_a, _pos_b, _pos_c, _pos_u, _pos_v, _pos_w;
+CANON_PLANE _pl;
 EmcPose tool_offset;
 
 static InterpBase *pinterp;
@@ -318,7 +316,30 @@ void ARC_FEED(int line_number,
               double second_axis, int rotation, double axis_end_point,
               double a_position, double b_position, double c_position,
               double u_position, double v_position, double w_position) {
-    // XXX: set _pos_*
+    double x, y, z;
+    if (_pl == CANON_PLANE_XY) {
+        x = first_end;
+        y = second_end;
+        z = axis_end_point;
+    }
+    else if (_pl == CANON_PLANE_XZ) {
+        x = second_end;
+        y = axis_end_point;
+        z = first_end;
+    }
+    else if (_pl == CANON_PLANE_YZ) {
+        x = axis_end_point;
+        y = first_end;
+        z = second_end;
+    }
+    else {
+        x = _pos_x;
+        y = _pos_y;
+        z = _pos_z;
+    }
+    _pos_x = x; _pos_y = y; _pos_z = z;
+    _pos_a=a_position; _pos_b=b_position; _pos_c=c_position;
+    _pos_u=u_position; _pos_v=v_position; _pos_w=w_position;
     maybe_new_line(line_number);
     if(interp_error) return;
     // PyObject *result =
@@ -341,6 +362,9 @@ void ARC_FEED(int line_number,
     p->set_axis_end_point(axis_end_point);
 
     machinetalk::Position *pos = p->mutable_pos();
+    pos->set_x(x);
+    pos->set_y(y);
+    pos->set_z(z);
     pos->set_a(a_position);
     pos->set_b(b_position);
     pos->set_c(c_position);
@@ -496,8 +520,9 @@ void SET_XY_ROTATION(double t) {
 void USE_LENGTH_UNITS(CANON_UNITS u) { }
 
 void SELECT_PLANE(CANON_PLANE pl) {
+    _pl = pl;
     maybe_new_line();
-    // if(interp_error) return;
+    if(interp_error) return;
 
     machinetalk::Preview *p = output.add_preview();
     p->set_type(machinetalk::PV_SELECT_PLANE);
@@ -580,7 +605,7 @@ void SET_FEED_RATE(double rate) {
 
 void DWELL(double time) {
     maybe_new_line();
-    // if(interp_error) return;
+    if(interp_error) return;
     // PyObject *result =
     //     callmethod(callback, "dwell", "f", time);
     // if(result == NULL) interp_error ++;
@@ -1010,6 +1035,7 @@ static PyObject *parse_file(PyObject *self, PyObject *args) {
 
     _pos_x = _pos_y = _pos_z = _pos_a = _pos_b = _pos_c = 0;
     _pos_u = _pos_v = _pos_w = 0;
+    _pl = CANON_PLANE_XY;
 
     note_printf(istat, "open '%s'", f);
     publish_istat(machinetalk::INTERP_RUNNING);
@@ -1306,13 +1332,13 @@ static PyObject *bind_sockets(PyObject *self, PyObject *args) {
     if(!PyArg_ParseTuple(args, "ss", &preview_uri, &status_uri))
         return NULL;
     int rc;
-    rc = zsocket_bind(z_preview, "%s", preview_uri);
+    rc = zsock_bind(z_preview, "%s", preview_uri);
     if(!rc) {
 	PyErr_Format(PyExc_RuntimeError,
 		     "binding preview socket to '%s' failed", preview_uri);
 	return NULL;
     }
-    rc = zsocket_bind(z_status, "%s", status_uri);
+    rc = zsock_bind(z_status, "%s", status_uri);
     if(!rc) {
 	PyErr_Format(PyExc_RuntimeError,
 		     "binding status socket to '%s' failed", status_uri);
@@ -1321,8 +1347,8 @@ static PyObject *bind_sockets(PyObject *self, PyObject *args) {
     // usleep(300 *1000); // avoid slow joiner syndrome
 
     return Py_BuildValue("(ss)",
-			 zsocket_last_endpoint(z_preview),
-			 zsocket_last_endpoint(z_status));
+			 zsock_last_endpoint(z_preview),
+			 zsock_last_endpoint(z_status));
 }
 
 static PyMethodDef gcode_methods[] = {

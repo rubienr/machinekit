@@ -16,7 +16,7 @@ $(call TOOBJSDEPS, hal/utils/halsh.c) : EXTRAFLAGS += $(TCL_CFLAGS)
 	../lib/libmtalk.so.0 \
 	../lib/librtapi_math.so.0
 	$(ECHO) Linking $(notdir $@)
-	$(Q)$(CC) $(LDFLAGS) -shared $^  $(TCL_LIBS) -o $@
+	$(Q)$(CC) $(LDFLAGS) -shared $^  -o $@
 TARGETS += ../tcl/hal.so
 
 $(call TOOBJSDEPS, $(HALCMDCCSRCS)) : EXTRAFLAGS =  \
@@ -32,6 +32,17 @@ $(call TOOBJSDEPS, $(HALCMDCCSRCS)) : EXTRAFLAGS =  \
 	$(Q)$(CC) $(LDFLAGS) -o $@ $^ $(READLINE_LIBS) \
 	$(PROTOBUF_LIBS) $(CZMQ_LIBS) $(AVAHI_LIBS) -lm -lstdc++
 TARGETS += ../bin/halcmd
+
+ifdef TARGET_PLATFORM_SOCFPGA
+HM2UTILRCS := hal/utils/mksocmemio.c
+$(call TOOBJSDEPS, $(HM2UTILRCS)) : EXTRAFLAGS = -Wall -Werror -std=c99
+USERSRCS += $(HM2UTILRCS)
+../bin/mksocmemio: $(call TOOBJS, $(HM2UTILRCS))
+	$(ECHO) Linking $(notdir $@)
+	@mkdir -p $(dir $@)
+	$(Q)$(CC) $(LDFLAGS) -g -Wall -o $@ $^
+TARGETS += ../bin/mksocmemio
+endif
 
 ifdef HAVE_GTK
 HALMETERSRCS := \

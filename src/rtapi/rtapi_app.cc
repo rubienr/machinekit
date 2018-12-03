@@ -577,30 +577,37 @@ static int do_callfunc_cmd(int instance,
 
 
 static int do_load_cmd(int instance,
-		       string name,
+		       string path,
 		       pbstringarray_t args,
 		       machinetalk::Container &pbreply)
 {
-    char module_name[PATH_MAX];
+    char module_path[PATH_MAX];
     int retval;
+
+    // For modules given as paths, use the path basename as the module name
+    string name = path;
+    if (name.find_last_of("/") != string::npos)
+      name = name.substr(name.find_last_of("/") + 1);
 
     if (modules.count(name) == 0) {
 	if (kernel_threads(flavor)) {
 	    string cmdargs = pbconcat(args, " ", "'");
-	    retval = run_module_helper("insert %s %s", name.c_str(), cmdargs.c_str());
+	    retval = run_module_helper(
+              "insert %s %s", path.c_str(), cmdargs.c_str());
 	    if (retval) {
-		note_printf(pbreply, "couldnt insmod %s - see dmesg\n", name.c_str());
+		note_printf(
+                  pbreply, "couldnt insmod %s - see dmesg\n", path.c_str());
 	    } else {
 		modules[name] = modinfo();
 		loading_order.push_back(name);
 	    }
 	    return retval;
 	} else {
-	    strncpy(module_name, (name + flavor->mod_ext).c_str(),
+	    strncpy(module_path, (path + flavor->mod_ext).c_str(),
 		    PATH_MAX);
 	    modinfo_t mi = modinfo_t();
 
-	    mi.handle = dlopen(module_name, RTLD_GLOBAL |RTLD_NOW);
+	    mi.handle = dlopen(module_path, RTLD_GLOBAL |RTLD_NOW);
 	    if (!mi.handle) {
 		string errmsg(dlerror());
 		note_printf(pbreply, "%s: dlopen: %s",
@@ -610,7 +617,7 @@ static int do_load_cmd(int instance,
 	    }
 	    // first load of a module. Record default instanceparams
 	    // so they can be replayed before newinst
-	    record_instparms(module_name, mi);
+	    record_instparms(module_path, mi);
 
 	    // retrieve the address of rtapi_switch_struct
 	    // so rtapi functions can be called and members
@@ -653,7 +660,7 @@ static int do_load_cmd(int instance,
 	    loading_order.push_back(name);
 
 	    rtapi_print_msg(RTAPI_MSG_DBG, "%s: loaded from %s\n",
-			    name.c_str(), module_name);
+			    name.c_str(), module_path);
 	    return 0;
 	}
     } else {
@@ -855,9 +862,9 @@ static int attach_global_segment()
 
 
 // handle commands from zmq socket
-static int rtapi_request(zloop_t *loop, zmq_pollitem_t *poller, void *arg)
+static int rtapi_request(zloop_t *loop, zsock_t *socket, void *arg)
 {
-    zmsg_t *r = zmsg_recv(poller->socket);
+    zmsg_t *r = zmsg_recv(socket);
     char *origin = zmsg_popstr (r);
     zframe_t *request_frame  = zmsg_pop (r);
     static bool force_exit = false;
@@ -1081,8 +1088,8 @@ static int rtapi_request(zloop_t *loop, zmq_pollitem_t *poller, void *arg)
 		fprintf(stderr, "reply: %s\n",buffer.c_str());
 	    }
 	}
-	assert(zstr_sendm (poller->socket, origin) == 0);
-	if (zframe_send (&reply, poller->socket, 0)) {
+	assert(zstr_sendm (socket, origin) == 0);
+	if (zframe_send (&reply, socket, 0)) {
 	    rtapi_print_msg(RTAPI_MSG_ERR,
 			    "cant serialize to %s (type %d size %zu)",
 			    origin ? origin : "NULL",
@@ -1180,6 +1187,9 @@ static int s_handle_signal(zloop_t *loop, zmq_pollitem_t *poller, void *arg)
 static int
 s_handle_timer(zloop_t *loop, int  timer_id, void *args)
 {
+    (void)loop;
+    (void)timer_id;
+    (void)args;
     if (global_data->rtapi_msgd_pid == 0) {
 	// cant log this via rtapi_print, since msgd is gone
 	syslog_async(LOG_ERR,"rtapi_msgd went away, exiting\n");
@@ -1291,17 +1301,16 @@ static int mainloop(size_t  argc, char **argv)
 	assert(signal_fd > -1);
     }
 
-    // suppress default handling of signals in zctx_new()
+    // suppress default handling of signals in zsock_new()
     // since we're using signalfd()
     zsys_handler_set(NULL);
 
-    zctx_t *z_context = zctx_new ();
-    void *z_command = zsocket_new (z_context, ZMQ_ROUTER);
+    zsock_t *z_command = zsock_new (ZMQ_ROUTER);
     {
 	char z_ident[30];
 	snprintf(z_ident, sizeof(z_ident), "rtapi_app%d", getpid());
-	zsocket_set_identity(z_command, z_ident);
-	zsocket_set_linger(z_command, 1000); // wait for last reply to drain
+	zsock_set_identity(z_command, z_ident);
+	zsock_set_linger(z_command, 1000); // wait for last reply to drain
     }
 
 #ifdef NOTYET
@@ -1324,13 +1333,13 @@ static int mainloop(size_t  argc, char **argv)
 	    z_uri = strdup(uri);
 	}
 
-	if ((z_port = zsocket_bind(z_command, z_uri)) == -1) {
+	if ((z_port = zsock_bind(z_command, z_uri)) == -1) {
 	    rtapi_print_msg(RTAPI_MSG_ERR,  "cannot bind '%s' - %s\n",
 			    z_uri, strerror(errno));
 	    global_data->rtapi_app_pid = 0;
 	    exit(EXIT_FAILURE);
 	} else {
-	    z_uri_dsn = zsocket_last_endpoint(z_command);
+	    z_uri_dsn = zsock_last_endpoint(z_command);
 	    rtapi_print_msg(RTAPI_MSG_DBG,  "rtapi_app: command RPC socket on '%s'\n",
 			    z_uri_dsn);
 	}
@@ -1341,7 +1350,7 @@ static int mainloop(size_t  argc, char **argv)
 	snprintf(uri, sizeof(uri), ZMQIPC_FORMAT,
 		 RUNDIR, instance_id, RTAPIMOD, service_uuid);
 	mode_t prev = umask(S_IROTH | S_IWOTH | S_IXOTH);
-	if ((z_port = zsocket_bind(z_command, "%s", uri )) < 0) {
+	if ((z_port = zsock_bind(z_command, "%s", uri )) < 0) {
 	    rtapi_print_msg(RTAPI_MSG_ERR,  "cannot bind IPC socket '%s' - %s\n",
 			    uri, strerror(errno));
 	    global_data->rtapi_app_pid = 0;
@@ -1354,12 +1363,13 @@ static int mainloop(size_t  argc, char **argv)
     assert(z_loop);
     zloop_set_verbose(z_loop, debug);
 
-    zmq_pollitem_t signal_poller = { 0, signal_fd, ZMQ_POLLIN };
-    if (trap_signals)
+    
+    if (trap_signals) {
+	zmq_pollitem_t signal_poller = { 0, signal_fd, ZMQ_POLLIN };
 	zloop_poller (z_loop, &signal_poller, s_handle_signal, NULL);
-
-    zmq_pollitem_t command_poller = { z_command, 0, ZMQ_POLLIN };
-    zloop_poller(z_loop, &command_poller, rtapi_request, NULL);
+    }
+    
+    zloop_reader(z_loop, z_command, rtapi_request, NULL);
 
     zloop_timer (z_loop, BACKGROUND_TIMER, 0, s_handle_timer, NULL);
 
@@ -1412,7 +1422,7 @@ static int mainloop(size_t  argc, char **argv)
     zeroconf_service_withdraw(rtapi_publisher);
 
     // shutdown zmq context
-    zctx_destroy(&z_context);
+    zsock_destroy(&z_command);
 
     // exiting, so deregister our pid, which will make rtapi_msgd exit too
     global_data->rtapi_app_pid = 0;
@@ -1702,7 +1712,7 @@ int main(int argc, char **argv)
     openlog_async(argv[0], option, LOG_LOCAL1);
     // setlogmask_async(LOG_UPTO(LOG_DEBUG));
     // max out async syslog buffers for slow system in debug mode
-    tunelog_async(99,1000);
+    tunelog_async(99,10);
 
     if (trap_signals && (getenv("NOSIGHDLR") != NULL))
 	trap_signals = false;
@@ -1802,6 +1812,7 @@ static int record_instparms(char *fname, modinfo_t &mi)
     // so walk the rpath and stat
     boost::split(tokens, rp, boost::is_any_of(":"),
 			 boost::algorithm::token_compress_on);
+    tokens.push_back(string(fname));
 
     for(i = 0; i < tokens.size() && csize < 0; i++) {
 	pn = tokens[i]+ "/" + fname;
