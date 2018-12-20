@@ -82,7 +82,7 @@ typedef struct {
 	hal_float_t	*Set_F;					// frequency command
 	hal_float_t	*Out_F;					// actual output frequency
 	hal_float_t	*Out_A;					// actual output amps
-	hal_float_t	*RoTT;					// actual motor rmp (based on VFD parameters) 
+	hal_float_t	*RoTT;					// actual motor rmp (based on VFD parameters)
 	hal_float_t	*DCV;					// DC Volts (to be confirmed)
 	hal_float_t	*ACV;					// AC Volts (to be confirmed)
 	hal_float_t	*Cont;
@@ -91,20 +91,20 @@ typedef struct {
 	hal_bit_t *spindle_forward;			// spindle forward input
 	hal_bit_t *spindle_reverse;			// spindle reverse input
 	hal_bit_t *spindle_on;				// spinlde on input
-	hal_s32_t *CNTR;					// stores the status of the control request
-	hal_s32_t *CNST;					// stores the response of the control request
+	hal_s32_t *CNTR;				// stores the status of the control request
+	hal_s32_t *CNST;				// stores the response of the control request
 	
 	hal_bit_t *CNST_Run;				// CNST Run bit
-	hal_bit_t *CNST_Jog;				// CNST Jog bit	
-	hal_bit_t *CNST_Command_rf;			// CNST Run reverse / forward bit	
-	hal_bit_t *CNST_Running;			// CNST Running bit	
-	hal_bit_t *CNST_Jogging;			// CNST Jogging bit	
-	hal_bit_t *CNST_Running_rf;				// CNST Jog reverse / forward bit	
-	hal_bit_t *CNST_Bracking;			// CNST bracking bit	
-	hal_bit_t *CNST_Track_Start;		// CNST track start bit	
+	hal_bit_t *CNST_Jog;				// CNST Jog bit
+	hal_bit_t *CNST_Command_rf;			// CNST Run reverse / forward bit
+	hal_bit_t *CNST_Running;			// CNST Running bit
+	hal_bit_t *CNST_Jogging;			// CNST Jogging bit
+	hal_bit_t *CNST_Running_rf;			// CNST Jog reverse / forward bit
+	hal_bit_t *CNST_Bracking;			// CNST bracking bit
+	hal_bit_t *CNST_Track_Start;			// CNST track start bit
 
 	hal_float_t *speed_command;			// spindle speed command from EMC
-	hal_float_t	*freq_cmd;				// calculated frequency command
+	hal_float_t	*freq_cmd;			// calculated frequency command
 
 	hal_float_t *max_freq;				// PD005 Max Operating Frequency
 	hal_float_t *freq_lower_limit;		// PD011 Frequency Lower Limit
@@ -112,12 +112,12 @@ typedef struct {
 	hal_float_t *rated_motor_current;	// PD142 Rated Motor Current - as per motor name plate
 	hal_float_t *rated_motor_rev;		// max motor speed (at max_freq).  PD144 gets set to value corresponding to RPM at 50Hz
 	
-	hal_bit_t	*hycomm_ok;				// the last HYCOMM_OK transactions returned successfully
+	hal_bit_t	*hycomm_ok;			// the last HYCOMM_OK transactions returned successfully
 	
 	hal_float_t *max_rpm;				// calculated based on VFD max frequency setup parameter
 
-	hal_float_t	*spindle_speed_fb;   // (out) reports current spindle speed
-	hal_bit_t	*spindle_at_speed;   // (out) True when spindle is on and at commanded speed
+	hal_float_t	*spindle_speed_fb;	// (out) reports current spindle speed
+	hal_bit_t	*spindle_at_speed;	// (out) True when spindle is on and at commanded speed
 	hal_float_t	*spindle_at_speed_tolerance;  // (in)
 
 	hal_s32_t	*retval;
