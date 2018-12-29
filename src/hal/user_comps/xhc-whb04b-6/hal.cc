@@ -25,13 +25,12 @@
 #include <assert.h>
 #include <string.h>
 #include <stdarg.h>
+#include <unistd.h>
 
 // 3rd party includes
 
 // local library includes
 #include "./pendant.h"
-
-using std::endl;
 
 namespace XhcWhb04b6 {
 
@@ -140,7 +139,7 @@ Hal::~Hal()
     freeSimulatedPin((void**)(&memory->in.isProgramIdle));
 
     freeSimulatedPin((void**)(&memory->in.isModeAuto));
-    freeSimulatedPin((void**)(&memory->in.isModeJoint));
+    //freeSimulatedPin((void**)(&memory->in.isModeJoint));
     freeSimulatedPin((void**)(&memory->in.isModeManual));
     freeSimulatedPin((void**)(&memory->in.isModeMdi));
 
@@ -224,7 +223,7 @@ Hal::~Hal()
     freeSimulatedPin((void**)(&memory->out.doStopProgram));
 
     freeSimulatedPin((void**)(&memory->out.doModeAuto));
-    freeSimulatedPin((void**)(&memory->out.doModeJoint));
+    //freeSimulatedPin((void**)(&memory->out.doModeJoint));
     freeSimulatedPin((void**)(&memory->out.doModeManual));
     freeSimulatedPin((void**)(&memory->out.doModeMdi));
 
@@ -268,7 +267,7 @@ int Hal::newHalFloat(hal_pin_dir_t direction, hal_float_t** ptr, int componentId
     {
         *mHalCout << "in  ";
     }
-    *mHalCout << pin_name << endl;
+    *mHalCout << pin_name << "\n";
 
     assert(ptr != nullptr);
     assert(*ptr == nullptr);
@@ -306,7 +305,7 @@ int Hal::newHalSigned32(hal_pin_dir_t direction, hal_s32_t** ptr, int componentI
     {
         *mHalCout << "in  ";
     }
-    *mHalCout << pin_name << endl;
+    *mHalCout << pin_name << "\n";
 
     assert(ptr != nullptr);
     assert(*ptr == nullptr);
@@ -344,7 +343,7 @@ int Hal::newHalUnsigned32(hal_pin_dir_t direction, hal_u32_t** ptr, int componen
     {
         *mHalCout << "in  ";
     }
-    *mHalCout << pin_name << endl;
+    *mHalCout << pin_name << "\n";
 
     assert(ptr != nullptr);
     assert(*ptr == nullptr);
@@ -382,7 +381,7 @@ int Hal::newHalBit(hal_pin_dir_t direction, hal_bit_t** ptr, int componentId, co
     {
         *mHalCout << "in  ";
     }
-    *mHalCout << pin_name << endl;
+    *mHalCout << pin_name << "\n";
 
     assert(ptr != nullptr);
     assert(*ptr == nullptr);
@@ -439,10 +438,10 @@ void Hal::init(const MetaButtonCodes* metaButtons, const KeyCodes& keyCodes)
         mHalCompId = hal_init(mName);
         if (mHalCompId <= 0)
         {
-            std::cerr << endl << "failed to initialize HAL component " << mName << endl;
+            std::cerr << "\nfailed to initialize HAL component " << mName << "\n";
             exit(EXIT_FAILURE);
         }
-        *mHalCout << "ok" << endl;
+        *mHalCout << "ok\n" ;
 
         *mHalCout << "hal   initialize shared HAL memory for component id  " << mHalCompId << " ... ";
         memory = reinterpret_cast<HalMemory*>(hal_malloc(sizeof(HalMemory)));
@@ -456,10 +455,10 @@ void Hal::init(const MetaButtonCodes* metaButtons, const KeyCodes& keyCodes)
 
     if (memory == nullptr)
     {
-        std::cerr << "failed to allocate HAL memory" << endl;
+        std::cerr << "failed to allocate HAL memory\n";
         exit(EXIT_FAILURE);
     }
-    *mHalCout << "ok" << endl;
+    *mHalCout << "ok\n";
 
     // register all known xhc-whb04b-6 buttons
     for (size_t idx = 0; !((metaButtons[idx].key.code == keyCodes.Buttons.undefined.code) &&
@@ -624,11 +623,11 @@ void Hal::init(const MetaButtonCodes* metaButtons, const KeyCodes& keyCodes)
     newHalBit(HAL_OUT, &(memory->out.doStopProgram), mHalCompId, "%s.halui.program.stop", mComponentPrefix);
 
     newHalBit(HAL_IN, &(memory->in.isModeAuto), mHalCompId, "%s.halui.mode.is-auto", mComponentPrefix);
-    newHalBit(HAL_IN, &(memory->in.isModeJoint), mHalCompId, "%s.halui.mode.is-joint", mComponentPrefix);
+    //newHalBit(HAL_IN, &(memory->in.isModeJoint), mHalCompId, "%s.halui.mode.is-joint", mComponentPrefix);
     newHalBit(HAL_IN, &(memory->in.isModeManual), mHalCompId, "%s.halui.mode.is-manual", mComponentPrefix);
     newHalBit(HAL_IN, &(memory->in.isModeMdi), mHalCompId, "%s.halui.mode.is-mdi", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.doModeAuto), mHalCompId, "%s.halui.mode.auto", mComponentPrefix);
-    newHalBit(HAL_OUT, &(memory->out.doModeJoint), mHalCompId, "%s.halui.mode.joint", mComponentPrefix);
+    //newHalBit(HAL_OUT, &(memory->out.doModeJoint), mHalCompId, "%s.halui.mode.joint", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.doModeManual), mHalCompId, "%s.halui.mode.manual", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.doModeMdi), mHalCompId, "%s.halui.mode.mdi", mComponentPrefix);
 
@@ -735,7 +734,7 @@ void Hal::enableVerbose(bool enable)
 
 void Hal::setNoAxisActive(bool enabled)
 {
-    *mHalCout << "hal   OFF no axis active" << endl;
+    *mHalCout << "hal   OFF no axis active\n";
 }
 
 // ----------------------------------------------------------------------
@@ -744,7 +743,7 @@ void Hal::setAxisXActive(bool enabled)
 {
     *memory->out.jointXSelect   = enabled;
     *memory->out.axisXJogEnable = enabled;
-    *mHalCout << "hal   X axis active" << endl;
+    *mHalCout << "hal   X axis active\n";
 }
 
 // ----------------------------------------------------------------------
@@ -753,7 +752,7 @@ void Hal::setAxisYActive(bool enabled)
 {
     *memory->out.jointYSelect   = enabled;
     *memory->out.axisYJogEnable = enabled;
-    *mHalCout << "hal   Y axis active" << endl;
+    *mHalCout << "hal   Y axis active\n";
 }
 
 // ----------------------------------------------------------------------
@@ -762,7 +761,7 @@ void Hal::setAxisZActive(bool enabled)
 {
     *memory->out.jointZSelect   = enabled;
     *memory->out.axisZJogEnable = enabled;
-    *mHalCout << "hal   Z axis active" << endl;
+    *mHalCout << "hal   Z axis active\n";
 }
 
 // ---4-------------------------------------------------------------------
@@ -771,7 +770,7 @@ void Hal::setAxisAActive(bool enabled)
 {
     *memory->out.jointASelect   = enabled;
     *memory->out.axisAJogEnable = enabled;
-    *mHalCout << "hal   A axis active" << endl;
+    *mHalCout << "hal   A axis active\n";
 }
 
 // ----------------------------------------------------------------------
@@ -780,7 +779,7 @@ void Hal::setAxisBActive(bool enabled)
 {
     *memory->out.jointBSelect   = enabled;
     *memory->out.axisBJogEnable = enabled;
-    *mHalCout << "hal   B axis active" << endl;
+    *mHalCout << "hal   B axis active\n";
 }
 
 // ----------------------------------------------------------------------
@@ -789,7 +788,7 @@ void Hal::setAxisCActive(bool enabled)
 {
     *memory->out.jointCSelect   = enabled;
     *memory->out.axisCJogEnable = enabled;
-    *mHalCout << "hal   C axis active" << endl;
+    *mHalCout << "hal   C axis active\n";
 }
 
 // ----------------------------------------------------------------------
@@ -802,7 +801,7 @@ void Hal::setStepSize(const hal_float_t& stepSize)
     *memory->out.axisAJogScale = stepSize;
     *memory->out.axisBJogScale = stepSize;
     *memory->out.axisCJogScale = stepSize;
-    *mHalCout << "hal   step size " << stepSize << endl;
+    *mHalCout << "hal   step size " << stepSize << "\n";
 }
 
 // ----------------------------------------------------------------------
@@ -811,7 +810,7 @@ void Hal::setLead()
 {
     std::ios init(NULL);
     init.copyfmt(*mHalCout);
-    *mHalCout << "hal   feed rate Lead" << endl;
+    *mHalCout << "hal   feed rate Lead\n";
     mHalCout->copyfmt(init);
 }
 
@@ -850,15 +849,9 @@ void Hal::setStop(bool enabled)
 
 void Hal::setStart(bool enabled)
 {
-    if (!enabled)
+    requestAutoMode(enabled);
+    if (enabled)
     {
-        // clear auto mode
-        *memory->out.doModeAuto = false;
-    }
-    else
-    {
-        // request auto mode
-        *memory->out.doModeAuto = true;
         toggleStartResumeProgram();
     }
     setPin(enabled, KeyCodes::Buttons.start.text);
@@ -1093,26 +1086,37 @@ void Hal::setSpindleMinus(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void Hal::setMachineHome(bool enabled)
+/**
+ * Requests machine to go home home.
+ * The task is performed via MDI command.
+ */
+void Hal::requestMachineGoHome(bool enabled)
 {
-    enableMdiMode(enabled);
-    *memory->out.homeAll = enabled;
+    requestMdiMode(enabled);
     setPin(enabled, KeyCodes::Buttons.machine_home.text);
 }
 
 // ----------------------------------------------------------------------
 
+/**
+ * Sends machine to safe Z position.
+ * The task is performed via MDI code.
+ */
 void Hal::setSafeZ(bool enabled)
 {
-    enableMdiMode(enabled);
+    requestMdiMode(enabled);
     setPin(enabled, KeyCodes::Buttons.safe_z.text);
 }
 
 // ----------------------------------------------------------------------
 
+/**
+ * Sends machine to workpiece home position.
+ * The task is performed via MDI code.
+ */
 void Hal::setWorkpieceHome(bool enabled)
 {
-    enableMdiMode(enabled);
+    requestMdiMode(enabled);
     setPin(enabled, KeyCodes::Buttons.workpiece_home.text);
 }
 
@@ -1185,9 +1189,13 @@ void Hal::toggleSpindleOnOff(bool isButtonPressed)
 
 // ----------------------------------------------------------------------
 
+/**
+ * Puts machine into probing mode for Z axis.
+ * The task is performed via MDI code.
+ */
 void Hal::setProbeZ(bool enabled)
 {
-    enableMdiMode(enabled);
+    requestMdiMode(enabled);
     setPin(enabled, KeyCodes::Buttons.probe_z.text);
 }
 
@@ -1203,7 +1211,7 @@ void Hal::setContinuousMode(bool enabled)
         *memory->out.axisASetVelocityMode = true;
         *memory->out.axisBSetVelocityMode = true;
         *memory->out.axisCSetVelocityMode = true;
-        *mHalCout << "hal   step mode is continuous" << endl;
+        *mHalCout << "hal   step mode is continuous\n";
     }
     setPin(enabled, KeyCodes::Buttons.manual_pulse_generator.text);
 }
@@ -1220,7 +1228,7 @@ void Hal::setStepMode(bool enabled)
         *memory->out.axisASetVelocityMode = false;
         *memory->out.axisBSetVelocityMode = false;
         *memory->out.axisCSetVelocityMode = false;
-        *mHalCout << "hal   step mode is step" << endl;
+        *mHalCout << "hal   step mode is step\n";
     }
     setPin(enabled, KeyCodes::Buttons.step_continuous.text);
 }
@@ -1312,9 +1320,16 @@ void Hal::setMacro9(bool enabled)
 
 // ----------------------------------------------------------------------
 
+void Hal::requestMachineHomingAll(bool isRisingEdge)
+{
+    requestManualMode(isRisingEdge);
+    *memory->out.homeAll = isRisingEdge;
+}
+
+// ----------------------------------------------------------------------
+
 void Hal::setMacro10(bool enabled)
 {
-    enableManualMode(enabled);
     setPin(enabled, KeyCodes::Buttons.macro10.text);
 }
 
@@ -1364,8 +1379,7 @@ void Hal::setMacro16(bool enabled)
 
 void Hal::setPin(bool enabled, size_t pinNumber, const char* pinName)
 {
-    *mHalCout << "hal   " << pinName << ((enabled) ? " enabled" : " disabled") << " (pin # " << pinNumber << ")"
-              << endl;
+    *mHalCout << "hal   " << pinName << ((enabled) ? " enabled" : " disabled") << " (pin # " << pinNumber << ")\n";
     *(memory->out.button_pin[pinNumber]) = enabled;
 }
 
@@ -1383,19 +1397,25 @@ void Hal::setPin(bool enabled, const char* pinName)
 
 void Hal::setJogCounts(const HandWheelCounters& counters)
 {
-    *memory->out.axisXJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_X);
-    *memory->out.axisYJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_Y);
-    *memory->out.axisZJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_Z);
-    *memory->out.axisAJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_A);
-    *memory->out.axisBJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_B);
-    *memory->out.axisCJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_C);
     if (counters.isLeadCounterActive())
     {
         *memory->out.feedOverrideCounts = counters.counts(HandWheelCounters::CounterNameToIndex::LEAD);
     }
+    else
+    {
+        requestManualMode(true);
+        *memory->out.axisXJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_X);
+        *memory->out.axisYJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_Y);
+        *memory->out.axisZJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_Z);
+        *memory->out.axisAJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_A);
+        *memory->out.axisBJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_B);
+        *memory->out.axisCJogCounts = counters.counts(HandWheelCounters::CounterNameToIndex::AXIS_C);
+        requestManualMode(false);
+    }
 }
 
 // ----------------------------------------------------------------------
+
 
 void Hal::setFunction(bool enabled)
 {
@@ -1404,54 +1424,99 @@ void Hal::setFunction(bool enabled)
 
 // ----------------------------------------------------------------------
 
-bool Hal::trySetManualMode(bool isButtonPressed)
+void Hal::requestAutoMode(bool isRisingEdge)
 {
-    if (isButtonPressed)
+    if (0 != *memory->in.isModeAuto)
     {
-        if (!*memory->in.isModeAuto)
-        {
-            *memory->out.doModeManual = true;
-            return true;
-        }
+        return;
     }
-    else
-    {
-        *memory->out.doModeManual = false;
-    }
-    return false;
-}
 
-// ----------------------------------------------------------------------
-
-void Hal::enableManualMode(bool isRisingEdge)
-{
     if (isRisingEdge)
     {
-        if (*memory->in.isModeManual || *memory->in.isModeMdi)
-        {
-            *memory->out.doModeManual = true;
-        }
+        *memory->out.doModeAuto = true;
+        waitForRequestedMode(memory->in.isModeAuto);
     }
     else
     {
-        *memory->out.doModeManual = false;
+      *memory->out.doModeAuto = false;
     }
 }
 
 // ----------------------------------------------------------------------
 
-void Hal::enableMdiMode(bool isRisingEdge)
+void Hal::requestManualMode(bool isRisingEdge)
 {
+    if (0 != *memory->in.isModeManual)
+    {
+        return;
+    }
+
     if (isRisingEdge)
     {
-        if (*memory->in.isModeManual || *memory->in.isModeMdi)
-        {
+        //if (!(*memory->in.isModeAuto))
+        //{
+            *memory->out.doModeManual = true;
+            waitForRequestedMode(memory->in.isModeManual);
+        //}
+    }
+    else
+    {
+        *memory->out.doModeManual = false;
+    }
+}
+
+// ----------------------------------------------------------------------
+
+/**
+ * MDI mode is usually to be requested before an MDI code is executed.
+ */
+void Hal::requestMdiMode(bool isRisingEdge)
+{
+    if (0 != *memory->in.isModeMdi)
+    {
+        return;
+    }
+
+    if (isRisingEdge)
+    {
+        //if (!(*memory->in.isModeAuto))
+        //{
             *memory->out.doModeMdi = true;
-        }
+            waitForRequestedMode(memory->in.isModeMdi);
+        //}
     }
     else
     {
         *memory->out.doModeMdi = false;
     }
+}
+
+// ----------------------------------------------------------------------
+
+bool Hal::waitForRequestedMode(hal_bit_t const *condition, useconds_t timeout_ms, unsigned int max_timeouts)
+{
+    unsigned int timeouts = max_timeouts;
+    do
+    {
+        if (0 != *condition)
+        {
+            usleep(timeout_ms * 1000);
+        }
+        else
+        {
+            return true;
+        }
+    } while ((0 != *condition) && (--timeouts) > 0);
+
+    if (0 != *condition)
+    {
+        auto delay = (max_timeouts - timeouts) * timeout_ms;
+        std::cerr << "hal   failed to wait for reqested mode. waited " << delay << "ms\n";
+    }
+    else
+    {
+        return true;
+    }
+    return false;
 }
 }

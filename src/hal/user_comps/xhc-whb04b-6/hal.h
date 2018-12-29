@@ -130,8 +130,8 @@ public:
 
         //! to be connected to \ref halui.mode.is-auto
         hal_bit_t* isModeAuto{nullptr};
-        //! to be connected to \ref halui.mode.is-joint
-        hal_bit_t* isModeJoint{nullptr};
+        ////! to be connected to \ref halui.mode.is-joint
+        //hal_bit_t* isModeJoint{nullptr};
         //! to be connected to \ref halui.mode.is-manual
         hal_bit_t* isModeManual{nullptr};
         //! to be connected to \ref halui.mode.is-mdi
@@ -273,8 +273,8 @@ public:
 
         //! to be connected to \ref halui.mode.auto
         hal_bit_t* doModeAuto{nullptr};
-        //! to be connected to \ref halui.mode.joint
-        hal_bit_t* doModeJoint{nullptr};
+        ////! to be connected to \ref halui.mode.joint
+        //hal_bit_t* doModeJoint{nullptr};
         //! to be connected to \ref halui.mode.manual
         hal_bit_t* doModeManual{nullptr};
         //! to be connected to \ref halui.mode.mdi
@@ -447,8 +447,10 @@ public:
     void setSpindleMinus(bool enabled);
     //! \sa setReset(bool, size_t)
     void setFunction(bool enabled);
-    //! \sa setReset(bool, size_t)
-    void setMachineHome(bool enabled);
+    //! Requests machine to search home for all axis. \ref halui.home-all
+    void requestMachineHomingAll(bool isRisingEdge);
+    //! Requests machine to go home (move axis to home position).
+    void requestMachineGoHome(bool enabled);
     //! \sa setReset(bool, size_t)
     void setSafeZ(bool enabled);
     //! \sa setReset(bool, size_t)
@@ -520,11 +522,6 @@ public:
     //! \xrefitem getAxisXPosition(bool)
     hal_float_t getAxisCPosition(bool absolute) const;
 
-    //! Requests manual mode if in MDI mode. Skips request if in AUTO mode.
-    //! \param isButtonPressed true on button press, false on release
-    //! \return true on successful request and if isButtonPressed == true, false otherwise
-    bool trySetManualMode(bool isButtonPressed);
-
 private:
     HalMemory* memory{nullptr};
     std::map <std::string, size_t> mButtonNameToIdx;
@@ -573,9 +570,19 @@ private:
     void toggleStartResumeProgram();
 
     void clearStartResumeProgramStates();
+    //! \sa requestManualMode(bool)
+    void requestAutoMode(bool isRisingEdge);
+    //! Requests manual mode if in MDI mode. Skips request if in AUTO mode.
+    //! \param isButtonPressed true on button press, false on release
+    void requestManualMode(bool isRisingEdge);
+    //! \sa requestManualMode(bool)
+    void requestMdiMode(bool isRisingEdge);
 
-    void enableManualMode(bool isRisingEdge);
-
-    void enableMdiMode(bool isRisingEdge);
+    //! Polls for condition with timeout and max loops count.
+    //! \param condition the condition to be polled
+    //! \param timeout_ms delay in [ms] in between condition is checks
+    //! \param max_timeouts maximum number of checks
+    //! \return true if condition was met, false otherwise
+    bool waitForRequestedMode(hal_bit_t const *condition, useconds_t timeout_ms=2, unsigned int max_timeouts=200);
 };
 }
