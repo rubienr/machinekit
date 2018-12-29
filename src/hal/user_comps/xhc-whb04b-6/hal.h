@@ -579,10 +579,13 @@ private:
     void requestMdiMode(bool isRisingEdge);
 
     //! Polls for condition with timeout and max loops count.
+    //! Returns if condition is met or number of loops is exhausted.
+    //! Experience on BeagleBoneBlack with Axis UI revealed that the delay until a mode is switched is
+    //! approximately 80ms to 150ms.
     //! \param condition the condition to be polled
     //! \param timeout_ms delay in [ms] in between condition is checks
     //! \param max_timeouts maximum number of checks
     //! \return true if condition was met, false otherwise
-    bool waitForRequestedMode(hal_bit_t const *condition, useconds_t timeout_ms=2, unsigned int max_timeouts=200);
+    bool waitForRequestedMode(hal_bit_t const *condition, useconds_t timeout_ms=5, unsigned int max_timeouts=50);
 };
 }
