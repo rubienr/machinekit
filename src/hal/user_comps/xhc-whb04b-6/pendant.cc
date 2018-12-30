@@ -846,7 +846,7 @@ void Handwheel::count(int8_t delta)
 
     std::ios init(NULL);
     init.copyfmt(*mWheelCout);
-    *mWheelCout << mPrefix << "handwheel total counts " << std::setfill(' ') << std::setw(5) << mCounters << "\n";
+    *mWheelCout << mPrefix << "wheel  total counts " << std::setfill(' ') << std::setw(5) << mCounters << "\n";
     mWheelCout->copyfmt(init);
 }
 
@@ -1015,7 +1015,7 @@ std::ostream& operator<<(std::ostream& os, const Pendant& data)
 
     os << "{currentButtonState=" << data.currentButtonsState() << " "
        << "previousButtonState=" << data.previousButtonsState() << " "
-       << "handwheel= " << data.handWheel() << "}";
+       << "wheel= " << data.handWheel() << "}";
     return os;
 }
 
@@ -1632,7 +1632,7 @@ bool Pendant::onJogDialEvent(const HandWheelCounters& counters, int8_t delta)
 {
 
     if (HandWheelCounters::CounterNameToIndex::UNDEFINED != counters.activeCounter() &&
-        counters.counts() != 0)
+        0 != counters.counts())
     {
         *mPendantCout << mPrefix << "wheel  event " << counters.counts() << "\n";
 
@@ -1642,7 +1642,11 @@ bool Pendant::onJogDialEvent(const HandWheelCounters& counters, int8_t delta)
                 mHal.getFeedOverrideMinValue() * 100,
                 mHal.getFeedOverrideMaxValue() * 100);
         }
-        mHal.setJogCounts(counters);
+
+        if (0 != delta)
+        {
+            mHal.setJogCounts(counters);
+        }
         mDisplay.onJogDialEvent(counters, delta);
         return true;
     }

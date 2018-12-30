@@ -32,6 +32,7 @@
 
 // local library includes
 #include <hal.h>
+#include <sys/types.h>
 
 // forward declarations
 
@@ -40,7 +41,29 @@ namespace XhcWhb04b6 {
 // forward declarations
 class MetaButtonCodes;
 class KeyCodes;
+namespace Profiles {
+struct ModesRequest;
+}
 
+namespace Profiles {
+
+// ----------------------------------------------------------------------
+
+//! Defines hold and space delays for mode requests when pin is toggled.
+struct ModesRequest {
+    const useconds_t holdMs;
+    const useconds_t spaceMs;
+};
+
+// ----------------------------------------------------------------------
+
+//! The slow profile is reasonable for the BeagleBoneBlack when using Axis UI.
+static constexpr ModesRequest halModesRequestSlowProfile()
+{
+  //! For BeagleBoneBlack this values seams reasonable, since it is a rather slow hardware.
+  return Profiles::ModesRequest{10,10};
+}
+}
 
 // ----------------------------------------------------------------------
 
@@ -130,8 +153,6 @@ public:
 
         //! to be connected to \ref halui.mode.is-auto
         hal_bit_t* isModeAuto{nullptr};
-        ////! to be connected to \ref halui.mode.is-joint
-        //hal_bit_t* isModeJoint{nullptr};
         //! to be connected to \ref halui.mode.is-manual
         hal_bit_t* isModeManual{nullptr};
         //! to be connected to \ref halui.mode.is-mdi
@@ -273,8 +294,6 @@ public:
 
         //! to be connected to \ref halui.mode.auto
         hal_bit_t* doModeAuto{nullptr};
-        ////! to be connected to \ref halui.mode.joint
-        //hal_bit_t* doModeJoint{nullptr};
         //! to be connected to \ref halui.mode.manual
         hal_bit_t* doModeManual{nullptr};
         //! to be connected to \ref halui.mode.mdi
@@ -306,7 +325,8 @@ public:
 class Hal
 {
 public:
-    Hal();
+    Hal(Profiles::ModesRequest modesRequestProfile=Profiles::halModesRequestSlowProfile());
+
     ~Hal();
     //! Initializes HAL memory and pins according to simulation mode. Must not be called more than once.
     //! If \ref mIsSimulationMode is true heap memory will be used, shared HAL memory otherwise.
@@ -534,6 +554,7 @@ private:
     std::ostream* mHalCout{nullptr};
     HandwheelStepmodes::Mode mStepMode;
     bool                     mIsSpindleDirectionForward{true};
+    Profiles::ModesRequest   mModesRequestProfile;
 
     //! //! Allocates new hal_bit_t pin according to \ref mIsSimulationMode. If \ref mIsSimulationMode then
     //! mallocs memory, hal_pin_bit_new allocation otherwise.
@@ -571,12 +592,14 @@ private:
 
     void clearStartResumeProgramStates();
     //! \sa requestManualMode(bool)
-    void requestAutoMode(bool isRisingEdge);
+    bool requestAutoMode(bool isRisingEdge);
     //! Requests manual mode if in MDI mode. Skips request if in AUTO mode.
+    //! \sa requestMode(bool, hal_bit_t*, hal_bit_t*)
     //! \param isButtonPressed true on button press, false on release
-    void requestManualMode(bool isRisingEdge);
+    //! \return true if machine has selected the mode, false otherwise
+    bool requestManualMode(bool isRisingEdge);
     //! \sa requestManualMode(bool)
-    void requestMdiMode(bool isRisingEdge);
+    bool requestMdiMode(bool isRisingEdge);
 
     //! Polls for condition with timeout and max loops count.
     //! Returns if condition is met or number of loops is exhausted.
@@ -586,6 +609,14 @@ private:
     //! \param timeout_ms delay in [ms] in between condition is checks
     //! \param max_timeouts maximum number of checks
     //! \return true if condition was met, false otherwise
-    bool waitForRequestedMode(hal_bit_t const *condition, useconds_t timeout_ms=5, unsigned int max_timeouts=50);
+    bool waitForRequestedMode(volatile hal_bit_t* condition, useconds_t timeout_ms=5, unsigned int max_timeouts=60);
+
+    //! Requests machine mode such as auto, mdi, manual. When toggling it introduces hold and space delay.
+    //! \sa mModesRequestProfile
+    //! \param requestPin the (output) pin to toggle for requesting
+    //! \param modeFeedbackPin the (input) pin reflecting if the mode is set
+    //! \return on rising edge: true if the machine has selected or is in the desired mode, false otherwise;
+    //! on falling edge: false
+    bool requestMode(bool isRisingEdge, hal_bit_t* requestPin, hal_bit_t* modeFeedbackPin);
 };
 }

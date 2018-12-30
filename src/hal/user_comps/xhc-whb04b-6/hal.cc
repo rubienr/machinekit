@@ -74,10 +74,11 @@ void Hal::freeSimulatedPin(void** pin)
 
 // ----------------------------------------------------------------------
 
-Hal::Hal() :
+Hal::Hal(Profiles::ModesRequest modesRequestProfile) :
     mButtonNameToIdx(),
     mHalCout(&mDevNull),
-    mStepMode(HandwheelStepmodes::Mode::STEP)
+    mStepMode(HandwheelStepmodes::Mode::STEP),
+    mModesRequestProfile(modesRequestProfile)
 {
 }
 
@@ -139,7 +140,6 @@ Hal::~Hal()
     freeSimulatedPin((void**)(&memory->in.isProgramIdle));
 
     freeSimulatedPin((void**)(&memory->in.isModeAuto));
-    //freeSimulatedPin((void**)(&memory->in.isModeJoint));
     freeSimulatedPin((void**)(&memory->in.isModeManual));
     freeSimulatedPin((void**)(&memory->in.isModeMdi));
 
@@ -623,11 +623,9 @@ void Hal::init(const MetaButtonCodes* metaButtons, const KeyCodes& keyCodes)
     newHalBit(HAL_OUT, &(memory->out.doStopProgram), mHalCompId, "%s.halui.program.stop", mComponentPrefix);
 
     newHalBit(HAL_IN, &(memory->in.isModeAuto), mHalCompId, "%s.halui.mode.is-auto", mComponentPrefix);
-    //newHalBit(HAL_IN, &(memory->in.isModeJoint), mHalCompId, "%s.halui.mode.is-joint", mComponentPrefix);
     newHalBit(HAL_IN, &(memory->in.isModeManual), mHalCompId, "%s.halui.mode.is-manual", mComponentPrefix);
     newHalBit(HAL_IN, &(memory->in.isModeMdi), mHalCompId, "%s.halui.mode.is-mdi", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.doModeAuto), mHalCompId, "%s.halui.mode.auto", mComponentPrefix);
-    //newHalBit(HAL_OUT, &(memory->out.doModeJoint), mHalCompId, "%s.halui.mode.joint", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.doModeManual), mHalCompId, "%s.halui.mode.manual", mComponentPrefix);
     newHalBit(HAL_OUT, &(memory->out.doModeMdi), mHalCompId, "%s.halui.mode.mdi", mComponentPrefix);
 
@@ -849,12 +847,19 @@ void Hal::setStop(bool enabled)
 
 void Hal::setStart(bool enabled)
 {
-    requestAutoMode(enabled);
-    if (enabled)
+    if (requestAutoMode(enabled))
     {
-        toggleStartResumeProgram();
+        if (enabled)
+        {
+            toggleStartResumeProgram();
+        }
+        setPin(enabled, KeyCodes::Buttons.start.text);
     }
-    setPin(enabled, KeyCodes::Buttons.start.text);
+
+    if (!enabled)
+    {
+        setPin(enabled, KeyCodes::Buttons.start.text);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -1092,8 +1097,18 @@ void Hal::setSpindleMinus(bool enabled)
  */
 void Hal::requestMachineGoHome(bool enabled)
 {
-    requestMdiMode(enabled);
-    setPin(enabled, KeyCodes::Buttons.machine_home.text);
+    if (requestMdiMode(enabled))
+    {
+        if (enabled)
+        {
+            setPin(enabled, KeyCodes::Buttons.machine_home.text);
+        }
+    }
+
+    if (!enabled)
+    {
+        setPin(enabled, KeyCodes::Buttons.machine_home.text);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -1104,8 +1119,18 @@ void Hal::requestMachineGoHome(bool enabled)
  */
 void Hal::setSafeZ(bool enabled)
 {
-    requestMdiMode(enabled);
-    setPin(enabled, KeyCodes::Buttons.safe_z.text);
+    if (requestMdiMode(enabled))
+    {
+        if (enabled)
+        {
+            setPin(enabled, KeyCodes::Buttons.safe_z.text);
+        }
+    }
+
+    if (!enabled)
+    {
+        setPin(enabled, KeyCodes::Buttons.safe_z.text);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -1116,8 +1141,18 @@ void Hal::setSafeZ(bool enabled)
  */
 void Hal::setWorkpieceHome(bool enabled)
 {
-    requestMdiMode(enabled);
-    setPin(enabled, KeyCodes::Buttons.workpiece_home.text);
+    if (requestMdiMode(enabled))
+    {
+        if (enabled)
+        {
+            setPin(enabled, KeyCodes::Buttons.workpiece_home.text);
+        }
+    }
+
+    if (!enabled)
+    {
+        setPin(enabled, KeyCodes::Buttons.workpiece_home.text);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -1195,8 +1230,18 @@ void Hal::toggleSpindleOnOff(bool isButtonPressed)
  */
 void Hal::setProbeZ(bool enabled)
 {
-    requestMdiMode(enabled);
-    setPin(enabled, KeyCodes::Buttons.probe_z.text);
+    if (requestMdiMode(enabled))
+    {
+        if (enabled)
+        {
+            setPin(enabled, KeyCodes::Buttons.probe_z.text);
+        }
+    }
+
+    if (!enabled)
+    {
+        setPin(enabled, KeyCodes::Buttons.probe_z.text);
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -1322,8 +1367,18 @@ void Hal::setMacro9(bool enabled)
 
 void Hal::requestMachineHomingAll(bool isRisingEdge)
 {
-    requestManualMode(isRisingEdge);
-    *memory->out.homeAll = isRisingEdge;
+    if (requestManualMode(isRisingEdge))
+    {
+        if (isRisingEdge)
+        {
+            *memory->out.homeAll = isRisingEdge;
+        }
+    }
+
+    if (!isRisingEdge)
+    {
+      *memory->out.homeAll = isRisingEdge;
+    }
 }
 
 // ----------------------------------------------------------------------
@@ -1424,45 +1479,16 @@ void Hal::setFunction(bool enabled)
 
 // ----------------------------------------------------------------------
 
-void Hal::requestAutoMode(bool isRisingEdge)
+bool Hal::requestAutoMode(bool isRisingEdge)
 {
-    if (0 != *memory->in.isModeAuto)
-    {
-        return;
-    }
-
-    if (isRisingEdge)
-    {
-        *memory->out.doModeAuto = true;
-        waitForRequestedMode(memory->in.isModeAuto);
-    }
-    else
-    {
-      *memory->out.doModeAuto = false;
-    }
+    return requestMode(isRisingEdge, memory->out.doModeAuto, memory->in.isModeAuto);
 }
 
 // ----------------------------------------------------------------------
 
-void Hal::requestManualMode(bool isRisingEdge)
+bool Hal::requestManualMode(bool isRisingEdge)
 {
-    if (0 != *memory->in.isModeManual)
-    {
-        return;
-    }
-
-    if (isRisingEdge)
-    {
-        //if (!(*memory->in.isModeAuto))
-        //{
-            *memory->out.doModeManual = true;
-            waitForRequestedMode(memory->in.isModeManual);
-        //}
-    }
-    else
-    {
-        *memory->out.doModeManual = false;
-    }
+    return requestMode(isRisingEdge, memory->out.doModeManual, memory->in.isModeManual);
 }
 
 // ----------------------------------------------------------------------
@@ -1470,35 +1496,52 @@ void Hal::requestManualMode(bool isRisingEdge)
 /**
  * MDI mode is usually to be requested before an MDI code is executed.
  */
-void Hal::requestMdiMode(bool isRisingEdge)
+bool Hal::requestMdiMode(bool isRisingEdge)
 {
-    if (0 != *memory->in.isModeMdi)
-    {
-        return;
-    }
-
-    if (isRisingEdge)
-    {
-        //if (!(*memory->in.isModeAuto))
-        //{
-            *memory->out.doModeMdi = true;
-            waitForRequestedMode(memory->in.isModeMdi);
-        //}
-    }
-    else
-    {
-        *memory->out.doModeMdi = false;
-    }
+    return requestMode(isRisingEdge, memory->out.doModeMdi, memory->in.isModeMdi);
 }
 
 // ----------------------------------------------------------------------
 
-bool Hal::waitForRequestedMode(hal_bit_t const *condition, useconds_t timeout_ms, unsigned int max_timeouts)
+bool Hal::requestMode(bool isRisingEdge, hal_bit_t *requestPin, hal_bit_t * modeFeedbackPin)
 {
+    if (isRisingEdge)
+    {
+        if (true == *modeFeedbackPin)
+        {
+            // shortcut for mode request which is already active
+            return true;
+        }
+        // request mode
+        *requestPin = true;
+        usleep(mModesRequestProfile.holdMs * 1000);
+        *requestPin = false;
+        usleep(mModesRequestProfile.spaceMs * 1000);
+        return waitForRequestedMode(modeFeedbackPin);
+    }
+    else
+    {
+      // on button released always clear request
+      *requestPin = false;
+     return false;
+    }
+
+    return false;
+}
+
+// ----------------------------------------------------------------------
+
+bool Hal::waitForRequestedMode(volatile hal_bit_t * condition, useconds_t timeout_ms, unsigned int max_timeouts)
+{
+    if(mIsSimulationMode)
+    {
+        return true;
+    }
+
     unsigned int timeouts = max_timeouts;
     do
     {
-        if (0 != *condition)
+        if (false == *condition)
         {
             usleep(timeout_ms * 1000);
         }
@@ -1506,17 +1549,19 @@ bool Hal::waitForRequestedMode(hal_bit_t const *condition, useconds_t timeout_ms
         {
             return true;
         }
-    } while ((0 != *condition) && (--timeouts) > 0);
+    } while ((false == *condition) && (--timeouts) > 0);
 
-    if (0 != *condition)
+    if (false == *condition)
     {
         auto delay = (max_timeouts - timeouts) * timeout_ms;
         std::cerr << "hal   failed to wait for reqested mode. waited " << delay << "ms\n";
+        return false;
     }
     else
     {
         return true;
     }
+
     return false;
 }
 }
