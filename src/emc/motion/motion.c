@@ -456,6 +456,29 @@ static int init_hal_io(void)
     if (retval != 0) {
 	return retval;
     }
+
+    /* export spindle parameters */
+    retval =
+	hal_param_u32_new("motion.spindle.speed-change-step-abs", HAL_RW, &(emcmot_hal_data->spindle_speed_change_step_abs),
+	mot_comp_id);
+    if (retval != 0) {
+	return retval;
+    }
+
+    retval =
+	hal_param_u32_new("motion.spindle.speed-change-max-abs", HAL_RW, &(emcmot_hal_data->spindle_speed_max_abs),
+	mot_comp_id);
+    if (retval != 0) {
+	return retval;
+    }
+
+    retval =
+	hal_param_u32_new("motion.spindle.speed-change-min-abs", HAL_RW, &(emcmot_hal_data->spindle_speed_min_abs),
+	mot_comp_id);
+    if (retval != 0) {
+	return retval;
+    }
+
     /* export debug parameters */
     /* these can be used to view any internal variable, simply change a line
        in control.c:output_to_hal() and recompile */
@@ -672,6 +695,11 @@ static int init_hal_io(void)
     *(emcmot_hal_data->teleop_mode) = 0;
     *(emcmot_hal_data->coord_error) = 0;
     *(emcmot_hal_data->on_soft_limit) = 0;
+
+    /* init spindle parameters */
+    emcmot_hal_data->spindle_speed_change_step_abs = 100;
+    emcmot_hal_data->spindle_speed_max_abs = 48000;
+    emcmot_hal_data->spindle_speed_min_abs = 0;
 
     /* init debug parameters */
     emcmot_hal_data->debug_bit_0 = 0;

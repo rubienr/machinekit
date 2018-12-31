@@ -160,6 +160,11 @@ typedef struct {
     hal_bit_t   *spindle_is_oriented;	/* in: orientation completed */
     hal_s32_t   *spindle_orient_fault;	/* in: error code of failed operation */
 
+    // spindle increase / decrease parameters
+    hal_u32_t spindle_speed_change_step_abs;	/* in: absolute step to increase or decrease spindle speed */
+    hal_u32_t spindle_speed_max_abs;	/* in: on increase, absolute spindle speed is capped to max value */
+    hal_u32_t spindle_speed_min_abs;	/* in: on decrease, absolute spindle speed is capped to min value */
+
     // FIXME - debug only, remove later
     hal_float_t traj_pos_out;	/* RPA: traj internals, for debugging */
     hal_float_t traj_vel_out;	/* RPA: traj internals, for debugging */

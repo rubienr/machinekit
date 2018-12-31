@@ -1671,23 +1671,43 @@ int emcmotCommandHandler(void *arg, const hal_funct_args_t *fa)
 	    emcmotStatus->spindle.locked = 0;
 	    break;
 
-	case EMCMOT_SPINDLE_INCREASE:
-	    rtapi_print_msg(RTAPI_MSG_DBG, "SPINDLE_INCREASE");
-	    if (emcmotStatus->spindle.speed > 0) {
-		emcmotStatus->spindle.speed += 100; //FIXME - make the step a HAL parameter
-	    } else if (emcmotStatus->spindle.speed < 0) {
-		emcmotStatus->spindle.speed -= 100;
-	    }
-	    break;
+  case EMCMOT_SPINDLE_INCREASE:
+      rtapi_print_msg(RTAPI_MSG_DBG, "SPINDLE_INCREASE");
+      {
+          int32_t speed = emcmotStatus->spindle.speed;
+          int32_t speed_max = emcmot_hal_data->spindle_speed_max_abs;
+          int32_t speed_step = emcmot_hal_data->spindle_speed_change_step_abs;
 
-	case EMCMOT_SPINDLE_DECREASE:
-	    rtapi_print_msg(RTAPI_MSG_DBG, "SPINDLE_DECREASE");
-	    if (emcmotStatus->spindle.speed > 100) {
-		emcmotStatus->spindle.speed -= 100; //FIXME - make the step a HAL parameter
-	    } else if (emcmotStatus->spindle.speed < -100) {
-		emcmotStatus->spindle.speed += 100;
-	    }
-	    break;
+          if (speed > 0) {
+              speed += speed_step;
+              speed = (speed > speed_max) ? speed_max : speed;
+          } else {
+              speed -= speed_step;
+              speed = (speed < -speed_max) ? -speed_max : speed;
+          }
+
+          emcmotStatus->spindle.speed = speed;
+      }
+    break;
+
+  case EMCMOT_SPINDLE_DECREASE:
+      rtapi_print_msg(RTAPI_MSG_DBG, "SPINDLE_DECREASE");
+      {
+          int32_t speed = emcmotStatus->spindle.speed;
+          int32_t speed_min = emcmot_hal_data->spindle_speed_min_abs;
+          int32_t speed_step = emcmot_hal_data->spindle_speed_change_step_abs;
+
+          if (speed > 0) {
+              speed -= speed_step;
+              speed = (speed < speed_min) ? speed_min : speed;
+          } else {
+              speed += speed_step;
+              speed = (speed > -speed_min) ? -speed_min : speed;
+          }
+
+          emcmotStatus->spindle.speed = speed;
+      }
+    break;
 
 	case EMCMOT_SPINDLE_BRAKE_ENGAGE:
 	    rtapi_print_msg(RTAPI_MSG_DBG, "SPINDLE_BRAKE_ENGAGE");
